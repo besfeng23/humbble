@@ -1,54 +1,102 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  StyleSheet, 
-  Alert, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
   ImageBackground,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import appwrite from '../../constants/appwrite';
+import { Redirect, useRouter } from 'expo-router';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthProvider';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 const SignupScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(
+    isSupabaseConfigured ? null : 'Auth is not configured'
+  );
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const router = useRouter();
+  const { session } = useAuth();
+
+  if (session) {
+    return <Redirect href="/(tabs)/people" />;
+  }
 
   const handleSignup = async () => {
+    setErrorMessage(null);
+    setInfoMessage(null);
+
+    if (!isSupabaseConfigured) {
+      setErrorMessage('Auth is not configured');
+      return;
+    }
+
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedName || !trimmedEmail || !password) {
+      setErrorMessage('All fields are required.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage('Password must be at least 6 characters.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await appwrite?.account?.create(
-        'unique()',
-        email,
+      const emailRedirectTo =
+        Platform.OS === 'web' && typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/signin`
+          : undefined;
+
+      const { data, error } = await supabase.auth.signUp({
+        email: trimmedEmail,
         password,
-        name
-      );
-      Alert.alert('Success', 'Account created! Please sign in.');
-      setEmail('');
-      setPassword('');
-      setName('');
-      router.replace('/auth/signin');
+        options: {
+          data: { full_name: trimmedName },
+          ...(emailRedirectTo ? { emailRedirectTo } : {}),
+        },
+      });
+
+      if (error) {
+        setErrorMessage(error.message || 'Sign up failed.');
+        return;
+      }
+
+      if (data.session) {
+        router.replace('/(tabs)/people');
+        return;
+      }
+
+      if (data.user && !data.session) {
+        setInfoMessage(
+          'Check your email to confirm your account, then sign in.'
+        );
+      }
     } catch (error: any) {
-      Alert.alert('Signup Error', error.message || 'Unknown error');
+      setErrorMessage(error?.message || 'Unknown error');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <LinearGradient
@@ -57,9 +105,8 @@ const SignupScreen = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        
         <ImageBackground
-          source={require('../../assets/images/sign-up.jpg')} 
+          source={require('../../assets/images/sign-up.jpg')}
           style={styles.backgroundImage}
           imageStyle={styles.backgroundImageStyle}
         >
@@ -67,13 +114,23 @@ const SignupScreen = () => {
             {/* Header Section */}
             <View style={styles.headerSection}>
               <Text style={styles.welcomeText}>Join Us Today</Text>
-              <Text style={styles.subtitle}>Create your account and start exploring</Text>
+              <Text style={styles.subtitle}>
+                Create your account and start exploring
+              </Text>
             </View>
 
             {/* Form Section */}
             <View style={styles.formContainer}>
               <Text style={styles.formTitle}>SIGN UP</Text>
-              
+
+              {errorMessage ? (
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              ) : null}
+
+              {infoMessage ? (
+                <Text style={styles.infoText}>{infoMessage}</Text>
+              ) : null}
+
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.input}
@@ -105,17 +162,21 @@ const SignupScreen = () => {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
+                  onSubmitEditing={handleSignup}
                 />
               </View>
 
-              <TouchableOpacity 
-                style={[styles.signupButton, loading && styles.signupButtonDisabled]} 
+              <TouchableOpacity
+                style={[
+                  styles.signupButton,
+                  loading && styles.signupButtonDisabled,
+                ]}
                 onPress={handleSignup}
                 disabled={loading}
               >
                 <View style={styles.signupButtonSolid}>
                   <Text style={styles.signupButtonTextSolid}>
-                    {loading ? 'Creating Account...' : 'Sign Up'}
+                    {loading ? 'Creating account...' : 'Sign Up'}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -127,28 +188,40 @@ const SignupScreen = () => {
               </View>
 
               <View style={styles.socialContainer}>
-                <TouchableOpacity style={styles.socialButton}>
+                <TouchableOpacity
+                  style={styles.socialButton}
+                  onPress={() => {
+                    setErrorMessage(null);
+                    setInfoMessage('Google sign-in is not available yet.');
+                  }}
+                >
                   <Text style={styles.socialButtonText}>G</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton}>
+                <TouchableOpacity
+                  style={styles.socialButton}
+                  onPress={() => {
+                    setErrorMessage(null);
+                    setInfoMessage('Facebook sign-in is not available yet.');
+                  }}
+                >
                   <Text style={styles.socialButtonText}>f</Text>
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity 
-                onPress={() => router.replace('/auth/signin')} 
+              <TouchableOpacity
+                onPress={() => router.replace('/auth/signin')}
                 style={styles.linkContainer}
               >
                 <Text style={styles.linkText}>
-                  Already have an account? <Text style={styles.linkHighlight}>Sign In</Text>
+                  Already have an account?{' '}
+                  <Text style={styles.linkHighlight}>Sign In</Text>
                 </Text>
               </TouchableOpacity>
 
               <View style={styles.termsContainer}>
                 <Text style={styles.termsText}>
                   By signing up, you agree to our{' '}
-                  <Text style={styles.termsLink}>Terms of Service</Text>
-                  {' '}and{' '}
+                  <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
                   <Text style={styles.termsLink}>Privacy Policy</Text>
                 </Text>
               </View>
@@ -219,6 +292,24 @@ const styles = StyleSheet.create({
     color: '#333',
     letterSpacing: 1,
   },
+  errorText: {
+    color: '#d32f2f',
+    backgroundColor: '#fdecea',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  infoText: {
+    color: '#1b5e20',
+    backgroundColor: '#e8f5e9',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    fontSize: 14,
+    textAlign: 'center',
+  },
   inputContainer: {
     marginBottom: 20,
   },
@@ -288,8 +379,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#1a1a1a',
-    
-    
   },
   socialButtonText: {
     fontSize: 20,
@@ -301,27 +390,26 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   linkText: {
-    color: '#6c757d', 
+    color: '#6c757d',
     fontSize: 16,
   },
   linkHighlight: {
     color: '#FFD600',
     fontWeight: '700',
     textDecorationLine: 'underline',
-    
   },
   termsContainer: {
     paddingHorizontal: 10,
   },
   termsText: {
     fontSize: 12,
-    color: '#6c757d', 
+    color: '#6c757d',
     textAlign: 'center',
     lineHeight: 18,
   },
   termsLink: {
-    color: '#FFD600', 
-    fontWeight: '500',  
+    color: '#FFD600',
+    fontWeight: '500',
   },
 });
 

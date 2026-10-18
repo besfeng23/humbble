@@ -1,12 +1,13 @@
 import { Redirect, Tabs, useRouter, useSegments } from "expo-router";
 import React, { useEffect } from "react";
-import { Platform } from "react-native";
+import { ActivityIndicator, Platform, View } from "react-native";
 
 import { HapticTab } from "@/components/HapticTab";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useAuth } from "@/lib/AuthProvider";
 import {
   FontAwesome,
   FontAwesome6,
@@ -17,6 +18,19 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color={Colors[colorScheme ?? "light"].tint} />
+      </View>
+    );
+  }
+
+  if (!session) {
+    return <Redirect href="/auth/signin" />;
+  }
 
   return (
     <SafeAreaView

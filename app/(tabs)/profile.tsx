@@ -12,6 +12,7 @@ import { AntDesign, Ionicons, Octicons } from "@expo/vector-icons";
 import Avatar from "@/components/Avatar";
 import Button from "@/components/Button";
 import { useRouter } from "expo-router";
+import { useAuth } from "@/lib/AuthProvider";
 
 const PLANS = [
   { plan: "Get exclusive photo insights", p1: true, p2: true },
@@ -25,10 +26,36 @@ const PLANS = [
 ];
 
 const profile = () => {
-  const headerbutton = () => (
-    <AntDesign name="setting" size={24} color="black" />
-  );
   const router = useRouter();
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace("/auth/signin");
+  };
+
+  const displayName =
+    user?.user_metadata?.full_name || user?.email || "Prakash, 27";
+
+  const headerbutton = () => (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+      <Pressable
+        onPress={handleSignOut}
+        style={{
+          backgroundColor: "#ebebeb",
+          paddingHorizontal: 12,
+          paddingVertical: 6,
+          borderRadius: 8,
+        }}
+      >
+        <Text style={{ color: "#1c1c1c", fontWeight: "600", fontSize: 14 }}>
+          Sign out
+        </Text>
+      </Pressable>
+      <AntDesign name="setting" size={24} color="black" />
+    </View>
+  );
+
   return (
     <ScrollView style={{ paddingHorizontal: 8 }}>
       <View style={{ gap: 10 }}>
@@ -39,7 +66,14 @@ const profile = () => {
             image="https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
           />
           <View>
-            <Text style={{ fontSize: 22, fontWeight: "600" }}>Prakash, 27</Text>
+            <Text style={{ fontSize: 22, fontWeight: "600" }}>
+              {displayName}
+            </Text>
+            {user?.email && user?.user_metadata?.full_name ? (
+              <Text style={{ fontSize: 14, color: "#666", marginBottom: 4 }}>
+                {user.email}
+              </Text>
+            ) : null}
             <Button
               style={{ backgroundColor: "#ebebeb" }}
               textStyle={{ color: "#1c1c1c" }}
