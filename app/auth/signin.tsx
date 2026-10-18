@@ -1,48 +1,80 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  StyleSheet, 
-  Alert, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
   ImageBackground,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import appwrite from '../../constants/appwrite';
+import { Redirect, useRouter } from 'expo-router';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthProvider';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 const SigninScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(
+    isSupabaseConfigured ? null : 'Auth is not configured'
+  );
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const router = useRouter();
+  const { session } = useAuth();
+
+  if (session) {
+    return <Redirect href="/(tabs)/people" />;
+  }
 
   const handleSignin = async () => {
+    setErrorMessage(null);
+    setInfoMessage(null);
+
+    if (!isSupabaseConfigured) {
+      setErrorMessage('Auth is not configured');
+      return;
+    }
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setErrorMessage('Please enter both email and password.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await appwrite?.account?.createEmailSession(email, password);
-      Alert.alert('Success', 'Signed in successfully!');
-      setEmail('');
-      setPassword('');
-      // You can navigate to the main app screen here
-      // router.replace('/');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password,
+      });
+
+      if (error) {
+        setErrorMessage(error.message || 'Sign in failed.');
+        return;
+      }
+
+      if (data.session) {
+        setEmail('');
+        setPassword('');
+        router.replace('/(tabs)/people');
+      }
     } catch (error: any) {
-      Alert.alert('Sign In Error', error.message || 'Unknown error');
+      setErrorMessage(error?.message || 'Unknown error');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <LinearGradient
@@ -51,7 +83,6 @@ const SigninScreen = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        {/* You can replace this with your placeholder image */}
         <ImageBackground
           source={require('../../assets/images/sign-in.jpg')}
           style={styles.backgroundImage}
@@ -61,13 +92,23 @@ const SigninScreen = () => {
             {/* Header Section */}
             <View style={styles.headerSection}>
               <Text style={styles.welcomeText}>Welcome Back</Text>
-              <Text style={styles.subtitle}>Sign in to continue your journey</Text>
+              <Text style={styles.subtitle}>
+                Sign in to continue your journey
+              </Text>
             </View>
 
             {/* Form Section */}
             <View style={styles.formContainer}>
               <Text style={styles.formTitle}>LOGIN</Text>
-              
+
+              {errorMessage ? (
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              ) : null}
+
+              {infoMessage ? (
+                <Text style={styles.infoText}>{infoMessage}</Text>
+              ) : null}
+
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.input}
@@ -88,15 +129,25 @@ const SigninScreen = () => {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
+                  onSubmitEditing={handleSignin}
                 />
               </View>
 
-              <TouchableOpacity style={styles.forgotPassword}>
+              <TouchableOpacity
+                style={styles.forgotPassword}
+                onPress={() => {
+                  setErrorMessage(null);
+                  setInfoMessage('Password reset is not available yet.');
+                }}
+              >
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.loginButton, loading && styles.loginButtonDisabled]} 
+              <TouchableOpacity
+                style={[
+                  styles.loginButton,
+                  loading && styles.loginButtonDisabled,
+                ]}
                 onPress={handleSignin}
                 disabled={loading}
               >
@@ -114,20 +165,33 @@ const SigninScreen = () => {
               </View>
 
               <View style={styles.socialContainer}>
-                <TouchableOpacity style={styles.socialButton}>
+                <TouchableOpacity
+                  style={styles.socialButton}
+                  onPress={() => {
+                    setErrorMessage(null);
+                    setInfoMessage('Google sign-in is not available yet.');
+                  }}
+                >
                   <Text style={styles.socialButtonText}>G</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton}>
+                <TouchableOpacity
+                  style={styles.socialButton}
+                  onPress={() => {
+                    setErrorMessage(null);
+                    setInfoMessage('Facebook sign-in is not available yet.');
+                  }}
+                >
                   <Text style={styles.socialButtonText}>f</Text>
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity 
-                onPress={() => router.replace('/auth/signup')} 
+              <TouchableOpacity
+                onPress={() => router.replace('/auth/signup')}
                 style={styles.linkContainer}
               >
                 <Text style={styles.linkText}>
-                  Don't have an account? <Text style={styles.linkHighlight}>Sign Up</Text>
+                  Don't have an account?{' '}
+                  <Text style={styles.linkHighlight}>Sign Up</Text>
                 </Text>
               </TouchableOpacity>
             </View>
@@ -196,6 +260,24 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: '#333',
     letterSpacing: 1,
+  },
+  errorText: {
+    color: '#d32f2f',
+    backgroundColor: '#fdecea',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  infoText: {
+    color: '#1b5e20',
+    backgroundColor: '#e8f5e9',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    fontSize: 14,
+    textAlign: 'center',
   },
   inputContainer: {
     marginBottom: 20,

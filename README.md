@@ -38,6 +38,13 @@ cd Humbble
 npm install
 ```
 
+### Supabase auth setup
+
+Copy `.env.example` to `.env` and set your Supabase project credentials:
+
+- `EXPO_PUBLIC_SUPABASE_URL`: Your Supabase project URL (e.g., `https://<project-ref>.supabase.co`)
+- `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or `EXPO_PUBLIC_SUPABASE_ANON_KEY`): Your Supabase publishable / anonymous public key
+
 ### Running the Project
 
 For Web:
