@@ -163,12 +163,16 @@ SELECT ok(
  AND NOT pg_catalog.has_table_privilege('authenticated', 'public.audit_events', 'DELETE'),
  'client roles have no audit event access'
 );
-SELECT ok(
- NOT pg_catalog.has_table_privilege('authenticated', 'public.moderation_cases', 'SELECT')
- AND NOT pg_catalog.has_table_privilege('authenticated', 'public.moderation_cases', 'INSERT')
- AND NOT pg_catalog.has_table_privilege('authenticated', 'public.moderation_cases', 'UPDATE'),
- 'moderation cases are staff/server-only'
+-- SELECT is granted to authenticated in P2-04, but RLS must hide every case
+-- from a normal user. Test effective row visibility rather than table privilege.
+SET ROLE authenticated;
+SET "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000021","role":"authenticated"}';
+SELECT is_empty(
+  $$SELECT id FROM public.moderation_cases$$,
+  'normal authenticated user cannot read moderation cases under RLS'
 );
+RESET ROLE;
+RESET "request.jwt.claims";
 SELECT ok(
  NOT pg_catalog.has_table_privilege('authenticated', 'public.reports', 'UPDATE')
  AND NOT pg_catalog.has_table_privilege('authenticated', 'public.reports', 'DELETE'),

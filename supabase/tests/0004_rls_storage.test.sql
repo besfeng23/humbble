@@ -41,11 +41,10 @@ SELECT ok(NOT EXISTS (
 SELECT ok(EXISTS (SELECT 1 FROM pg_catalog.pg_proc AS p JOIN pg_catalog.pg_namespace AS n ON n.oid = p.pronamespace WHERE n.nspname::TEXT COLLATE "C" = 'private'::TEXT COLLATE "C" AND p.proname::TEXT COLLATE "C" = 'is_trusted_moderator'::TEXT COLLATE "C"), 'trusted moderator check is implemented in the private schema');
 
 -- Synthetic identities and fixture rows. UUIDs 0041-0045 are reserved by this test.
-DELETE FROM storage.objects
- WHERE name::TEXT COLLATE "C" LIKE ANY (ARRAY[
-   '00000000-0000-0000-0000-000000000041/%'::TEXT COLLATE "C",
-   '00000000-0000-0000-0000-000000000042/%'::TEXT COLLATE "C"
- ]);
+-- This entire fixture runs inside BEGIN/ROLLBACK, so Storage-object inserts
+-- are rolled back by the test transaction. Never DELETE directly from storage.objects;
+-- Supabase requires object deletion through the Storage API. Reserved UUID paths
+-- keep these test objects distinct from other fixtures.
 DELETE FROM public.audit_events WHERE action::TEXT COLLATE "C" = 'p204-retained-audit'::TEXT COLLATE "C";
 DELETE FROM public.consent_records WHERE consent_key::TEXT COLLATE "C" = 'p204-consent'::TEXT COLLATE "C";
 DELETE FROM public.payment_events WHERE provider_event_id::TEXT COLLATE "C" IN ('p204-payment-a'::TEXT COLLATE "C", 'p204-payment-b'::TEXT COLLATE "C");
