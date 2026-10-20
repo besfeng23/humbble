@@ -25,7 +25,7 @@ const PLANS = [
   { plan: "Two compliments a weeks", p1: true, p2: true },
 ];
 
-const profile = () => {
+const Profile = () => {
   const router = useRouter();
   const { user, signOut } = useAuth();
 
@@ -237,7 +237,7 @@ const profile = () => {
   );
 };
 
-export default profile;
+export default Profile;
 
 const styles = StyleSheet.create({
   tableItem: {

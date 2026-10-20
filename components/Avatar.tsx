@@ -1,6 +1,11 @@
 import { Image, View } from "react-native";
 
-const Avatar = ({ size }) => {
+type AvatarProps = {
+  size: number;
+  image?: string;
+};
+
+const Avatar = ({ size }: AvatarProps) => {
   return (
     <View
       style={{

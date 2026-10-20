@@ -62,7 +62,7 @@ export default function Discover() {
             renderItem={({ item }) => (
               <UserCard showLikeIcon={true} data={item} size="small" />
             )}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id.toString()}
             ItemSeparatorComponent={() => <View style={{ width: 10 }}></View>}
             showsHorizontalScrollIndicator={false}
           />
@@ -89,7 +89,7 @@ export default function Discover() {
             renderItem={({ item }) => (
               <UserCard showLikeIcon={true} data={item} size="small" />
             )}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id.toString()}
             ItemSeparatorComponent={() => <View style={{ width: 10 }}></View>}
             showsHorizontalScrollIndicator={false}
           />
@@ -116,7 +116,7 @@ export default function Discover() {
             renderItem={({ item }) => (
               <UserCard showLikeIcon={true} size="large" data={item} />
             )}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id.toString()}
             ItemSeparatorComponent={() => <View style={{ width: 10 }}></View>}
             showsHorizontalScrollIndicator={false}
           />
