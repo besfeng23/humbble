@@ -27,37 +27,64 @@ SELECT enum_has_labels(
 -- The verification record has exactly the approved provider-metadata columns.
 SELECT results_eq(
   $$
-    SELECT column_name::TEXT
+    SELECT column_name::TEXT COLLATE "C"
       FROM information_schema.columns
-     WHERE table_schema = 'public' AND table_name = 'verification_requests'
+     WHERE table_schema::TEXT COLLATE "C" = 'public' COLLATE "C"
+       AND table_name::TEXT COLLATE "C" = 'verification_requests' COLLATE "C"
      ORDER BY ordinal_position
   $$,
   $$ VALUES
-    ('id'::TEXT), ('user_id'::TEXT), ('provider'::TEXT),
-    ('provider_session_id'::TEXT), ('status'::TEXT), ('attempts'::TEXT),
-    ('created_at'::TEXT), ('decided_at'::TEXT)
+    ('id'::TEXT COLLATE "C"), ('user_id'::TEXT COLLATE "C"),
+    ('provider'::TEXT COLLATE "C"), ('provider_session_id'::TEXT COLLATE "C"),
+    ('status'::TEXT COLLATE "C"), ('attempts'::TEXT COLLATE "C"),
+    ('created_at'::TEXT COLLATE "C"), ('decided_at'::TEXT COLLATE "C")
   $$,
   'verification_requests contains only approved metadata columns'
 );
-SELECT hasnt_column('public', 'verification_requests', 'artifact_storage_path', 'no artifact_storage_path column');
-SELECT hasnt_column('public', 'verification_requests', 'artifact_purge_after', 'no artifact_purge_after column');
-SELECT hasnt_column('public', 'verification_requests', 'selfie_storage_path', 'no selfie storage path column');
-SELECT hasnt_column('public', 'verification_requests', 'raw_selfie', 'no raw selfie column');
-SELECT hasnt_column('public', 'verification_requests', 'biometric_template', 'no biometric template column');
+SELECT ok(NOT EXISTS (
+  SELECT 1 FROM information_schema.columns
+   WHERE table_schema::TEXT COLLATE "C" = 'public' COLLATE "C"
+     AND table_name::TEXT COLLATE "C" = 'verification_requests' COLLATE "C"
+     AND column_name::TEXT COLLATE "C" = 'artifact_storage_path' COLLATE "C"
+), 'no artifact_storage_path column');
+SELECT ok(NOT EXISTS (
+  SELECT 1 FROM information_schema.columns
+   WHERE table_schema::TEXT COLLATE "C" = 'public' COLLATE "C"
+     AND table_name::TEXT COLLATE "C" = 'verification_requests' COLLATE "C"
+     AND column_name::TEXT COLLATE "C" = 'artifact_purge_after' COLLATE "C"
+), 'no artifact_purge_after column');
+SELECT ok(NOT EXISTS (
+  SELECT 1 FROM information_schema.columns
+   WHERE table_schema::TEXT COLLATE "C" = 'public' COLLATE "C"
+     AND table_name::TEXT COLLATE "C" = 'verification_requests' COLLATE "C"
+     AND column_name::TEXT COLLATE "C" = 'selfie_storage_path' COLLATE "C"
+), 'no selfie storage path column');
+SELECT ok(NOT EXISTS (
+  SELECT 1 FROM information_schema.columns
+   WHERE table_schema::TEXT COLLATE "C" = 'public' COLLATE "C"
+     AND table_name::TEXT COLLATE "C" = 'verification_requests' COLLATE "C"
+     AND column_name::TEXT COLLATE "C" = 'raw_selfie' COLLATE "C"
+), 'no raw selfie column');
+SELECT ok(NOT EXISTS (
+  SELECT 1 FROM information_schema.columns
+   WHERE table_schema::TEXT COLLATE "C" = 'public' COLLATE "C"
+     AND table_name::TEXT COLLATE "C" = 'verification_requests' COLLATE "C"
+     AND column_name::TEXT COLLATE "C" = 'biometric_template' COLLATE "C"
+), 'no biometric template column');
 
 -- RLS must be enabled on every relation in this migration (4 assertions).
 SELECT ok((SELECT c.relrowsecurity FROM pg_catalog.pg_class AS c
             JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
-           WHERE n.nspname = 'public' AND c.relname = 'profiles'), 'RLS enabled on profiles');
+           WHERE n.nspname::TEXT COLLATE "C" = 'public' COLLATE "C" AND c.relname::TEXT COLLATE "C" = 'profiles' COLLATE "C"), 'RLS enabled on profiles');
 SELECT ok((SELECT c.relrowsecurity FROM pg_catalog.pg_class AS c
             JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
-           WHERE n.nspname = 'public' AND c.relname = 'profile_photos'), 'RLS enabled on profile_photos');
+           WHERE n.nspname::TEXT COLLATE "C" = 'public' COLLATE "C" AND c.relname::TEXT COLLATE "C" = 'profile_photos' COLLATE "C"), 'RLS enabled on profile_photos');
 SELECT ok((SELECT c.relrowsecurity FROM pg_catalog.pg_class AS c
             JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
-           WHERE n.nspname = 'public' AND c.relname = 'user_preferences'), 'RLS enabled on user_preferences');
+           WHERE n.nspname::TEXT COLLATE "C" = 'public' COLLATE "C" AND c.relname::TEXT COLLATE "C" = 'user_preferences' COLLATE "C"), 'RLS enabled on user_preferences');
 SELECT ok((SELECT c.relrowsecurity FROM pg_catalog.pg_class AS c
             JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
-           WHERE n.nspname = 'public' AND c.relname = 'verification_requests'), 'RLS enabled on verification_requests');
+           WHERE n.nspname::TEXT COLLATE "C" = 'public' COLLATE "C" AND c.relname::TEXT COLLATE "C" = 'verification_requests' COLLATE "C"), 'RLS enabled on verification_requests');
 
 -- Synthetic Auth identities are created as the migration/test owner, never as
 -- an application client. Keep all test effects inside this transaction.
@@ -86,8 +113,8 @@ SELECT lives_ok(
   'DOB exactly 18 succeeds and profile can be created'
 );
 SELECT results_eq(
-  $$ SELECT verification_status FROM public.profiles WHERE id = '00000000-0000-0000-0000-000000000001' $$,
-  $$ VALUES ('not_started'::public.verification_state) $$,
+  $$ SELECT verification_status::TEXT COLLATE "C" FROM public.profiles WHERE id = '00000000-0000-0000-0000-000000000001' $$,
+  $$ VALUES ('not_started'::TEXT COLLATE "C") $$,
   'client INSERT cannot set verification_status'
 );
 SELECT results_eq(
@@ -130,8 +157,8 @@ SELECT lives_ok(
 );
 RESET ROLE;
 SELECT results_eq(
-  $$ SELECT display_name FROM public.profiles WHERE id = '00000000-0000-0000-0000-000000000002' $$,
-  $$ VALUES ('User Bravo'::TEXT) $$,
+  $$ SELECT display_name COLLATE "C" FROM public.profiles WHERE id = '00000000-0000-0000-0000-000000000002' $$,
+  $$ VALUES ('User Bravo'::TEXT COLLATE "C") $$,
   'User B profile remains unchanged after User A update attempt'
 );
 
@@ -274,8 +301,8 @@ VALUES
 SET LOCAL ROLE authenticated;
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}';
 SELECT results_eq(
-  $$ SELECT provider_session_id FROM public.verification_requests $$,
-  $$ VALUES ('session-alpha'::TEXT) $$,
+  $$ SELECT provider_session_id COLLATE "C" FROM public.verification_requests $$,
+  $$ VALUES ('session-alpha'::TEXT COLLATE "C") $$,
   'User A can SELECT only their own verification request'
 );
 SELECT is_empty(
