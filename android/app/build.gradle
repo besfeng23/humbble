@@ -80,6 +80,44 @@ def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInRelea
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
+def resolveSigningValue = { String key ->
+    def prop = findProperty(key)?.toString()?.trim()
+    if (prop) return prop
+    def env = System.getenv(key)?.trim()
+    return env ?: null
+}
+
+def releaseStoreFile = resolveSigningValue('HUMBBLE_UPLOAD_STORE_FILE')
+def releaseStorePassword = resolveSigningValue('HUMBBLE_UPLOAD_STORE_PASSWORD')
+def releaseKeyAlias = resolveSigningValue('HUMBBLE_UPLOAD_KEY_ALIAS')
+def releaseKeyPassword = resolveSigningValue('HUMBBLE_UPLOAD_KEY_PASSWORD')
+def hasReleaseSigning = [
+    releaseStoreFile,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+].every { it != null && !it.isEmpty() }
+
+def validateReleaseSigning = {
+    def missing = [
+        'HUMBBLE_UPLOAD_STORE_FILE': releaseStoreFile,
+        'HUMBBLE_UPLOAD_STORE_PASSWORD': releaseStorePassword,
+        'HUMBBLE_UPLOAD_KEY_ALIAS': releaseKeyAlias,
+        'HUMBBLE_UPLOAD_KEY_PASSWORD': releaseKeyPassword,
+    ].findAll { _, val -> !val }.keySet()
+
+    if (!missing.isEmpty()) {
+        throw new GradleException(
+            "Release signing configuration is incomplete (fail-closed). Missing required Gradle properties or environment variables: ${missing.join(', ')}."
+        )
+    }
+    if (!file(releaseStoreFile).exists()) {
+        throw new GradleException(
+            "Release signing keystore file defined by HUMBBLE_UPLOAD_STORE_FILE does not exist."
+        )
+    }
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
@@ -96,10 +134,18 @@ android {
     }
     signingConfigs {
         debug {
-            storeFile file('debug.keystore')
+            storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
             storePassword 'android'
             keyAlias 'androiddebugkey'
             keyPassword 'android'
+        }
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
         }
     }
     buildTypes {
@@ -107,9 +153,9 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
@@ -123,6 +169,15 @@ android {
     }
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    def hasReleaseTask = taskGraph.allTasks.any { task ->
+        task.project == project && (task.name ==~ /(?i).*release.*/)
+    }
+    if (hasReleaseTask) {
+        validateReleaseSigning()
     }
 }
 

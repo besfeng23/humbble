@@ -11,11 +11,15 @@ expo-env.d.ts
 
 # Native
 *.orig.*
+*.keystore
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
+google-services.json
+GoogleService-Info.plist
+android/keystore.properties
 
 # Metro
 .metro-health-check*
@@ -30,7 +34,10 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env.*
 .env*.local
+!.env.example
 
 # typescript
 *.tsbuildinfo
