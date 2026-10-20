@@ -33,6 +33,8 @@ ALTER TABLE public.profiles ENABLE TRIGGER trg_profiles_02_birth_date_18_plus;
 
 UPDATE public.profiles SET birth_date = DATE '1992-07-02'
  WHERE id = '00000000-0000-0000-0000-000000000052';
+UPDATE public.profiles SET created_at = pg_catalog.now() + INTERVAL '1 second'
+ WHERE id = '00000000-0000-0000-0000-000000000052';
 UPDATE public.profiles SET birth_date = DATE '1970-01-01'
  WHERE id = '00000000-0000-0000-0000-000000000060';
 
@@ -227,8 +229,8 @@ SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000095",
 SELECT is((SELECT matched FROM public.record_swipe('00000000-0000-0000-0000-000000000094', 'like')), TRUE, 'reciprocal like returns matched true');
 SELECT is((SELECT COUNT(*)::INTEGER FROM public.matches WHERE user_a_id = '00000000-0000-0000-0000-000000000094' AND user_b_id = '00000000-0000-0000-0000-000000000095' AND status = 'active'), 1, 'reciprocal like creates exactly one active canonical match');
 SELECT is((SELECT COUNT(*)::INTEGER FROM public.conversations c JOIN public.matches m ON m.id = c.match_id WHERE m.user_a_id = '00000000-0000-0000-0000-000000000094' AND m.user_b_id = '00000000-0000-0000-0000-000000000095'), 1, 'reciprocal like creates exactly one conversation');
-SELECT is((SELECT COUNT(*)::INTEGER FROM public.conversation_participants cp JOIN public.conversations c ON c.id = cp.conversation_id JOIN public.matches m ON m.id = c.match_id WHERE m.user_a_id = '00000000-0000-0000-0000-000000000094' AND m.user_b_id = '00000000-0000-0000-0000-000000000095'), 2, 'match has exactly two participants');
 RESET ROLE;
+SELECT is((SELECT COUNT(*)::INTEGER FROM public.conversation_participants cp JOIN public.conversations c ON c.id = cp.conversation_id JOIN public.matches m ON m.id = c.match_id WHERE m.user_a_id = '00000000-0000-0000-0000-000000000094' AND m.user_b_id = '00000000-0000-0000-0000-000000000095'), 2, 'match has exactly two participants');
 RESET "request.jwt.claims";
 
 -- block_user is idempotent; existing block triggers end the match; unblock never restores it.
@@ -268,14 +270,14 @@ RESET "request.jwt.claims";
 SET LOCAL ROLE authenticated;
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000051","role":"authenticated"}';
 SELECT lives_ok($$SELECT public.submit_report('00000000-0000-0000-0000-000000000052', 'safety', 'p205-test-report')$$, 'caller can submit a report about another account');
-SELECT is((SELECT COUNT(*)::INTEGER FROM public.reports WHERE reporter_id = '00000000-0000-0000-0000-000000000051' AND context_summary::TEXT COLLATE "C" = 'p205-test-report'::TEXT COLLATE "C'), 1, 'report reporter is derived from caller');
+SELECT is((SELECT COUNT(*)::INTEGER FROM public.reports WHERE reporter_id = '00000000-0000-0000-0000-000000000051' AND context_summary::TEXT COLLATE "C" = 'p205-test-report'::TEXT COLLATE "C"), 1, 'report reporter is derived from caller');
 SELECT throws_ok($$SELECT public.submit_report('00000000-0000-0000-0000-000000000051', 'safety', 'self')$$, '23514', 'self_report_not_allowed', 'self-report is rejected');
 SELECT throws_ok($$SELECT public.submit_report('00000000-0000-0000-0000-000000000052', 'safety', pg_catalog.repeat('x', 1001))$$, '22001', 'report_context_too_long', 'report context obeys existing 1000-character schema limit');
 SELECT lives_ok($$SELECT COUNT(*) FROM pg_catalog.generate_series(1, 9) AS g(n) CROSS JOIN LATERAL public.submit_report('00000000-0000-0000-0000-000000000052', 'safety', 'p205-rate-' || g.n::TEXT)$$, 'nine more submissions reach but do not exceed the rate limit');
 SELECT is((SELECT COUNT(*)::INTEGER FROM public.reports WHERE reporter_id = '00000000-0000-0000-0000-000000000051' AND created_at >= pg_catalog.now() - INTERVAL '24 hours'), 10, 'reporter can submit at most ten reports in 24 hours');
 SELECT throws_ok($$SELECT public.submit_report('00000000-0000-0000-0000-000000000052', 'safety', 'p205-rate-limit')$$, 'P0001', 'report_rate_limited', '11th report is rejected by rate limit');
 RESET ROLE;
-SELECT is((SELECT COUNT(*)::INTEGER FROM public.audit_events WHERE actor_id = '00000000-0000-0000-0000-000000000051' AND action::TEXT COLLATE "C" = 'report.submitted'::TEXT COLLATE "C'), 10, 'each accepted report has an audit event');
+SELECT is((SELECT COUNT(*)::INTEGER FROM public.audit_events WHERE actor_id = '00000000-0000-0000-0000-000000000051' AND action::TEXT COLLATE "C" = 'report.submitted'::TEXT COLLATE "C"), 10, 'each accepted report has an audit event');
 SET LOCAL ROLE authenticated;
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000052","role":"authenticated"}';
 SELECT is_empty($$SELECT id FROM public.reports WHERE reporter_id = '00000000-0000-0000-0000-000000000051'$$, 'other account cannot read reporter records');
@@ -289,7 +291,7 @@ SELECT is(public.request_privacy_action('export', 'f0000000-0000-0000-0000-00000
 SELECT throws_ok($$SELECT public.request_privacy_action('export', 'f0000000-0000-0000-0000-000000000002')$$, 'P0001', 'privacy_request_already_open', 'second open request of same type is rejected');
 SELECT lives_ok($$SELECT public.request_privacy_action('deletion', 'f0000000-0000-0000-0000-000000000003')$$, 'different privacy request type may be opened');
 RESET ROLE;
-SELECT is((SELECT COUNT(*)::INTEGER FROM public.audit_events WHERE actor_id = '00000000-0000-0000-0000-000000000051' AND action::TEXT COLLATE "C" = 'privacy.requested'::TEXT COLLATE "C'), 2, 'new privacy requests write audit events only once');
+SELECT is((SELECT COUNT(*)::INTEGER FROM public.audit_events WHERE actor_id = '00000000-0000-0000-0000-000000000051' AND action::TEXT COLLATE "C" = 'privacy.requested'::TEXT COLLATE "C"), 2, 'new privacy requests write audit events only once');
 RESET "request.jwt.claims";
 
 -- Moderator transition: app_metadata is trusted; users and user_metadata cannot grant the role.
