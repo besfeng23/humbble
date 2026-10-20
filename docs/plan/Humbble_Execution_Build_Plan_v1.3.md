@@ -34,6 +34,13 @@ Labels used throughout §V1.3:
 - Engaging counsel later stays available and is recommended. The GATE-LEGAL-02 question set (§B2) is kept as an **optional** packet.
 - The non-lawyer parts of GATE-LEGAL-01 still apply, with the Owner as approver: published terms, privacy notice, community standards and user disclosures must exist and be approved by the Owner before real users.
 
+**Owner decision 3 [OWNER]:** on **21 October 2026, 03:30 PHT**, Mark Johnson approved **expats residing in the Philippines** ("Expats in the Philippines is ok to join too") as an in-scope audience segment.
+- They are served **under the PH market**: same market config, same plan, same pilot stages and gates as other PH members.
+- They are **not** gated on non-PH market enablement, ADR-003 market release or OWN-PRICE-01.
+- Pricing follows the **PH market price** (currently ₱599/month, Sandbox), subject to OWN-PRICE-01.
+- Eligibility is residence in the Philippines, determined the same way as for any PH member. Citizenship is never a pricing or feature input (binding mitigation 2).
+- [PRELIMINARY] Expats who are US citizens or permanent residents still fall within IMBRA's "United States client" scope. This segment does not reduce the owner-accepted IMBRA risk in §B13.
+
 **What decision 1 supersedes (affiliate goal only), effective once Mark signs ADR-003:**
 - `owner-decisions.md` §2 "Philippines only; US/CA/AU/UK deferred";
 - ADR-002 §2.1, and the nationality-pairing positioning restrictions in ADR-002 §2.2;
@@ -73,7 +80,7 @@ Labels used throughout §V1.3:
 
 ### B1. Strategic goal (new, first-class)
 
-**G-AFF-01 — Affiliate Growth & Performance Marketing.** Build a scalable, tracked partner-acquisition channel (legal review waived by the Owner; binding mitigations in §B0) (affiliates, publishers, creators and dating-traffic partners on tracked links, paid only on qualifying conversions) that produces **legitimate, verified, engaged, paying and retained members** — not raw registrations — on a platform whose supply side is genuine, verified, consenting adult Filipina members. Owner-selected audience (GATE-OWN-MKT-01, Option 2): international men in US/CA/AU/UK seeking genuine Filipina singles. Lawyer review was waived by the Owner (risk acceptance, §B0). Execution needs Mark's ADR-003 signature, OWN-PRICE-01, live-billing, spend and outreach approvals. Public copy stays within ADR-002 until ADR-003 is signed.
+**G-AFF-01 — Affiliate Growth & Performance Marketing.** Build a scalable, tracked partner-acquisition channel (legal review waived by the Owner; binding mitigations in §B0) (affiliates, publishers, creators and dating-traffic partners on tracked links, paid only on qualifying conversions) that produces **legitimate, verified, engaged, paying and retained members** — not raw registrations — on a platform whose supply side is genuine, verified, consenting adult Filipina members. Owner-selected audiences: (a) international men in US/CA/AU/UK seeking genuine Filipina singles (GATE-OWN-MKT-01, Option 2); and (b) **expats residing in the Philippines** (Owner decision 3, 2026-10-21 03:30 PHT). Segment (b) is served under the PH market and follows the PH price, subject to OWN-PRICE-01; it is not gated on non-PH market enablement. Lawyer review was waived by the Owner (risk acceptance, §B0). Execution needs Mark's ADR-003 signature, OWN-PRICE-01, live-billing, spend and outreach approvals. Public copy stays within ADR-002 until ADR-003 is signed.
 
 **Measurable success criteria** (targets are [HYPOTHETICAL] until baseline data exists; none is a current performance claim; measured only after live billing is approved):
 
@@ -90,6 +97,7 @@ Labels used throughout §V1.3:
 
 ### B2. Markets and legal risk (target markets selected by the Owner; lawyer review waived by the Owner; risks remain)
 
+- **In-PH segment:** expats residing in the Philippines [OWNER: decision 3, 2026-10-21 03:30 PHT]. Served under the PH market and its rules: PH pricing (subject to OWN-PRICE-01), RA 10173, PH consumer law. Affiliate/creator traffic aimed at PH-resident expats is a PH-market campaign. It still needs Mark's outreach, spend and live-billing approvals and the Phase 6 PH gates, but not non-PH market enablement. IMBRA may still apply to US-citizen expats [PRELIMINARY].
 - Target markets: US, CA, AU, UK [OWNER: GATE-OWN-MKT-01 Option 2, 2026-10-21]. Before any launch, each market needs this research (Deep Research). Legal advice is optional after the owner waiver. Evaluation deliverable per market: consumer-subscription/auto-renewal rules, dating-specific rules, privacy/cross-border transfer, online-safety duties, advertising/affiliate disclosure rules, tax and payment-provider terms. **[PENDING-DEEP-RESEARCH]**
 - **Philippine RA 10906 (Anti-Mail Order Spouse Act, 2016):** ADR-002 already summarises §3 prohibitions on matching Filipinos with foreign nationals for marriage/common-law partnership for profit, on advertising such schemes, and on soliciting Filipinos into such clubs, and the carve-out for "legitimate dating websites, which have for their purpose connecting individuals with shared interests". [PRELIMINARY — as summarised in repo ADR-002; primary text and the 2022 IRR to be cited by Deep Research and interpreted by counsel.] **Risk:** marketing "men worldwide ↔ Filipina singles" with affiliates paid to recruit foreign men is the exact pattern counsel must assess against §3(b)/(c) and the carve-out.
 - **RA 11862 (Expanded Anti-Trafficking in Persons Act, 2022):** intermediary duties already flagged in ADR-002 (ToS prohibition, takedown/reporting). [PRELIMINARY; PENDING-DEEP-RESEARCH]
@@ -153,6 +161,8 @@ Formulas: `net_monthly = price × (1 − processing_fee_rate) − fixed_fee`; `L
 These are arithmetic illustrations of the formulas, not forecasts. The PH plan (₱599) needs its own table once PH fee data is verified. Commission spend is **outside** the ₱10,000/month infra ceiling and needs a separate Owner budget line.
 
 ### B6. Funnel and conversion-experiment plan
+
+Segments: PH residents (Filipina members and **expats residing in the PH**, both under the PH market and price) and, after non-PH enablement, international men in US/CA/AU/UK. The steps are the same for every segment. Residence is captured for market resolution only and is never used to vary price or features beyond the market rules. Expat-specific landers are allowed as PH-market campaign variants and follow the same copy mitigations.
 
 Funnel (each step instrumented as a server-side or allowlisted analytics event under P5-03 consent rules; no conversion rate is assumed):
 ad/placement → campaign lander (SCR-01 variant) → registration (SCR-04) → email confirmation → 18+ identity/selfie verification (SCR-10) → profile completion (SCR-07–09) → discovery (SCR-11) → first meaningful engagement (mutual match + ≥3 messages each within 72h, per v1.2 §3 Phase 6) → subscription (SCR-20, Sandbox) → renewal / retention (SCR-21).
@@ -245,6 +255,7 @@ Affiliate Program Manager; Partner Compliance Reviewer; Finance/Payout Approver 
   - IMBRA definition and exemption text at 8 U.S.C. § 1375a(e)(4) (uscode.house.gov; law.cornell.edu). How it applies to Humbble is unverified, and no lawyer will verify it (waived).
 - **[OWNER]**
   - GATE-OWN-MKT-01 resolved, Option 2 (international men seeking Filipina singles; US/CA/AU/UK; 2026-10-21 02:18 PHT).
+  - Expats residing in the Philippines are an in-scope segment under the PH market and PH price, subject to OWN-PRICE-01, and not gated on non-PH enablement (2026-10-21 03:30 PHT).
   - **Independent lawyer review waived** (GATE-LEGAL-02 and the lawyer-opinion part of GATE-LEGAL-01; 2026-10-21 02:42 PHT). Owner risk acceptance, not legal clearance.
   - Binding mitigations §B0 items 1–4; ADR-003 acceptance by Mark's signature alone.
   - Still binding: Sandbox only until Mark approves live billing; spend approval; outreach approval by Mark; 18+/safety gates; ₱599 / US$29.99 market prices pending OWN-PRICE-01; ₱10,000/mo planning-only ceiling; roles only; RED-APPLE proposed/unverified; vendor-independent verification with no raw selfie retention; no spend, applications or outreach so far.
@@ -280,6 +291,7 @@ Affiliate Program Manager; Partner Compliance Reviewer; Finance/Payout Approver 
 | 1.3-draft | 2026-10-21 | Grok Bot | B10–B15 phases A–E, epics, roles, risks, evidence classes, first tasks |
 | 1.3-draft | 2026-10-21 | Grok Bot, recording Owner decision | GATE-OWN-MKT-01 RESOLVED (Option 2: international men, US/CA/AU/UK); B0 rewritten; ADR-003 (Proposed) added; GATE-LEGAL-02 is a hard blocker; B1, B2, B10, B13, B14, B15 updated |
 | 1.3-draft | 2026-10-21 | Grok Bot, recording Owner decision | Lawyer review WAIVED BY OWNER (GATE-LEGAL-02 and the lawyer-opinion part of GATE-LEGAL-01): owner risk acceptance, not legal clearance; binding mitigations; OWN-PRICE-01 opened; ADR-003 needs only Mark's signature; header, B0, B1, B2, B4, B10, B11, B13, B14, B15 updated |
+| 1.3-draft | 2026-10-21 | Grok Bot, recording Owner decision | Expats residing in PH added as an in-scope segment under the PH market/price (subject to OWN-PRICE-01); B0, B1, B2, B6, B14 updated |
 | 1.3-draft | — | Pending | Deep Research fill-in of PENDING-DEEP-RESEARCH items |
 
 ---
