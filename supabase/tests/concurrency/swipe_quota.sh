@@ -55,7 +55,8 @@ trap cleanup EXIT INT TERM
 } | "${PSQL[@]}"
 
 run_one() {
-  local target="$1" index="$2" status_file="$TMP_DIR/status.$index"
+  local target="$1" index="$2"
+  local status_file="$TMP_DIR/status.$index"
   if "${PSQL[@]}" >"$TMP_DIR/out.$index" 2>"$TMP_DIR/err.$index" <<SQL
 SET ROLE authenticated;
 SET "request.jwt.claims" = '{"sub":"$ACTOR","role":"authenticated"}';
