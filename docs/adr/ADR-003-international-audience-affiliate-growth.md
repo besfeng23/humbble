@@ -20,7 +20,7 @@ The Owner's commercial goal is a competitive international dating platform conne
 The Owner has waived independent legal review and **accepts the legal risk personally**. This waiver is not legal clearance. The documented risks remain:
 - **US IMBRA, 8 U.S.C. § 1375a.** The dating-service exemption in (e)(4)(B)(ii) requires that the principal business is *not* international dating between US persons and foreign nationals, *and* that rates and services are comparable regardless of gender or citizenship. Otherwise broker duties apply: background-information collection, sex-offender registry search, disclosures, and consent before sharing contact details. [PRELIMINARY]
 - **Philippine RA 10906 §3.** Prohibits profit-making matching of Filipinos with foreign nationals for marriage, advertising such schemes, and soliciting Filipinos into them. Legitimate shared-interest dating websites are carved out. The criminal penalties are summarised in ADR-002. [PRELIMINARY]
-- **RA 11862** intermediary duties; **RA 10173** privacy and cross-border transfer rules; consumer, auto-renewal, online-safety and affiliate-disclosure rules in each target market. [PENDING-DEEP-RESEARCH]
+- **RA 11862** intermediary duties; **RA 10173** privacy and cross-border transfer rules; affiliate-disclosure rules (FTC 16 CFR 255.5, CAP, ACCC, Competition Bureau; plan §B2, §B16); consumer, auto-renewal and online-safety rules [UNVERIFIED — not researched]
 
 ## 2. Proposed decision (effective only on Mark's signature)
 

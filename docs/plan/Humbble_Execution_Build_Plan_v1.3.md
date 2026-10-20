@@ -11,7 +11,7 @@
 
 ---
 
-> **v1.3 status:** v1.2 plus a first-class **Affiliate Growth & Performance Marketing** goal (§V1.3 B0–B15), drafted by Grok Bot on 2026-10-21 at Mark Johnson's direction. **Docs-only; no implementation, no spend, no network application, no outreach sent.** Research-dependent facts (network terms, commission benchmarks, legal citations) are marked **`PENDING-DEEP-RESEARCH`**; any preliminary web check is labelled *preliminary* and is not a verified fact. **Precedence:** `owner-decisions.md` > ADR-002 / §V1.2 binding amendments > §V1.3 > the body of this plan. §V1.3 may add scope, but **nothing in §V1.3 weakens** a v1.2 amendment, an ADR-002 guardrail or an owner decision. The exceptions are the Owner's own later decisions: GATE-OWN-MKT-01 (Option 2, 2026-10-21 02:18 PHT), and the waiver of lawyer review (2026-10-21 02:42 PHT; owner risk acceptance, §B0/§B13). GATE-OWN-MKT-01 supersedes the PH-only/neutral-positioning parts **for the affiliate goal only**, through ADR-003 once Accepted (§B0). Until then, ADR-002 continues to govern code and copy. All v1.2 section numbers (§0–§11, A1–A6, PR IDs, gate IDs) are preserved verbatim below so existing references in `docs/` and `legal/` stay valid.
+> **v1.3 status:** v1.2 plus a first-class **Affiliate Growth & Performance Marketing** goal (§V1.3 B0–B16), drafted by Grok Bot on 2026-10-21 at Mark Johnson's direction. **Docs-only; no implementation, no spend, no network application, no outreach sent.** Research-dependent facts (network terms, commission benchmarks, legal citations) were filled in on 2026-10-21 by Grok Bot web research, with sources in §B16. Items without a source are marked **[UNVERIFIED]**. **Precedence:** `owner-decisions.md` > ADR-002 / §V1.2 binding amendments > §V1.3 > the body of this plan. §V1.3 may add scope, but **nothing in §V1.3 weakens** a v1.2 amendment, an ADR-002 guardrail or an owner decision. The exceptions are the Owner's own later decisions: GATE-OWN-MKT-01 (Option 2, 2026-10-21 02:18 PHT), and the waiver of lawyer review (2026-10-21 02:42 PHT; owner risk acceptance, §B0/§B13). GATE-OWN-MKT-01 supersedes the PH-only/neutral-positioning parts **for the affiliate goal only**, through ADR-003 once Accepted (§B0). Until then, ADR-002 continues to govern code and copy. All v1.2 section numbers (§0–§11, A1–A6, PR IDs, gate IDs) are preserved verbatim below so existing references in `docs/` and `legal/` stay valid.
 
 ## V1.3 Amendments — Affiliate Growth & Performance Marketing
 
@@ -19,8 +19,10 @@ Labels used throughout §V1.3:
 - **[VERIFIED]** fact checked against the repo or a cited primary/official source.
 - **[OWNER]** binding owner decision (`owner-decisions.md`, ADR-002, Mark's chat instructions recorded in `progress.md`).
 - **[ESTIMATE]** / **[HYPOTHETICAL]** planning number or assumption; not a measured result or a quote.
-- **[PRELIMINARY]** light web check only; must be confirmed by the Deep Research pass. Counsel review is optional since the 2026-10-21 02:42 PHT owner waiver.
-- **[PENDING-DEEP-RESEARCH]** placeholder to be filled from the owner-commissioned research report.
+- **[PRELIMINARY]** light check or search excerpt only; not a full read of the source. Counsel review is optional since the 2026-10-21 02:42 PHT owner waiver.
+- **[S#]** citation to the research appendix §B16 (URL + access date 2026-10-21).
+- **[UNVERIFIED]** no citable source found or not researched; must not be relied on.
+- *(Retired 2026-10-21:* `PENDING-DEEP-RESEARCH` placeholders were replaced by Grok Bot web research; see §B16.)
 - **[UNRESOLVED]** assumption or dependency nobody has confirmed.
 
 ### B0. Owner decisions on market and legal review: GATE-OWN-MKT-01 resolved (Option 2); lawyer review waived by Owner
@@ -39,7 +41,7 @@ Labels used throughout §V1.3:
 - They are **not** gated on non-PH market enablement, ADR-003 market release or OWN-PRICE-01.
 - Pricing follows the **PH market price** (currently ₱599/month, Sandbox), subject to OWN-PRICE-01.
 - Eligibility is residence in the Philippines, determined the same way as for any PH member. Citizenship is never a pricing or feature input (binding mitigation 2).
-- [PRELIMINARY] Expats who are US citizens or permanent residents still fall within IMBRA's "United States client" scope. This segment does not reduce the owner-accepted IMBRA risk in §B13.
+- Expats who are US citizens or permanent residents still fall within IMBRA's definition, which covers US citizens, nationals and permanent residents [S1]. This segment does not reduce the owner-accepted IMBRA risk in §B13.
 
 **What decision 1 supersedes (affiliate goal only), effective once Mark signs ADR-003:**
 - `owner-decisions.md` §2 "Philippines only; US/CA/AU/UK deferred";
@@ -73,7 +75,7 @@ Labels used throughout §V1.3:
 | v1.2 safety/security/privacy/ops gates | OPEN | Real users |
 
 **OWN-PRICE-01 (open; Mark to decide):**
-- Background: IMBRA's dating-site exemption (8 U.S.C. § 1375a(e)(4)(B)(ii)) needs comparable rates and services regardless of gender or country of citizenship, and a principal business that is not US-to-foreign international dating. Option 2 likely already strains the second condition. [PRELIMINARY]
+- Background: IMBRA's dating-site exemption (8 U.S.C. § 1375a(e)(4)(B)(ii)) needs comparable rates and services regardless of gender or country of citizenship, and a principal business that is not US-to-foreign international dating [S1]. Option 2 likely already strains the second condition (analysis, not legal advice).
 - (a) **Equalize pricing:** one price for everyone, in every market. This supports the comparability prong. It changes §A5 and needs a pricing decision.
 - (b) **Keep US$29.99 / ₱599 market pricing** and accept the additional IMBRA-exemption risk.
 - Until Mark decides, non-PH markets stay disabled.
@@ -97,68 +99,174 @@ Labels used throughout §V1.3:
 
 ### B2. Markets and legal risk (target markets selected by the Owner; lawyer review waived by the Owner; risks remain)
 
-- **In-PH segment:** expats residing in the Philippines [OWNER: decision 3, 2026-10-21 03:30 PHT]. Served under the PH market and its rules: PH pricing (subject to OWN-PRICE-01), RA 10173, PH consumer law. Affiliate/creator traffic aimed at PH-resident expats is a PH-market campaign. It still needs Mark's outreach, spend and live-billing approvals and the Phase 6 PH gates, but not non-PH market enablement. IMBRA may still apply to US-citizen expats [PRELIMINARY].
-- Target markets: US, CA, AU, UK [OWNER: GATE-OWN-MKT-01 Option 2, 2026-10-21]. Before any launch, each market needs this research (Deep Research). Legal advice is optional after the owner waiver. Evaluation deliverable per market: consumer-subscription/auto-renewal rules, dating-specific rules, privacy/cross-border transfer, online-safety duties, advertising/affiliate disclosure rules, tax and payment-provider terms. **[PENDING-DEEP-RESEARCH]**
-- **Philippine RA 10906 (Anti-Mail Order Spouse Act, 2016):** ADR-002 already summarises §3 prohibitions on matching Filipinos with foreign nationals for marriage/common-law partnership for profit, on advertising such schemes, and on soliciting Filipinos into such clubs, and the carve-out for "legitimate dating websites, which have for their purpose connecting individuals with shared interests". [PRELIMINARY — as summarised in repo ADR-002; primary text and the 2022 IRR to be cited by Deep Research and interpreted by counsel.] **Risk:** marketing "men worldwide ↔ Filipina singles" with affiliates paid to recruit foreign men is the exact pattern counsel must assess against §3(b)/(c) and the carve-out.
-- **RA 11862 (Expanded Anti-Trafficking in Persons Act, 2022):** intermediary duties already flagged in ADR-002 (ToS prohibition, takedown/reporting). [PRELIMINARY; PENDING-DEEP-RESEARCH]
-- **RA 10173 (Data Privacy Act) + NPC rules:** affiliate attribution data, cross-border transfer to networks, and postback payloads. [PENDING-DEEP-RESEARCH]
-- **US IMBRA (8 U.S.C. § 1375a):** an "international marriage broker" is a fee-charging entity providing dating/matchmaking/social referrals between US citizens/residents and foreign nationals; IMBRA brokers must, among other things, not market minors, collect US-client background certifications, search the sex-offender registry and give disclosures before sharing foreign clients' contact information. The exemption in § 1375a(e)(4)(B)(ii) covers a dating service whose **principal business is not international dating between US persons and foreign nationals** *and* which **charges comparable rates and offers comparable services regardless of gender or country of citizenship**. [PRELIMINARY — text read at uscode.house.gov and law.cornell.edu (8 U.S.C. § 1375a(e)(4)); counsel to confirm.] **Risk:** a product whose stated paying audience is foreign men seeking Filipinas, with market-specific prices (US$29.99 vs ₱599), may fall outside the exemption on both prongs. This must go to counsel before Option 2.
-- Other jurisdictions (CA/AU/UK equivalents, UK Online Safety Act, AU eSafety, FTC endorsement/affiliate disclosure, ROSCA/state auto-renewal laws): **[PENDING-DEEP-RESEARCH]**.
-- **Optional question set, for use if the Owner later engages an independent Philippine lawyer** (GATE-LEGAL-02 is waived; the packet is not required): (1) Does a paid affiliate program recruiting foreign users to a PH-based dating service fall under RA 10906 §3? (2) What copy/positioning keeps it within the "legitimate dating website" carve-out? (3) Liability for affiliate-created ads and the required controls. (4) Can Humbble pay commissions to foreign affiliates, and what tax/withholding/registration applies to the (still unverified) operator? (5) DPA treatment of click IDs, sub-IDs and postbacks shared with networks; cross-border transfer basis. (6) Whether market-specific pricing is compatible with IMBRA comparability and PH consumer law. (7) Required affiliate T&Cs, disclosures and audit rights. (8) Whether Humbble under Option 2 is an "international marriage broker" under IMBRA, and if so, which compliance duties apply, and whether ADR-003 positioning keeps it outside RA 10906 §3. (9) Which ADR-002 guardrails must remain for legality.
+> Research status: these entries come from Grok Bot web research on 2026-10-21. Gemini Deep Research stalled on a usage limit, and the ChatGPT deep-research report (`/workspace/humbble-plan/chatgpt-dr-report.md`) has no citations, so it was used **only as leads, never as evidence**. Every fact below cites a source in §B16, numbered **[S#]**, all accessed 2026-10-21. Anything without a source is marked **[UNVERIFIED]**. Independent lawyer review was **waived by the Owner** (§B0). None of this is legal advice or legal clearance.
+
+- **In-PH segment:** expats residing in the Philippines [OWNER: decision 3, 2026-10-21 03:30 PHT].
+  - Served under the PH market and its rules: PH pricing (subject to OWN-PRICE-01), RA 10173, PH consumer law.
+  - Affiliate/creator traffic aimed at PH-resident expats is a PH-market campaign. It needs Mark's outreach, spend and live-billing approvals and the Phase 6 PH gates, but not non-PH market enablement.
+  - IMBRA may still apply to US-citizen or permanent-resident expats: IMBRA's definition covers US citizens, nationals and lawful permanent residents [S1].
+- **Target markets:** US, CA, AU, UK [OWNER: GATE-OWN-MKT-01 Option 2, 2026-10-21]. Legal advice is optional after the owner waiver.
+  - Researched per market: affiliate/endorsement disclosure rules (below).
+  - Not researched, so **[UNVERIFIED]**: consumer-subscription and auto-renewal law (US ROSCA and state ARLs, UK/AU/CA equivalents), UK Online Safety Act duties, AU eSafety codes, sales tax/VAT/GST on digital services, and each market's privacy law.
+- **Philippine RA 10906 (Anti-Mail Order Spouse Act, approved 21 July 2016) [S2]:** primary text read on lawphil.net.
+  - **§3(a)** makes it unlawful to "engage in any business or scheme for money, profit… which has for its purpose the matching or offering of a Filipino to a foreign national for marriage or common law partnership on a mail-order basis or through personal introduction, email, or websites on the internet".
+  - **§3(b)** prohibits advertising or publishing materials "calculated to promote" §3(a), including on websites.
+  - **§3(c)** prohibits soliciting, enlisting, attracting or inducing "any Filipino to become a member in any club or association whose objective is to match Filipino nationals to foreign nationals for the purpose of marriage or common law partnership for a fee".
+  - **§3(d)** prohibits using any website to promote these acts.
+  - **Carve-out:** "legitimate dating websites, which have for their purpose connecting individuals with shared interests in order to cultivate personal and dating relationships, are not covered by this Act."
+  - **§4 penalties [S2]:**
+    - 15 years' imprisonment and a fine of ₱500,000–₱1,000,000.
+    - **20 years and ₱2,000,000–₱5,000,000** if committed by a syndicate (3+ persons) or "on a large scale" ("against three (3) or more persons").
+    - Anyone who "shall abet or cooperate" gets the **same penalty**.
+    - Accessories who knowingly profit: 10 years and ₱100,000–₱500,000.
+    - For juridical persons, the penalty falls on the owner, president, partner, manager or responsible officer who participated in, or knowingly permitted or failed to prevent, the act.
+    - §5 provides for confiscation and forfeiture of proceeds.
+  - *Correction:* ADR-002's summary ("15 to 20 years… ₱500,000 to ₱5,000,000") compresses two penalty tiers. The tiers above are the primary text.
+  - **Plan implication (analysis, not legal advice):** whether a service falls in §3 or in the carve-out depends on its *purpose*: marriage-matching Filipinos with foreigners for profit, versus shared-interest dating. Paid affiliates who promote it could be "abetting or cooperating". The binding mitigations (§B0 items 1–4) and shared-interest positioning are the only controls in place. The 2022 IRR was not located **[UNVERIFIED]**.
+- **RA 11862 (Expanded Anti-Trafficking in Persons Act, 2022):** not researched in this pass. Intermediary duties stay as summarised in ADR-002 **[UNVERIFIED]**.
+- **RA 10173 (Data Privacy Act) + NPC rules:** not researched in this pass. Treatment of affiliate attribution data, cross-border transfer to networks and postback payloads is **[UNVERIFIED]**. Design default: postbacks carry no personal data (§B8).
+- **US IMBRA (8 U.S.C. § 1375a) [S1]:**
+  - **Definition, (e)(4)(A):** an "international marriage broker" is an entity "that charges fees for providing dating, matrimonial, matchmaking services, or social referrals between United States citizens or nationals or aliens lawfully admitted… as permanent residents and foreign national clients by providing personal contact information or otherwise facilitating communication between individuals".
+  - **Exemption, (e)(4)(B)(ii):** "an entity that provides dating services if its principal business is not to provide international dating services between United States citizens or United States residents and foreign nationals **and** it charges comparable rates and offers comparable services to all individuals it serves regardless of the individual's gender or country of citizenship".
+  - **Broker duties, (d):** no information about anyone under 18; obtain foreign clients' government proof of age and retain the original 7 years; search the National Sex Offender Public Website; collect a signed US-client background certification (protection orders, listed violent-crime arrests and convictions, prior marriages, and more); make disclosures before sharing contact details.
+  - **Plan implication:** Option 2's stated audience ("international men seeking Filipina singles") points at the "principal business" prong. Separately, ₱599 vs US$29.99 is priced by residence, not citizenship. Whether rates are "comparable … regardless of … country of citizenship" is untested and unreviewed (OWN-PRICE-01).
+- **Affiliate/endorsement disclosure (applies to every partner):**
+  - **US:** FTC Endorsement Guides, 16 CFR § 255.5. Material connections must be disclosed "clearly and conspicuously", and payments are explicitly material [S3]. The FTC's business FAQ says "affiliate link" alone may not be understood, and suggests "I get commissions for purchases made through links in this post" [S4]. The revised Guides were published 26 July 2023 [S5].
+  - **UK:** the CAP Code applies to affiliate marketing, and affiliate content must be "obviously identifiable" as advertising [S6].
+  - **AU:** ACCC guidance under the Australian Consumer Law requires paid, gifted or affiliate arrangements to be disclosed clearly and prominently [S7] — *read via search excerpt of the official PDF; full text not read*.
+  - **CA:** the Competition Bureau applies the Competition Act to influencer marketing; material connections, including commissions, must be disclosed clearly in each post [S8] — *read via search excerpt; full text not read*.
+- **Optional question set, for use if the Owner later engages an independent Philippine lawyer** (GATE-LEGAL-02 is waived; the packet is not required):
+  1. Does a paid affiliate program recruiting foreign users to a PH-based dating service fall under RA 10906 §3?
+  2. What copy/positioning keeps it within the "legitimate dating website" carve-out?
+  3. Liability for affiliate-created ads, and the required controls.
+  4. Can Humbble pay commissions to foreign affiliates, and what tax/withholding/registration applies to the (still unverified) operator?
+  5. DPA treatment of click IDs, sub-IDs and postbacks shared with networks; cross-border transfer basis.
+  6. Whether market-specific pricing is compatible with IMBRA comparability and PH consumer law.
+  7. Required affiliate T&Cs, disclosures and audit rights.
+  8. Whether Humbble under Option 2 is an "international marriage broker" under IMBRA, and if so, which compliance duties apply; and whether ADR-003 positioning keeps it outside RA 10906 §3.
+  9. Which ADR-002 guardrails must remain for legality.
 
 ### B3. Network prospects and program model
 
-**Status of every network: PROSPECT — not contacted, not applied to, no terms agreed.** No outreach message has been sent or drafted to any network.
+**Status of every network: PROSPECT — not contacted, not applied to, no terms agreed.** No outreach message has been sent or drafted. Findings come from public pages accessed 2026-10-21 (§B16).
 
-| Prospect | Preliminary public-page observation [PRELIMINARY, 2026-10-21] | To confirm [PENDING-DEEP-RESEARCH] |
+| Prospect | Advertiser onboarding | Dating vertical / brand fit | GEOs, traffic, payout models, tracking | Verdict for Humbble |
+|---|---|---|---|---|
+| **REBLL** (rebll.com) | Advertiser page invites advertisers into "REBLL Verified", external offers "regularly audited for quality" [S9] | Seeks in-house **DOI/SOI** dating offers and niches. Affiliate side: in-house **contact/flirt** offers, "CPL DOI, 25+ GEOs" [S9][S10]. Affiliates bound by a code of conduct and notice-and-takedown procedure [S11] | Affiliate signup asks for vertical, traffic sources, GEOs [S10]. Postback spec not found **[UNVERIFIED]** | **Poor fit.** Lead-based (SOI/DOI) payout model conflicts with §B4 (no registration-only payouts). Flirt/contact positioning is a brand-safety risk. Consider only if REBLL accepts paid-subscriber CPA and mainstream-only placement |
+| **Masters in Cash** (mastersincash.com) | No evidence of an external-advertiser program. Its T&C describe "the Masters in Cash **adult entertainment** affiliate program" for its own sites [S12] | Adult/flirt chat, in-house. T&C bar affiliates from domain names containing "dating" [S12] | RevShare and CPL; "25+ GEOs incl. USA" [S13]. Postback/callback support per the RedTrack integration guide [S14] | **Reject.** Adult in-house program, not an advertiser marketplace |
+| **Affmy** (affmy.com) | Accepts advertisers ("As an Advertiser" signup, Advertiser Agreement). Default conversion **hold period 14 days** unless an Insertion Order says otherwise [S15] | Dating verticals, in-house funnels, **Smartlink** [S16]. Affiliate T&C reference adult material and ban incentivised/motivated traffic [S15]. A third-party directory lists it as mainstream + adult smartlink [S17] | CPL, CPS, revshare [S16]; "Asia and Tier 1" [S16]. Postback details not read **[UNVERIFIED]** | **Conditional.** Only with a mainstream-only IO, no smartlink co-mingling, paid-subscriber CPA, and sub-ID transparency |
+| **Advidi** (advidi.com) | Advertiser program: "5000+ active affiliates" in 100+ countries, plus in-house media buying and email traffic; "extensive interviewing" approval [S18] | 300+ in-house dating offers in 25+ GEOs [S19]. Third-party list shows mainstream + adult dating [S20] | Social, native, SEO, SEA [S18]. Affiliate payout options incl. weekly NET 0/NET 2, PayPal, Paxum [S18]. Tracking platform **[UNVERIFIED]** | **Conditional.** Large reach; requires mainstream-only, traffic-source exclusions and creative approval |
+| **The Relationship Corp** (mainstream alternative) | Works with "major dating companies like Match, eHarmony" and owns subscription sites; takes advertisers and affiliates by contact [S21] | Mainstream, relationship-minded singles **35+** in North America, Europe, Australia; "**No Adult, Incentivized, or Co-Registration traffic allowed**" [S21] | Commissions on subscription sales or cost-per-registration [S21] | **Shortlist (direct partner).** Best brand fit found; pricing/terms **[UNVERIFIED]** |
+| **MaxBounty** (mainstream alternative) | Advertiser FAQ: advertisers can exclude traffic types (e.g. "No paid search"); all contact goes through the network; a compliance department monitors traffic [S22] | Multi-vertical CPA network; dating offers per a third-party list [S20] | Network-mediated; terms **[UNVERIFIED]** | **Shortlist.** Traffic-type exclusions fit §B4 |
+| **Perform[cb]** (mainstream alternative) | Publishes an advertiser compliance guide requiring FTC-compliant endorsements and disclosures [S23] | Dating case study on registrations and engagement [S24 — search excerpt only] | Terms **[UNVERIFIED]** | **Shortlist.** Compliance posture fits |
+| Cpamatica (noted, not shortlisted) | Advertiser program; 100+ countries; channels include push and popup/popunder [S25] | Dating / social-discovery offers | — | Not shortlisted: popunder/push channels conflict with brand-safety rules |
+
+**Brand-safety finding:** of the four Owner-named prospects, **none is a clean mainstream fit**. Masters in Cash is an adult program (reject). REBLL is built around SOI/DOI lead and flirt offers. Affmy and Advidi mix mainstream and adult. The mainstream alternatives that publicly ban adult or incentivised traffic, or allow traffic-type exclusions, are The Relationship Corp and MaxBounty; Perform[cb] publishes compliance requirements. Any listing must be mainstream-only, exclude adult placements and smartlink co-mingling, and pay only on paid subscribers.
+
+**In-house / SaaS tracking platforms (vendor pages, 2026-10-21):**
+
+| Platform | Published price | Relevant features / caveats |
 |---|---|---|
-| REBLL (rebll.com) | Advertiser page invites advertisers with in-house DOI/SOI dating offers, niches and GEOs into "REBLL Verified" (audited) | Advertiser application, mainstream-vs-adult policy, PH/target GEOs, traffic sources, payout models, postback spec, terms, fees |
-| Masters in Cash (mastersincash.com) | Self-described direct advertiser of in-house adult/flirt "entertainment" offers, RevShare and CPL; unclear that it lists third-party advertisers | Whether it accepts external advertisers at all; brand-safety fit |
-| Affmy (affmy.com) | CPA network, dating verticals (mainstream + adult per a third-party directory), CPL/CPS/revshare, smartlink | Advertiser onboarding, GEOs, smartlink co-mingling with adult offers, terms |
-| Advidi (advidi.com) | Dutch CPA network founded 2012; advertiser and affiliate sides; dating vertical | Advertiser criteria, mainstream policy, GEOs, tracking platform, terms |
-| Others (to shortlist) | — | Mainstream-only dating networks, creator platforms, review/comparison publishers **[PENDING-DEEP-RESEARCH]** |
-
-**Brand-safety flag [PRELIMINARY]:** several prospects publicly emphasise adult, flirt or SOI/DOI lead offers. Humbble is a conservative neutral product (ADR-002). Any listing must be mainstream-only, must exclude adult placements, smartlink co-mingling with adult offers, and SOI/DOI lead payouts, or the network is rejected.
+| Tapfiliate | Launch **US$89/mo** (US$74/mo annual); Scale US$179/mo; Enterprise custom [S26] | S2S/postback integration, REST API, recurring commissions, customisable cookie time [S26]. Free trial 7/14/30 days |
+| Rewardful | **US$49 / 99 / 149+ per month** by affiliate-attributed revenue; 0% transaction fee; managed payouts 3% [S27] | Stripe-centric ("two-way Stripe sync") [S27]. Fit with **PayPal Subscriptions** billing is **[UNVERIFIED]** and likely poor |
+| PartnerStack | **Not published**; demo-gated [S28] | Oriented to B2B/SaaS partner programs |
+| Everflow | **Custom quote; 6-month commitment required** [S29]. A Shopify listing shows US$950/mo + US$500 setup [S30] | Enterprise-grade; anti-fraud per listing; well above budget |
+| impact.com | Starter US$30/mo + 2.5% of revenue, **only for listed e-commerce platforms**; Essentials US$500/mo; Pro US$2,500/mo; setup US$250/hr [S31] | Starter not applicable to a PayPal-billed dating app |
 
 **Network listing vs direct in-house program:**
 
 | Dimension | Network listing | Direct in-house program |
 |---|---|---|
-| Reach / speed | Fast access to existing publishers | Slow; recruit one by one |
-| Control of traffic quality & copy | Lower; sub-affiliates opaque | High; vetted partners only |
-| Tracking | Network's platform + our S2S postback | Our first-party tracking (§B8) |
-| Cost | Network margin/fees [PENDING-DEEP-RESEARCH] | Build/ops effort; possible SaaS tracker cost (budget approval) |
-| Compliance | Contractual reliance on network | Direct contracts, direct audit rights |
+| Reach / speed | Fast access to existing publishers (e.g. Advidi 5000+ affiliates [S18]) | Slow; recruit one by one |
+| Control of traffic quality & copy | Lower; sub-affiliates opaque (Affmy allows sub-affiliates [S15]) | High; vetted partners only |
+| Tracking | Network platform + our S2S postback | First-party tracking (§B8), or a SaaS tracker (Tapfiliate from US$89/mo [S26]) |
+| Cost | Network margin is not published by any prospect **[UNVERIFIED]** | Build/ops effort, or SaaS fee (budget approval) |
+| Compliance | Contractual reliance on the network; some have compliance teams [S22][S23] | Direct contracts and audit rights; our own disclosure enforcement (FTC/CAP [S3][S6]) |
 
-**Recommendation [ESTIMATE, for Owner decision]:** a combination, sequenced: (1) build the minimal first-party tracking and policy layer first (it is needed either way for reconciliation); (2) run a **small direct program** of hand-vetted mainstream publishers/creators in the pilot; (3) list on **at most one or two** mainstream-compliant networks only after the direct pilot proves the qualification and clawback rules work, with sub-ID transparency and a fraud-reporting obligation in the contract.
+**Recommendation (an estimate, for Owner decision):**
+1. Build the minimal first-party tracking on the planned Supabase schema (§B8). It avoids a recurring SaaS fee against the ₱10,000/month ceiling. Tapfiliate Launch (US$89/mo) is the cheapest fallback found with S2S postbacks, and would need spend approval.
+2. Pilot a **small direct program** with mainstream partners, The Relationship Corp first.
+3. Add **at most one** network with traffic-type exclusions (MaxBounty) or a mainstream-only IO (Advidi/Affmy) after the direct pilot proves the qualification and clawback rules.
+4. Masters in Cash: do not pursue.
 
 ### B4. Commission model and program rules (no final percentages)
 
-Final rates are **not set**: they depend on verified pricing per market, PayPal processing fees, refund/chargeback rates, retention, CAC and LTV, none of which are measured yet. Industry benchmarks: **[PENDING-DEEP-RESEARCH]**.
+Final rates are **not set**: they depend on pricing, fees, refunds, retention, CAC and LTV, none of which are measured yet.
+- **Benchmarks:** the only payout ranges found are on a third-party affiliate blog (low evidentiary weight): SOI US$1–5, DOI US$2–10, paid-subscription conversion US$15–60+ [S20]. **No citable source was found for dating click→registration, registration→paid, churn or chargeback benchmarks. They remain [UNVERIFIED] and must not be used in models.** The ChatGPT report's figures (5–8% reg→paid, ~6-month tenure, 20–30% revshare) had no sources and are excluded.
+- **Models to compare:** (a) **CPA on a verified paying subscriber** (preferred default); (b) **recurring revshare** on net collected revenue for N months; (c) **hybrid** (smaller CPA + capped revshare). Registration-only (CPL/SOI/DOI) payouts are **excluded**. This rules out REBLL's lead-based model unless renegotiated.
+- **Qualifying conversion (proposal):** an attributed user who:
+  1. is 18+ with server-side verification `verified`;
+  2. completed the profile threshold;
+  3. has a **verified, reconciled first settlement** (`PAYMENT.SALE.COMPLETED` matched to catalogue plan/currency/amount per §A5);
+  4. passed the hold period;
+  5. is not flagged by fraud rules or suspended;
+  6. was not previously a member (dedupe on account and payment-instrument fingerprint where lawful).
+- **Attribution:** last eligible click within a **30-day click window** (estimate); view-through not credited; the Owner may change the window.
+- **Hold, clawback and payout (sourced constraints):**
+  - PayPal buyers can open an Item-Not-Received dispute **within 180 days** of payment [S32].
+  - Affmy's default advertiser hold is 14 days [S15], which is shorter than the dispute exposure.
+  - **Proposal:** hold **≥ 60 days** after first settlement before `approved`, and a **clawback window of 180 days** matching the PayPal dispute window.
+  - Monthly payout batch, net-30 (estimate); minimum threshold (estimate, e.g. US$50 equivalent).
+  - Payout cost if paid via PayPal Payouts from a PH account: 2% of amount, capped (international cap US$50) [S33].
+- **Clawback:** refund, chargeback, fraud finding or ToS breach within the clawback window reverses the commission (negative ledger entry offsetting future payouts). PayPal does not return its original fee on refunds [S33]. Dispute fees are US$8 standard / US$16 high-volume, and chargeback fees US$10, per the PH fee page [S33]. These are recoverable under the partner contract only if the contract says so.
+- **Approval rules:** partner application → KYC/business verification → traffic-source review → creative pre-approval → probation with cap → full approval. The Owner-assigned affiliate-manager role approves; agents never approve partners or payouts.
+- **Disclosure duty (contractual):** every partner must disclose the paid relationship per FTC 16 CFR 255.5 [S3][S4], CAP "obviously identifiable" [S6], ACCC [S7] and the Competition Bureau [S8].
+- **Prohibited practices (contractual, enforced):**
+  - fake or staff-operated profiles; fabricated conversations;
+  - misleading member counts or availability ("thousands of women waiting"); stolen or AI-generated photos presented as members;
+  - guaranteed outcomes, or marriage/spouse/bride/mail-order language (RA 10906 §3(b) [S2]); objectifying copy;
+  - adult placements; incentivised or forced signups (also banned by Affmy [S15] and The Relationship Corp [S21]);
+  - cookie stuffing, click injection, brand bidding without permission, email/SMS spam, bot traffic;
+  - misrepresenting price, free features or cancellation; targeting minors;
+  - undisclosed sub-affiliates.
+- **Fraud controls** (sources are vendor/industry blogs — practice guidance, not regulation [S34][S35]):
+  - S2S postbacks with click_id + event id + HMAC signature;
+  - dedupe/idempotency;
+  - click-to-conversion time, datacenter-IP, geo-mismatch and conversion-rate-spike checks;
+  - hold suspicious conversions for review rather than auto-pay;
+  - monthly validation of partner conversions against verified payments.
 
-- **Models to compare:** (a) **CPA on a verified paying subscriber** (preferred default); (b) **recurring revshare** on net collected revenue for N months; (c) **hybrid** (smaller CPA + capped revshare). Registration-only (CPL/SOI/DOI) payouts are **excluded**.
-- **Qualifying conversion (proposal):** attributed user who (1) is 18+ with server-side verification `verified`, (2) completed the profile threshold, (3) has a **verified, reconciled first settlement** (`PAYMENT.SALE.COMPLETED` matched to catalogue plan/currency/amount per §A5), (4) passed the refund/chargeback **hold period**, (5) is not flagged by fraud rules or suspended, (6) was not previously a member (dedupe on account and payment instrument fingerprint where lawful).
-- **Attribution:** last eligible click within a **30-day click window** [ESTIMATE]; view-through not credited; conflicts resolved by deterministic first-party record; the Owner may change the window.
-- **Hold & payout:** commission `pending` until hold elapses (proposal: **≥ 30 days** after settlement, or longer if refund/chargeback windows require [PENDING-DEEP-RESEARCH on PayPal dispute windows]); monthly payout batch, net-30 [ESTIMATE]; minimum payout threshold [ESTIMATE, e.g. US$50 equivalent, to be set].
-- **Clawback:** refund, chargeback, fraud finding or ToS breach within the clawback window reverses the commission (negative ledger entry; offsets future payouts).
-- **Approval rules:** partner application → KYC/business verification → traffic-source review → creative pre-approval → probation with cap → full approval. Owner-assigned affiliate-manager role approves; agents never approve partners or payouts.
-- **Prohibited practices (contractual, enforced):** fake or staff-operated profiles; fabricated conversations; misleading member counts or availability ("thousands of women waiting"); stolen or AI-generated photos presented as members; guaranteed outcomes or marriage/spouse/bride language; nationality-pairing or objectifying copy (ADR-002); adult placements; incentivised/forced signups; cookie stuffing, click injection, brand bidding without permission, email/SMS spam, bot traffic; misrepresenting price, free features or cancellation; targeting minors; sub-affiliating without disclosure.
+### B5. Unit-economics scenarios (fees sourced; all other assumptions HYPOTHETICAL)
 
-### B5. Unit-economics scenarios (all assumptions HYPOTHETICAL)
+Formulas:
+- `net_monthly = price × (1 − fee_allowance)`
+- `LTV_90 = Σ net revenue in 90 days × (1 − refund_chargeback_loss) − variable_cost`
+- `max_CPA = LTV_90 / target_LTV:CAC`
+- `gross_contribution = revenue − fees − refunds − commissions − variable_costs`
 
-Formulas: `net_monthly = price × (1 − processing_fee_rate) − fixed_fee`; `LTV_90 = Σ net revenue collected in 90 days × (1 − refund_chargeback_rate) − variable_cost`; `max_CPA = LTV_90 / target_LTV:CAC`; `gross_contribution = revenue − fees − refunds − commissions − variable_costs`.
+**Sourced fee inputs (PayPal PH merchant fee page, last updated 28 Sep 2026 [S33]):**
+- PH-account **domestic** receipt 3.40% + ₱15.00. On ₱599: ₱35.37 (≈5.9%).
+- PH-account **international** receipt 4.40% + US$0.30. On US$29.99: US$1.62 (≈5.4%).
+- Converting a received balance to PHP: 3.0% above base rate. Total ≈8.4% if converted.
+- If the operator were US-registered instead, US PayPal Checkout is 3.49% + US$0.49 [S36 — search excerpt].
+- The **operator entity is unverified**, so the applicable schedule is unknown.
+- Taxes (PH VAT, US sales tax, UK VAT, AU/CA GST) are **not included [UNVERIFIED]**.
+- **PayPal requires pre-approval for "Online Dating"** under its Acceptable Use Policy [S37]. The fee model is moot until that approval exists.
 
-| Input [HYPOTHETICAL] | Conservative | Base | Optimistic |
+| US plan | Conservative | Base | Optimistic |
 |---|---:|---:|---:|
-| Price (US plan, sandbox config) | US$29.99 | US$29.99 | US$29.99 |
-| Processing + FX + tax allowance | 12% | 10% | 8% |
-| Paid months collected in first 90 days | 1.5 | 2.2 | 2.7 |
-| Refund + chargeback loss | 8% | 5% | 3% |
-| Variable cost per payer (verification, moderation, support) | US$4 | US$3 | US$2 |
-| → LTV_90 (≈) | US$32.4 | US$53.4 | US$70.3 |
-| → max CPA at 3:1 (≈) | US$10.8 | US$17.8 | US$23.4 |
+| Price (sandbox config) | US$29.99 | US$29.99 | US$29.99 |
+| Fee allowance (≈8.4% PayPal intl + FX [S33], plus tax/buffer) [HYPOTHETICAL buffer] | 12% | 10% | 8.4% (fees only) |
+| Paid months collected in first 90 days [HYPOTHETICAL] | 1.5 | 2.2 | 2.7 |
+| Refund + chargeback loss [HYPOTHETICAL; no citable benchmark] | 8% | 5% | 3% |
+| Variable cost per payer [HYPOTHETICAL] | US$4 | US$3 | US$2 |
+| → LTV_90 (≈) | US$32.4 | US$53.4 | US$70.0 |
+| → max CPA at 3:1 (≈) | US$10.8 | US$17.8 | US$23.3 |
 
-These are arithmetic illustrations of the formulas, not forecasts. The PH plan (₱599) needs its own table once PH fee data is verified. Commission spend is **outside** the ₱10,000/month infra ceiling and needs a separate Owner budget line.
+| PH plan (incl. PH-resident expats) | Conservative | Base | Optimistic |
+|---|---:|---:|---:|
+| Price (sandbox config) | ₱599 | ₱599 | ₱599 |
+| Fee allowance (≈5.9% PayPal domestic [S33] + buffer) | 10% | 8% | 6.5% |
+| Paid months collected in first 90 days [HYPOTHETICAL] | 1.5 | 2.2 | 2.7 |
+| Refund + chargeback loss [HYPOTHETICAL] | 8% | 5% | 3% |
+| Variable cost per payer [HYPOTHETICAL] | ₱200 | ₱150 | ₱100 |
+| → LTV_90 (≈) | ₱544 | ₱1,002 | ₱1,367 |
+| → max CPA at 3:1 (≈) | ₱181 | ₱334 | ₱456 |
+
+**Takeaways:**
+- At the PH price, the illustrative maximum CPA (≈₱181–456) is far below the only third-party paid-subscription payout range found (US$15–60+ [S20], low-weight source). Paid networks are unlikely to work for PH/expat traffic at ₱599. Creators and direct partners on revshare are the realistic PH channel.
+- Commission spend is **outside** the ₱10,000/month infra ceiling and needs a separate Owner budget line.
+- These are arithmetic illustrations, not forecasts.
 
 ### B6. Funnel and conversion-experiment plan
 
@@ -210,7 +318,7 @@ All are unavailable because no real users, no live billing and no attribution ex
 
 | Phase | Dependencies | Deliverables | Acceptance criteria | Key risks | Evidence to complete |
 |---|---|---|---|---|---|
-| **A — Commercial readiness** | v1.3 merged; Deep Research report; GATE-OWN-MKT-01 (resolved) | ADR-003 finalised; OWN-PRICE-01 decision memo; verified fee/pricing sheet; unit-economics model; affiliate T&Cs & prohibited-practice policy drafts; optional legal question packet | Mark signs ADR-003 and decides OWN-PRICE-01; all [PENDING-DEEP-RESEARCH] items filled with citations | Owner-accepted legal risk materialises; economics negative | Signed ADR-003; OWN-PRICE-01 record; cited research |
+| **A — Commercial readiness** | v1.3 merged; research appendix §B16 (done 2026-10-21; gaps marked UNVERIFIED); GATE-OWN-MKT-01 (resolved) | ADR-003 finalised; OWN-PRICE-01 decision memo; verified fee/pricing sheet; unit-economics model; affiliate T&Cs & prohibited-practice policy drafts; optional legal question packet | Mark signs ADR-003 and decides OWN-PRICE-01; remaining [UNVERIFIED] items either sourced or accepted as unknown by the Owner | Owner-accepted legal risk materialises; economics negative | Signed ADR-003; OWN-PRICE-01 record; cited research |
 | **B — Network outreach (planned, not executed)** | Phase A (ADR-003 signed); operator entity verified by the Owner (DEP-LEGAL-02) | Network shortlist & scorecard; advertiser application packs; outreach templates for Owner approval | Owner approves each application/message before it is sent by the Owner or on explicit instruction; mainstream-only terms confirmed | Brand safety; networks require live tracking/billing first | Approved shortlist; sent-log (only after approval) |
 | **C — MVP affiliate program** | v1.2 P2-03/P2-04, P4 (Sandbox), P5-01/P5-03; ADR for affiliate migration | Tracking schema/RPCs, redirect, postbacks, ledger, admin views, partner landers — **synthetic data only** | pgTAP/RLS tests; S2S postback contract tests; reconciliation and clawback tests pass on synthetic Sandbox events | Scope creep into critical path | Merged PRs with CI evidence |
 | **D — Controlled pilot** | v1.2 Phase 6 gates (lawyer-opinion part waived); OWN-PRICE-01 decided; DEP-BILL-01 live billing; supply threshold (§B7); commission/media spend approved by Mark | 2–5 vetted partners, capped spend, weekly review | Commissions only on qualified conversions; reconciliation 100%; T&S metrics no worse than organic | Fraud; harm to supply-side members | Weekly pilot reports; audit of ledger |
@@ -230,7 +338,10 @@ Affiliate Program Manager; Partner Compliance Reviewer; Finance/Payout Approver 
 
 ### B13. Risks and blockers added to §10
 - **Critical — OWNER-ACCEPTED RISK (2026-10-21 02:42 PHT; not legally cleared):**
-  - RA 10906 §3 (profit-making matching of Filipinos with foreign nationals for marriage, advertising it, soliciting Filipinos into it). ADR-002 summarises the penalties as 15–20 years' imprisonment and ₱500,000–₱5,000,000 fines, with personal liability for officers. [PRELIMINARY]
+  - RA 10906 §3 (profit-making matching of Filipinos with foreign nationals for marriage, advertising it, soliciting Filipinos into it) [S2].
+    - Penalties: 15 years and ₱500,000–₱1,000,000; or 20 years and ₱2,000,000–₱5,000,000 if by a syndicate or "on a large scale" (against 3+ persons).
+    - Anyone who "shall abet or cooperate" gets the same penalty. This can reach affiliates and their principal.
+    - Officers who knowingly permit or fail to prevent the act are liable; proceeds are forfeited (§4–§5) [S2].
   - IMBRA, 8 U.S.C. § 1375a: if Humbble falls outside the dating-site exemption, broker duties apply (US-client background certification, sex-offender registry search, disclosures, consent before sharing contact details).
   - RA 11862 intermediary duties; RA 10173 privacy and cross-border transfers; other target-market consumer and online-safety rules.
   - Independent legal review was **waived by the Owner**.
@@ -247,12 +358,29 @@ Affiliate Program Manager; Partner Compliance Reviewer; Finance/Payout Approver 
 - **High:** commission and media spend have no budget; ₱10,000/month ceiling is infra-only and planning-only.
 - **High:** adult-oriented network inventory vs neutral brand; affiliate deception harming supply-side members.
 - **High:** schema dependencies (0002 failing CI in PR #12; 0003/0004 not started).
-- **Medium:** cross-border transfer of attribution data; app-store rules for web-to-app attribution and pricing.
+- **Critical (new, sourced):** PayPal's Acceptable Use Policy lists **"Online Dating" as an activity requiring PayPal pre-approval** [S37]. Live billing (DEP-BILL-01) cannot start without it, and the application is an external action needing Mark's instruction.
+- **High (new, sourced):** none of the four Owner-named networks is a clean mainstream fit [S9–S20].
+  - Masters in Cash is an adult entertainment program [S12]: reject.
+  - REBLL is lead (SOI/DOI) and flirt based [S9][S10].
+  - Affmy and Advidi mix mainstream and adult [S15–S20].
+  - Mainstream alternatives exist (The Relationship Corp [S21], MaxBounty [S22], Perform[cb] [S23]).
+- **High (new, sourced):** PH-price economics. The ₱599 illustrative max CPA (≈₱181–456, §B5) is far below the only third-party paid-subscriber payout range found (US$15–60+ [S20], low weight). Network CPA is unlikely to be viable for PH/expat traffic.
+- **High (new, sourced):** affiliate disclosure duties in every target market (FTC 16 CFR 255.5 [S3][S4]; CAP [S6]; ACCC [S7]; Competition Bureau [S8]) must be in partner contracts and monitored.
+- **Medium (new, sourced):** app stores.
+  - Apple: 4.3(b) says dating apps will not be accepted "unless they offer a meaningfully different or improved experience"; 1.1.4 bans "hookup" apps and anything used to facilitate prostitution or trafficking; 3.1.1 requires in-app purchase for subscriptions [S38].
+  - Google Play: dating apps must use Play Console tools to block minors and meet child-safety standards; "sugar dating" is prohibited [S39]; Play Billing is required for digital subscriptions [S40].
+  - Web-to-app attribution and store pricing interactions remain [UNVERIFIED].
+- **Medium:** cross-border transfer of attribution data (RA 10173 not researched, [UNVERIFIED]).
 
 ### B14. Evidence classification for §V1.3
 - **[VERIFIED]**
   - Repo state at `cd90aab` (§B8).
-  - IMBRA definition and exemption text at 8 U.S.C. § 1375a(e)(4) (uscode.house.gov; law.cornell.edu). How it applies to Humbble is unverified, and no lawyer will verify it (waived).
+  - IMBRA definition, exemption and broker-duty text at 8 U.S.C. § 1375a [S1]. How it applies to Humbble is unverified, and no lawyer will verify it (waived).
+  - RA 10906 primary text, including §3, the carve-out and §4–§5 penalties [S2].
+  - Affiliate disclosure rules: FTC [S3–S5]; CAP/ASA [S6]. ACCC [S7] and Competition Bureau [S8] are from excerpts only.
+  - PayPal: AUP "Online Dating" pre-approval [S37]; PH merchant fees [S33]; 180-day dispute window [S32].
+  - Network public terms (Masters in Cash adult program [S12]; Affmy 14-day hold [S15]; Advidi advertiser program [S18]; The Relationship Corp no-adult/incent [S21]; MaxBounty exclusions [S22]).
+  - SaaS tracker pricing [S26–S31]; Apple and Google Play policies [S38–S40].
 - **[OWNER]**
   - GATE-OWN-MKT-01 resolved, Option 2 (international men seeking Filipina singles; US/CA/AU/UK; 2026-10-21 02:18 PHT).
   - Expats residing in the Philippines are an in-scope segment under the PH market and PH price, subject to OWN-PRICE-01, and not gated on non-PH enablement (2026-10-21 03:30 PHT).
@@ -260,24 +388,79 @@ Affiliate Program Manager; Partner Compliance Reviewer; Finance/Payout Approver 
   - Binding mitigations §B0 items 1–4; ADR-003 acceptance by Mark's signature alone.
   - Still binding: Sandbox only until Mark approves live billing; spend approval; outreach approval by Mark; 18+/safety gates; ₱599 / US$29.99 market prices pending OWN-PRICE-01; ₱10,000/mo planning-only ceiling; roles only; RED-APPLE proposed/unverified; vendor-independent verification with no raw selfie retention; no spend, applications or outreach so far.
 - **[PRELIMINARY]**
-  - Network public-page observations (rebll.com/advertisers, mastersincash.com, affmy.com, advidi.com, third-party directories).
-  - RA 10906 / RA 11862 summaries carried from ADR-002.
+  - Items read only via search excerpt (method **E** in §B16); third-party directories and blogs [S17][S20][S34].
+  - RA 11862 summary carried from ADR-002.
   - The IMBRA exemption analysis in §B0.
 - **[HYPOTHETICAL/ESTIMATE]** §B5 scenarios, attribution window, hold period, payout threshold, network-vs-direct recommendation.
 - **[UNRESOLVED]**
   - OWN-PRICE-01; ADR-003 signature; whether Option 2 makes Humbble an IMBRA broker (legal question, now unreviewed).
   - Supply threshold, commission rates, commission/media budget, operator entity.
-  - Whether networks will accept a mainstream non-adult offer.
+  - Whether networks will accept a mainstream, paid-subscriber-only offer with our terms (not asked; no outreach).
+  - Everything listed as "Not researched" in §B16.
 
 ### B15. First actionable tasks (priority order; no spend, no outreach)
 1. ~~Owner resolves GATE-OWN-MKT-01~~ — **done**: Option 2, 2026-10-21 02:18 PHT. ~~Lawyer review~~ — **waived by Owner** 2026-10-21 02:42 PHT (risk acceptance).
 2. Mark decides **OWN-PRICE-01** (equalize pricing vs accept IMBRA-exemption risk) and signs **ADR-003**. This is now the critical-path owner action.
-3. Fill all `[PENDING-DEEP-RESEARCH]` items from the owner-commissioned research report, with citations. Prioritise IMBRA, RA 10906 and the target-market consumer/privacy rules, since no lawyer will review them.
+3. ~~Fill research placeholders~~ — **done 2026-10-21** (§B16). Remaining gaps marked [UNVERIFIED]: RA 11862, RA 10173/NPC, auto-renewal laws, UK OSA / AU eSafety, taxes, network postback specs and margins, dating conversion benchmarks. **New:** apply for PayPal "Online Dating" pre-approval [S37], but only on Mark's instruction (it is an external application).
 4. Unblock the schema critical path: fix PR #12 (0002) CI, then P2-03 (0003 `payment_events`/audit), the prerequisites for TRK.
 5. Draft affiliate T&Cs, the prohibited-practice policy, creative guidelines and the binding-mitigation checklist for Owner approval (EP-BD/EP-MKT/EP-RISK).
 6. Write the affiliate attribution ADR and event taxonomy (EP-TRK/EP-CONV), design only.
 7. Build the verified cost/fee sheet and finalise §B5 with real fee data; request a separate commission/media budget decision.
 8. *Optional:* add the §B2 question set to `docs/legal/review-packet.md`, in case the Owner engages counsel later.
+
+### B16. Research appendix — sources (all accessed 2026-10-21; method noted)
+
+Method key: **F** = full page fetched and read; **E** = search-engine excerpt of the official page (not a full read; treat as preliminary). The ChatGPT deep-research report had no citations and is **not** a source.
+
+| # | Source | URL | Method | Used for |
+|---|---|---|---|---|
+| S1 | 8 U.S.C. § 1375a (IMBRA), US Code (OLRC) and LII definition | https://uscode.house.gov/view.xhtml?req=granuleid%3AUSC-prelim-title8-section1375a ; https://www.law.cornell.edu/definitions/uscode.php?def_id=8-USC-257091165-1835661740 | E (definition and (d) duties text in excerpt) | IMBRA definition, exemption, broker duties |
+| S2 | Republic Act No. 10906 (Anti-Mail Order Spouse Act), Lawphil | https://lawphil.net/statutes/repacts/ra2016/ra_10906_2016.html | F | §3 prohibitions, carve-out, §4 penalties, §5 forfeiture |
+| S3 | 16 CFR § 255.5, eCFR | https://www.ecfr.gov/current/title-16/chapter-I/subchapter-B/part-255/section-255.5 | E | Material-connection disclosure |
+| S4 | FTC, "FTC's Endorsement Guides: What People Are Asking" | https://www.ftc.gov/business-guidance/resources/ftcs-endorsement-guides-what-people-are-asking | E | Affiliate-link disclosure wording |
+| S5 | Federal Register, revised Endorsement Guides (26 Jul 2023) | https://www.federalregister.gov/documents/2023/07/26/2023-14795/guides-concerning-the-use-of-endorsements-and-testimonials-in-advertising | E | Revision date |
+| S6 | ASA/CAP, "Online Affiliate Marketing" | https://www.asa.org.uk/advice-online/affiliate-marketing.html | F (text grep) | CAP Code applies; "obviously identifiable" |
+| S7 | ACCC, "Social media influencer testimonials and endorsements" | https://www.accc.gov.au/system/files/social-media-influencer-testimonials.pdf | E | AU disclosure |
+| S8 | Competition Bureau Canada, "Influencer marketing and the Competition Act" | https://competition-bureau.canada.ca/en/deceptive-marketing-practices/types-deceptive-marketing-practices/influencer-marketing-and-competition-act | E (direct fetch returned no content) | CA disclosure |
+| S9 | REBLL — Advertisers | https://rebll.com/advertisers/ | E (page text) | REBLL Verified, DOI/SOI |
+| S10 | REBLL — Affiliates / affiliate signup | https://rebll.com/affiliates/ ; https://affiliate-signup.rebll.com/ | E (page text) | Contact/flirt offers, CPL DOI, 25+ GEOs, signup fields |
+| S11 | REBLL — Terms and conditions | https://rebll.com/terms-and-conditions/ | F (text grep) | Code of conduct, notice and takedown |
+| S12 | Masters in Cash — Terms and conditions | https://www.mastersincash.com/terms-and-conditions/ | F (text grep) | "adult entertainment affiliate program"; domain-name rule |
+| S13 | Masters in Cash — home | https://www.mastersincash.com/ | E | RevShare/CPL, 25+ GEOs |
+| S14 | RedTrack Help — Masters in Cash integration | https://help.redtrack.io/knowledgebase/kb/automation/integrated-affiliate-networks/masters-in-cash/ | E | Global postbacks, sub1={clickid} |
+| S15 | Affmy — Terms (Affiliate + Advertiser Agreement) | https://affmy.com/terms | F (text grep) | 14-day default hold; incent ban; sub-affiliates; adult references |
+| S16 | Affmy — home | https://www.affmy.com/ | F | Dating verticals, smartlink, CPL/CPS/revshare, Asia/Tier 1 |
+| S17 | AffiliateFinders — Affmy advertiser review (third party) | https://www.affiliatefinders.com/cpa-network/affmy | E | Mainstream + adult smartlink; Cyprus |
+| S18 | Advidi — Advertisers | https://advidi.com/advertisers/ | F | 5000+ affiliates, 100+ countries, approval, payment options |
+| S19 | Advidi — dating landing page | https://lp.advidi.com/dating | E | 300+ in-house dating offers, 25+ GEOs |
+| S20 | RevBoost, "Best CPA Networks for Dating Offers in 2026" (third-party blog; low weight) | https://www.revboost.com/best/cpa-networks-for-dating | E | Payout ranges; network dating types |
+| S21 | The Relationship Corp | https://therelationshipcorp.com/ | F (text grep) | Mainstream, 35+, NA/EU/AU, no adult/incent/co-reg |
+| S22 | MaxBounty FAQ | https://maxbounty.com/faq-screen/ | F (text grep) | Advertiser traffic exclusions, compliance department |
+| S23 | Perform[cb], "The Advertiser's Guide to Marketing Compliance" | https://www.performcb.com/the-advertisers-guide-to-marketing-compliance/ | F (text grep) | FTC endorsement compliance |
+| S24 | Perform[cb] dating case study | https://www.performcb.com/case-studies/study/popular-dating-marketer-exceeds-registration-goals-trending-channels/ | E | Dating advertiser experience |
+| S25 | Cpamatica — Advertisers | https://cpamatica.io/advertisers | F | Channels incl. popup/popunder, 100+ countries |
+| S26 | Tapfiliate — Pricing | https://tapfiliate.com/pricing/ | F | US$89/179/custom; S2S; trials |
+| S27 | Rewardful — Pricing | https://www.rewardful.com/pricing | F | US$49/99/149+; 0% fee; Stripe sync |
+| S28 | PartnerStack — Pricing | https://partnerstack.com/pricing | E | Not published, demo-gated |
+| S29 | Everflow — Pricing | https://www.everflow.io/pricing | E | Custom quote; 6-month commitment |
+| S30 | Everflow — Shopify App Store listing | https://apps.shopify.com/everflow-v2 | E | US$950/mo + US$500 setup |
+| S31 | impact.com — Pricing | https://impact.com/pricing/ | E | Starter/Essentials/Pro/Enterprise |
+| S32 | PayPal US — Dispute filing timeframes | https://www.paypal.com/us/cshelp/article/dispute-filing-timeframes-help1173 | F (text grep) | 180-day INR window; 30/180-day SNAD |
+| S33 | PayPal PH — Merchant fees (last updated 28 Sep 2026) | https://www.paypal.com/ph/business/paypal-business-fees | F | PH domestic/international rates, FX, payouts, dispute/chargeback fees, refunds |
+| S34 | iRev, "Affiliate Fraud Detection and Prevention" (vendor blog) | https://irev.com/blog/affiliate-fraud-detection-prevention-and-tools-to-stay-safe/ | E | Fraud types and signals |
+| S35 | IAB Australia, Affiliate Program Compliance Guide 2025 | https://www.iabaustralia.com.au/wp-content/uploads/2025/11/IAB-Australia-Affiliate-Program-Compliance-Guide-2025.pdf | E | Vetting, prohibited methods, validation |
+| S36 | PayPal US — Business fees | https://www.paypal.com/us/business/paypal-business-fees | E | US Checkout 3.49% + US$0.49 |
+| S37 | PayPal — Acceptable Use Policy (updated 29 Oct 2022) | https://www.paypal.com/us/legalhub/paypal/acceptableuse-full | F | "Online Dating" requires PayPal pre-approval |
+| S38 | Apple — App Review Guidelines | https://developer.apple.com/app-store/review/guidelines/ | F (text grep) | 4.3(b) dating saturation; 1.1.4 hookup/trafficking; 3.1.1 IAP |
+| S39 | Google Play — Developer Program Policy | https://support.google.com/googleplay/android-developer/answer/17190352 | F (text grep) | Dating apps must block minors; child safety standards; "sugar dating" ban |
+| S40 | Google Play — Payments policy | https://support.google.com/googleplay/android-developer/answer/10281818 | E | Play Billing for digital subscriptions |
+
+**Not researched / still [UNVERIFIED]:**
+- RA 10906 IRR (2022); RA 11862; RA 10173 / NPC circulars;
+- US ROSCA and state auto-renewal laws; UK Online Safety Act; AU eSafety; CA/AU/UK consumer subscription rules;
+- digital-services taxes;
+- network margins, postback specs and advertiser fees;
+- dating conversion, churn and chargeback benchmarks.
 
 ## V1.3 Changelog
 | Version | Date | Author | Change |
@@ -292,7 +475,7 @@ Affiliate Program Manager; Partner Compliance Reviewer; Finance/Payout Approver 
 | 1.3-draft | 2026-10-21 | Grok Bot, recording Owner decision | GATE-OWN-MKT-01 RESOLVED (Option 2: international men, US/CA/AU/UK); B0 rewritten; ADR-003 (Proposed) added; GATE-LEGAL-02 is a hard blocker; B1, B2, B10, B13, B14, B15 updated |
 | 1.3-draft | 2026-10-21 | Grok Bot, recording Owner decision | Lawyer review WAIVED BY OWNER (GATE-LEGAL-02 and the lawyer-opinion part of GATE-LEGAL-01): owner risk acceptance, not legal clearance; binding mitigations; OWN-PRICE-01 opened; ADR-003 needs only Mark's signature; header, B0, B1, B2, B4, B10, B11, B13, B14, B15 updated |
 | 1.3-draft | 2026-10-21 | Grok Bot, recording Owner decision | Expats residing in PH added as an in-scope segment under the PH market/price (subject to OWN-PRICE-01); B0, B1, B2, B6, B14 updated |
-| 1.3-draft | — | Pending | Deep Research fill-in of PENDING-DEEP-RESEARCH items |
+| 1.3-draft | 2026-10-21 | Grok Bot (web research) | Research placeholders replaced with sourced findings (B2, B3, B4, B5, B13, B14, B15); new §B16 research appendix S1–S40; RA 10906 penalty tiers corrected from primary text; PayPal Online Dating pre-approval and PH fees added; ChatGPT report used as leads only |
 
 ---
 
