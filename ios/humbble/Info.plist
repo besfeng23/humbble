@@ -27,8 +27,8 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>myapp</string>
-          <string>com.anonymous.humbble</string>
+          <string>humbble</string>
+          <string>com.banataosystems.humbble</string>
         </array>
       </dict>
     </array>

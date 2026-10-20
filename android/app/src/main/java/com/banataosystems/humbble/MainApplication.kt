@@ -1,4 +1,4 @@
-package com.anonymous.humbble
+package com.banataosystems.humbble
 
 import android.app.Application
 import android.content.res.Configuration
