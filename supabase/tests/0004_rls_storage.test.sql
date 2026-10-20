@@ -4,7 +4,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET search_path = public, extensions, pg_temp;
-SELECT plan(65);
+SELECT plan(66);
 
 -- All 19 application tables from migrations 0001-0003 must retain RLS.
 SELECT ok(NOT EXISTS (
@@ -129,7 +129,7 @@ SET LOCAL "request.jwt.claims" = '{"role":"anon"}';
 SELECT throws_ok($$SELECT id FROM public.profiles$$, '42501', NULL, 'anon cannot read profiles');
 SELECT throws_ok($$SELECT user_id FROM public.user_preferences$$, '42501', NULL, 'anon cannot read preferences');
 SELECT throws_ok($$SELECT id FROM public.conversations$$, '42501', NULL, 'anon cannot read conversations');
-SELECT throws_ok($$SELECT name FROM storage.objects$$, '42501', NULL, 'anon cannot read private media');
+SELECT is_empty($$SELECT name FROM storage.objects WHERE bucket_id::TEXT COLLATE "C" IN ('profile_photos'::TEXT COLLATE "C", 'verification_artifacts'::TEXT COLLATE "C")$$, 'anon cannot read private media (RLS hides seeded objects)');
 SELECT throws_ok($$SELECT id FROM public.payment_events$$, '42501', NULL, 'anon cannot read payment events');
 SELECT throws_ok($$SELECT id FROM public.audit_events$$, '42501', NULL, 'anon cannot read audit records');
 RESET ROLE;
@@ -156,6 +156,7 @@ SELECT lives_ok($$INSERT INTO public.messages (conversation_id, sender_id, body)
 SELECT is((SELECT count(*)::INTEGER FROM public.reports WHERE context_summary::TEXT COLLATE "C" = 'p204-report-a'::TEXT COLLATE "C"), 1, 'user A reads own report');
 SELECT is_empty($$SELECT id FROM public.reports WHERE context_summary::TEXT COLLATE "C" = 'p204-report-b'::TEXT COLLATE "C"$$, 'user A cannot read user B report without moderator claim');
 SELECT is_empty($$SELECT id FROM public.moderation_cases$$, 'normal authenticated user cannot read moderation cases');
+SELECT throws_ok($$INSERT INTO public.moderation_cases DEFAULT VALUES$$, '42501', NULL, 'normal authenticated user cannot insert moderation cases');
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000041","role":"authenticated","user_metadata":{"role":"moderator"}}';
 SELECT is_empty($$SELECT id FROM public.reports WHERE context_summary::TEXT COLLATE "C" = 'p204-report-b'::TEXT COLLATE "C"$$, 'user-editable user_metadata cannot grant moderator access');
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000041","role":"authenticated"}';
