@@ -1,17 +1,17 @@
 # Humbble Premium — Execution-Ready Build Plan v1.3
 
-**Status:** DRAFT successor to v1.2. The Owner resolved the market question (GATE-OWN-MKT-01, Option 2, 21 Oct 2026 02:18 PHT). The affiliate-growth goal (§V1.3) targets international men, but **no international launch, paid traffic or outreach** may happen before GATE-LEGAL-02 and the other gates in §B0. Execution authorization remains separate.  
+**Status:** DRAFT successor to v1.2. The Owner resolved the market question (GATE-OWN-MKT-01, Option 2, 21 Oct 2026 02:18 PHT). The affiliate-growth goal (§V1.3) targets international men. On 21 Oct 2026 02:42 PHT the Owner **waived independent lawyer review** (GATE-LEGAL-02 and the lawyer-review part of GATE-LEGAL-01). This is an **owner risk acceptance, not legal clearance**. The other gates in §B0 still apply: ADR-003 signature, live billing, spend, outreach approval, and the 18+/safety gates. Execution authorization remains separate.  
 **Plan date:** 21 October 2026 (v1.2: 20 October 2026)  
 **Canonical repository:** `besfeng23/humbble`, branch `main`  
 **Starting reference:** `e5bff440a7f0f2f7a11a89f8b01b2985b6990c59` (v1.2 audit baseline); v1.3 drafted against `main` @ `cd90aab2e19567d5c960f86eb1a4c0b5294cf9aa`  
-**Primary launch market:** Philippines only for the v1.2 pilot and any launch until GATE-LEGAL-02 + ADR-003 acceptance; Owner-selected target for the affiliate goal: international men in US/CA/AU/UK (GATE-OWN-MKT-01, Option 2)  
+**Primary launch market:** Philippines only for the v1.2 pilot and any launch until Mark signs ADR-003; Owner-selected target for the affiliate goal: international men in US/CA/AU/UK (GATE-OWN-MKT-01, Option 2)  
 **Payment mode:** PayPal Sandbox only (unchanged; binding)  
 **Provisional operating ceiling:** ₱10,000/month; not authorization to spend (unchanged; does **not** cover affiliate commissions or media spend)  
 **Delivery estimate:** 18.5 weeks is an initial planning estimate, not a deadline or guarantee (v1.2 §A6 revision: calendar ≈ week 22–24). §V1.3 work is additive and is not on the current critical path.
 
 ---
 
-> **v1.3 status:** v1.2 plus a first-class **Affiliate Growth & Performance Marketing** goal (§V1.3 B0–B15), drafted by Grok Bot on 2026-10-21 at Mark Johnson's direction. **Docs-only; no implementation, no spend, no network application, no outreach sent.** Research-dependent facts (network terms, commission benchmarks, legal citations) are marked **`PENDING-DEEP-RESEARCH`**; any preliminary web check is labelled *preliminary* and is not a verified fact. **Precedence:** `owner-decisions.md` > ADR-002 / §V1.2 binding amendments > §V1.3 > the body of this plan. §V1.3 may add scope, but **nothing in §V1.3 weakens** a v1.2 amendment, an ADR-002 guardrail or an owner decision. The one exception is the Owner's own later decision GATE-OWN-MKT-01 (Option 2, 2026-10-21), which supersedes the PH-only/neutral-positioning parts **for the affiliate goal only**, through ADR-003 once Accepted (§B0). Until then, ADR-002 continues to govern code and copy. All v1.2 section numbers (§0–§11, A1–A6, PR IDs, gate IDs) are preserved verbatim below so existing references in `docs/` and `legal/` stay valid.
+> **v1.3 status:** v1.2 plus a first-class **Affiliate Growth & Performance Marketing** goal (§V1.3 B0–B15), drafted by Grok Bot on 2026-10-21 at Mark Johnson's direction. **Docs-only; no implementation, no spend, no network application, no outreach sent.** Research-dependent facts (network terms, commission benchmarks, legal citations) are marked **`PENDING-DEEP-RESEARCH`**; any preliminary web check is labelled *preliminary* and is not a verified fact. **Precedence:** `owner-decisions.md` > ADR-002 / §V1.2 binding amendments > §V1.3 > the body of this plan. §V1.3 may add scope, but **nothing in §V1.3 weakens** a v1.2 amendment, an ADR-002 guardrail or an owner decision. The exceptions are the Owner's own later decisions: GATE-OWN-MKT-01 (Option 2, 2026-10-21 02:18 PHT), and the waiver of lawyer review (2026-10-21 02:42 PHT; owner risk acceptance, §B0/§B13). GATE-OWN-MKT-01 supersedes the PH-only/neutral-positioning parts **for the affiliate goal only**, through ADR-003 once Accepted (§B0). Until then, ADR-002 continues to govern code and copy. All v1.2 section numbers (§0–§11, A1–A6, PR IDs, gate IDs) are preserved verbatim below so existing references in `docs/` and `legal/` stay valid.
 
 ## V1.3 Amendments — Affiliate Growth & Performance Marketing
 
@@ -19,56 +19,61 @@ Labels used throughout §V1.3:
 - **[VERIFIED]** fact checked against the repo or a cited primary/official source.
 - **[OWNER]** binding owner decision (`owner-decisions.md`, ADR-002, Mark's chat instructions recorded in `progress.md`).
 - **[ESTIMATE]** / **[HYPOTHETICAL]** planning number or assumption; not a measured result or a quote.
-- **[PRELIMINARY]** light web check only; must be confirmed by the Deep Research pass and, for legal items, by counsel.
+- **[PRELIMINARY]** light web check only; must be confirmed by the Deep Research pass. Counsel review is optional since the 2026-10-21 02:42 PHT owner waiver.
 - **[PENDING-DEEP-RESEARCH]** placeholder to be filled from the owner-commissioned research report.
 - **[UNRESOLVED]** assumption or dependency nobody has confirmed.
 
-### B0. GATE-OWN-MKT-01 — RESOLVED by Owner decision (Option 2); legal gate still blocks execution
+### B0. Owner decisions on market and legal review: GATE-OWN-MKT-01 resolved (Option 2); lawyer review waived by Owner
 
-**Owner decision [OWNER]:** On **21 October 2026, 02:18 PHT**, Mark Johnson answered GATE-OWN-MKT-01 with **"International men" — Option 2**. For the affiliate-growth goal the target paying audience is **international men seeking Filipina singles**, in the markets **US, CA, AU and UK**.
+**Owner decision 1 [OWNER]:** on **21 October 2026, 02:18 PHT**, Mark Johnson answered GATE-OWN-MKT-01 with **"International men" (Option 2)**. For the affiliate-growth goal the target paying audience is **international men seeking Filipina singles**, in the markets **US, CA, AU and UK**.
 
-**What the decision supersedes, and how far.** For the affiliate goal (G-AFF-01), it supersedes:
-- the "Philippines only; US/CA/AU/UK deferred" part of `owner-decisions.md` §2 and ADR-002 §2.1;
-- the neutral-positioning parts of ADR-002 §2.2 that forbid nationality-pairing positioning;
-- the "non-PH markets disabled at launch" part of §A5.
+**Owner decision 2 [OWNER]:** on **21 October 2026, 02:42 PHT**, Mark Johnson **removed the independent-lawyer-review requirement** for Humbble. Recorded effects:
+- **GATE-LEGAL-02** is **WAIVED BY OWNER**.
+- The `owner-decisions.md` §2 rule "no public or paid launch until required legal review … complete", and the lawyer-opinion part of **GATE-LEGAL-01** (v1.2 §8), are **WAIVED BY OWNER**.
+- These are **owner risk acceptances, not legal clearance**. Nothing in this repo may describe Humbble as legally reviewed, legally cleared or compliant on the strength of this waiver.
+- Engaging counsel later stays available and is recommended. The GATE-LEGAL-02 question set (§B2) is kept as an **optional** packet.
+- The non-lawyer parts of GATE-LEGAL-01 still apply, with the Owner as approver: published terms, privacy notice, community standards and user disclosures must exist and be approved by the Owner before real users.
 
-The superseding takes effect through **ADR-003** (`docs/adr/ADR-003-international-audience-affiliate-growth.md`). ADR-003 is **Proposed**: it is a draft, and it has no effect on code, copy or configuration until it is Accepted.
+**What decision 1 supersedes (affiliate goal only), effective once Mark signs ADR-003:**
+- `owner-decisions.md` §2 "Philippines only; US/CA/AU/UK deferred";
+- ADR-002 §2.1, and the nationality-pairing positioning restrictions in ADR-002 §2.2;
+- §A5 "non-PH markets disabled at launch".
 
-**Not superseded (still binding):**
-- 18+ gate and verification (A1, A2); no raw selfie retention; free mutual messaging (Invariant 4).
-- Free block/report/unmatch; no fake profiles or deceptive claims (§B7).
-- PayPal Sandbox only (DEP-BILL-01); the ₱10,000/month planning-only ceiling.
-- Roles only; RED-APPLE proposed and unverified; "no public or paid launch before lawyer review and safety gates" (`owner-decisions.md` §2).
-- The Phase 6 Philippines pilot plan.
-- Marriage-broker, mail-order-spouse and bride-catalogue language **remains prohibited** in every case.
+**Owner-accepted legal risks and the mitigations now made binding** (detail in §B13):
+1. No bride, mail-order, marriage-broker, spouse-catalogue or similar language anywhere: product, landers, affiliate creatives, ads.
+2. Identical pricing and identical features regardless of gender or citizenship. This **conflicts with the current market pricing** (US$29.99 vs ₱599, §A5) and is open owner decision **OWN-PRICE-01** below.
+3. 18+ gate and all v1.2 safety gates (GATE-AUTH-01, GATE-SAFE-01, GATE-PRIV-01, GATE-SEC-01 and the rest of the twelve, except the waived lawyer-opinion component).
+4. No fake, seeded, staff-operated or AI-persona profiles, and no deceptive claims (§B7).
+
+**Still binding [OWNER]:**
+- vendor-independent verification; no raw selfie retention; DOB hidden; free mutual messaging; free block/report/unmatch;
+- PayPal Sandbox only until Mark approves live billing (DEP-BILL-01);
+- ₱10,000/month planning-only ceiling; separate spend approval for anything chargeable, including commissions and media;
+- every network application and outreach message approved by Mark before it is sent;
+- roles only; RED-APPLE proposed and unverified; the staged Phase 6 pilot.
 
 | Gate | Status | Blocks |
 |---|---|---|
-| **GATE-OWN-MKT-01** — market/audience choice | **RESOLVED** 2026-10-21 02:18 PHT, Option 2 [OWNER] | — |
-| **ADR-003** acceptance (replaces affected parts of ADR-002) | **PROPOSED** — needs the GATE-LEGAL-02 opinion, then Owner sign-off | Any change to app copy, market config, discovery ranking or marketing materials |
-| **GATE-LEGAL-02** — written opinion from the Mark-appointed independent Philippine lawyer: RA 10906, RA 11862 and RA 10173 (privacy/cross-border); US IMBRA (8 U.S.C. § 1375a) and other target-market advice as the lawyer directs | **OPEN — HARD BLOCKER**; lawyer not appointed | **Any international launch, enabling a non-PH market, paid traffic or media spend, network application, affiliate or partner outreach, commission payment, and publication of internationally targeted copy** |
-| **GATE-LEGAL-01** (v1.2) | OPEN | Any real-user pilot or public/paid launch |
-| **DEP-BILL-01** — live billing authorization | OPEN — Sandbox only | Any real qualified conversion or commission |
-| Commission/media budget (separate from the ₱10,000 infra ceiling) | **UNRESOLVED** | Phase D |
+| **GATE-OWN-MKT-01** (market/audience) | **RESOLVED** 2026-10-21 02:18 PHT, Option 2 [OWNER] | — |
+| **GATE-LEGAL-02** (independent lawyer opinion) | **WAIVED BY OWNER** 2026-10-21 02:42 PHT. Owner risk acceptance, not legal clearance | — (optional) |
+| **GATE-LEGAL-01** (v1.2), lawyer-opinion part | **WAIVED BY OWNER** 2026-10-21 02:42 PHT | — |
+| **GATE-LEGAL-01** (v1.2), approved ToS/privacy/community standards/disclosures | OPEN; approver is now the Owner | Real users |
+| **ADR-003** acceptance | **PROPOSED**; needs only Mark's signature | Any change to app copy, market config, discovery ranking, marketing materials; any non-PH market |
+| **OWN-PRICE-01** (equalize pricing vs accept IMBRA-exemption risk) | **OPEN owner decision** | Enabling any non-PH market or international paid traffic |
+| **DEP-BILL-01** (live billing) | OPEN; Sandbox only | Any real paid conversion or commission |
+| **Spend approval** (commissions, media, paid tools; separate from the ₱10,000 infra ceiling) | OPEN | Phase D, paid tools |
+| **Outreach approval** (each application or message, by Mark) | Per item | Phase B sends |
+| v1.2 safety/security/privacy/ops gates | OPEN | Real users |
 
-**Allowed now:**
-- research and documents;
-- the ADR-003 draft and the lawyer question packet;
-- design specs and synthetic-data designs for the affiliate program.
-
-**Not allowed until GATE-LEGAL-02 passes** (and the other listed gates where relevant):
-- anything in the "Blocks" column of GATE-LEGAL-02;
-- changing ADR-002 enforcement in code or copy.
-
-**Known legal tension the lawyer must resolve [PRELIMINARY]:**
-- IMBRA's dating-site exemption needs two conditions: (a) the principal business is *not* international dating between US persons and foreign nationals; (b) rates and services are comparable regardless of gender or citizenship. Option 2 as stated likely fails (a). Market-specific prices (US$29.99 vs ₱599) may fail (b).
-- If the exemption does not apply, IMBRA broker duties apply: background-information collection and sex-offender registry search for US clients, disclosures, and consent before sharing contact details.
-- RA 10906 §3 prohibits profit-making matching of Filipinos with foreign nationals for marriage, advertising it, and soliciting Filipinos into such schemes. It carves out legitimate dating websites "connecting individuals with shared interests".
-- Option 2 positioning must be tested against both IMBRA and RA 10906 before any copy goes live. **[PENDING-DEEP-RESEARCH]** for citations and other markets.
+**OWN-PRICE-01 (open; Mark to decide):**
+- Background: IMBRA's dating-site exemption (8 U.S.C. § 1375a(e)(4)(B)(ii)) needs comparable rates and services regardless of gender or country of citizenship, and a principal business that is not US-to-foreign international dating. Option 2 likely already strains the second condition. [PRELIMINARY]
+- (a) **Equalize pricing:** one price for everyone, in every market. This supports the comparability prong. It changes §A5 and needs a pricing decision.
+- (b) **Keep US$29.99 / ₱599 market pricing** and accept the additional IMBRA-exemption risk.
+- Until Mark decides, non-PH markets stay disabled.
 
 ### B1. Strategic goal (new, first-class)
 
-**G-AFF-01 — Affiliate Growth & Performance Marketing.** Build a scalable, legally reviewed, tracked partner-acquisition channel (affiliates, publishers, creators and dating-traffic partners on tracked links, paid only on qualifying conversions) that produces **legitimate, verified, engaged, paying and retained members** — not raw registrations — on a platform whose supply side is genuine, verified, consenting adult Filipina members. Owner-selected audience (GATE-OWN-MKT-01, Option 2): international men in US/CA/AU/UK seeking genuine Filipina singles. Execution is blocked by GATE-LEGAL-02, and public copy stays within ADR-002 until ADR-003 is Accepted.
+**G-AFF-01 — Affiliate Growth & Performance Marketing.** Build a scalable, tracked partner-acquisition channel (legal review waived by the Owner; binding mitigations in §B0) (affiliates, publishers, creators and dating-traffic partners on tracked links, paid only on qualifying conversions) that produces **legitimate, verified, engaged, paying and retained members** — not raw registrations — on a platform whose supply side is genuine, verified, consenting adult Filipina members. Owner-selected audience (GATE-OWN-MKT-01, Option 2): international men in US/CA/AU/UK seeking genuine Filipina singles. Lawyer review was waived by the Owner (risk acceptance, §B0). Execution needs Mark's ADR-003 signature, OWN-PRICE-01, live-billing, spend and outreach approvals. Public copy stays within ADR-002 until ADR-003 is signed.
 
 **Measurable success criteria** (targets are [HYPOTHETICAL] until baseline data exists; none is a current performance claim; measured only after live billing is approved):
 
@@ -81,17 +86,17 @@ The superseding takes effect through **ADR-003** (`docs/adr/ADR-003-internationa
 | SC-AFF-05 | Integrity | Refund + chargeback rate and suspected-fraud rate below thresholds set in Phase D; **100%** of commission records reconcile to verified `payment_events` | Per affiliate per month |
 | SC-AFF-06 | Trust & safety | Report rate, verified-profile share and scam/impersonation findings for affiliate cohorts no worse than organic; zero confirmed fake/staff-operated profiles (absolute) | Per cohort |
 | SC-AFF-07 | Supply readiness before traffic | Paid traffic is not scaled until the active, complete, verified supply threshold (§B7) is met | Weekly |
-| SC-AFF-08 | Compliance | 100% of creatives/landers pre-approved; 0 unresolved prohibited-practice violations; GATE-LEGAL-02 passed before Phase D | All live partners |
+| SC-AFF-08 | Compliance | 100% of creatives/landers pre-approved by the Owner-appointed reviewer role; 0 unresolved prohibited-practice violations; 0 uses of bride/mail-order/marriage-broker language; pricing/features identical across gender and citizenship (or OWN-PRICE-01 risk explicitly accepted) before Phase D | All live partners |
 
-### B2. Markets and legal risk (target markets selected by the Owner; execution blocked by GATE-LEGAL-02)
+### B2. Markets and legal risk (target markets selected by the Owner; lawyer review waived by the Owner; risks remain)
 
-- Target markets: US, CA, AU, UK [OWNER: GATE-OWN-MKT-01 Option 2, 2026-10-21]. Before any launch, each market needs this research and the legal advice the lawyer directs. Evaluation deliverable per market: consumer-subscription/auto-renewal rules, dating-specific rules, privacy/cross-border transfer, online-safety duties, advertising/affiliate disclosure rules, tax and payment-provider terms. **[PENDING-DEEP-RESEARCH]**
+- Target markets: US, CA, AU, UK [OWNER: GATE-OWN-MKT-01 Option 2, 2026-10-21]. Before any launch, each market needs this research (Deep Research). Legal advice is optional after the owner waiver. Evaluation deliverable per market: consumer-subscription/auto-renewal rules, dating-specific rules, privacy/cross-border transfer, online-safety duties, advertising/affiliate disclosure rules, tax and payment-provider terms. **[PENDING-DEEP-RESEARCH]**
 - **Philippine RA 10906 (Anti-Mail Order Spouse Act, 2016):** ADR-002 already summarises §3 prohibitions on matching Filipinos with foreign nationals for marriage/common-law partnership for profit, on advertising such schemes, and on soliciting Filipinos into such clubs, and the carve-out for "legitimate dating websites, which have for their purpose connecting individuals with shared interests". [PRELIMINARY — as summarised in repo ADR-002; primary text and the 2022 IRR to be cited by Deep Research and interpreted by counsel.] **Risk:** marketing "men worldwide ↔ Filipina singles" with affiliates paid to recruit foreign men is the exact pattern counsel must assess against §3(b)/(c) and the carve-out.
 - **RA 11862 (Expanded Anti-Trafficking in Persons Act, 2022):** intermediary duties already flagged in ADR-002 (ToS prohibition, takedown/reporting). [PRELIMINARY; PENDING-DEEP-RESEARCH]
 - **RA 10173 (Data Privacy Act) + NPC rules:** affiliate attribution data, cross-border transfer to networks, and postback payloads. [PENDING-DEEP-RESEARCH]
 - **US IMBRA (8 U.S.C. § 1375a):** an "international marriage broker" is a fee-charging entity providing dating/matchmaking/social referrals between US citizens/residents and foreign nationals; IMBRA brokers must, among other things, not market minors, collect US-client background certifications, search the sex-offender registry and give disclosures before sharing foreign clients' contact information. The exemption in § 1375a(e)(4)(B)(ii) covers a dating service whose **principal business is not international dating between US persons and foreign nationals** *and* which **charges comparable rates and offers comparable services regardless of gender or country of citizenship**. [PRELIMINARY — text read at uscode.house.gov and law.cornell.edu (8 U.S.C. § 1375a(e)(4)); counsel to confirm.] **Risk:** a product whose stated paying audience is foreign men seeking Filipinas, with market-specific prices (US$29.99 vs ₱599), may fall outside the exemption on both prongs. This must go to counsel before Option 2.
 - Other jurisdictions (CA/AU/UK equivalents, UK Online Safety Act, AU eSafety, FTC endorsement/affiliate disclosure, ROSCA/state auto-renewal laws): **[PENDING-DEEP-RESEARCH]**.
-- **Questions for the Mark-appointed independent Philippine lawyer (GATE-LEGAL-02 packet, to be added to `docs/legal/review-packet.md` in a later PR):** (1) Does a paid affiliate program recruiting foreign users to a PH-based dating service fall under RA 10906 §3? (2) What copy/positioning keeps it within the "legitimate dating website" carve-out? (3) Liability for affiliate-created ads and the required controls. (4) Can Humbble pay commissions to foreign affiliates, and what tax/withholding/registration applies to the (still unverified) operator? (5) DPA treatment of click IDs, sub-IDs and postbacks shared with networks; cross-border transfer basis. (6) Whether market-specific pricing is compatible with IMBRA comparability and PH consumer law. (7) Required affiliate T&Cs, disclosures and audit rights. (8) Whether Humbble under Option 2 is an "international marriage broker" under IMBRA, and if so, which compliance duties apply, and whether ADR-003 positioning keeps it outside RA 10906 §3. (9) Which ADR-002 guardrails must remain for legality.
+- **Optional question set, for use if the Owner later engages an independent Philippine lawyer** (GATE-LEGAL-02 is waived; the packet is not required): (1) Does a paid affiliate program recruiting foreign users to a PH-based dating service fall under RA 10906 §3? (2) What copy/positioning keeps it within the "legitimate dating website" carve-out? (3) Liability for affiliate-created ads and the required controls. (4) Can Humbble pay commissions to foreign affiliates, and what tax/withholding/registration applies to the (still unverified) operator? (5) DPA treatment of click IDs, sub-IDs and postbacks shared with networks; cross-border transfer basis. (6) Whether market-specific pricing is compatible with IMBRA comparability and PH consumer law. (7) Required affiliate T&Cs, disclosures and audit rights. (8) Whether Humbble under Option 2 is an "international marriage broker" under IMBRA, and if so, which compliance duties apply, and whether ADR-003 positioning keeps it outside RA 10906 §3. (9) Which ADR-002 guardrails must remain for legality.
 
 ### B3. Network prospects and program model
 
@@ -125,7 +130,7 @@ Final rates are **not set**: they depend on verified pricing per market, PayPal 
 
 - **Models to compare:** (a) **CPA on a verified paying subscriber** (preferred default); (b) **recurring revshare** on net collected revenue for N months; (c) **hybrid** (smaller CPA + capped revshare). Registration-only (CPL/SOI/DOI) payouts are **excluded**.
 - **Qualifying conversion (proposal):** attributed user who (1) is 18+ with server-side verification `verified`, (2) completed the profile threshold, (3) has a **verified, reconciled first settlement** (`PAYMENT.SALE.COMPLETED` matched to catalogue plan/currency/amount per §A5), (4) passed the refund/chargeback **hold period**, (5) is not flagged by fraud rules or suspended, (6) was not previously a member (dedupe on account and payment instrument fingerprint where lawful).
-- **Attribution:** last eligible click within a **30-day click window** [ESTIMATE]; view-through not credited; conflicts resolved by deterministic first-party record; Owner/counsel may change window.
+- **Attribution:** last eligible click within a **30-day click window** [ESTIMATE]; view-through not credited; conflicts resolved by deterministic first-party record; the Owner may change the window.
 - **Hold & payout:** commission `pending` until hold elapses (proposal: **≥ 30 days** after settlement, or longer if refund/chargeback windows require [PENDING-DEEP-RESEARCH on PayPal dispute windows]); monthly payout batch, net-30 [ESTIMATE]; minimum payout threshold [ESTIMATE, e.g. US$50 equivalent, to be set].
 - **Clawback:** refund, chargeback, fraud finding or ToS breach within the clawback window reverses the commission (negative ledger entry; offsets future payouts).
 - **Approval rules:** partner application → KYC/business verification → traffic-source review → creative pre-approval → probation with cap → full approval. Owner-assigned affiliate-manager role approves; agents never approve partners or payouts.
@@ -195,26 +200,38 @@ All are unavailable because no real users, no live billing and no attribution ex
 
 | Phase | Dependencies | Deliverables | Acceptance criteria | Key risks | Evidence to complete |
 |---|---|---|---|---|---|
-| **A — Commercial readiness** | v1.3 merged; Deep Research report; GATE-OWN-MKT-01 (resolved) | Market/legal question packet (GATE-LEGAL-02); ADR-003 finalised; verified fee/pricing sheet; unit-economics model; affiliate T&Cs & prohibited-practice policy drafts | GATE-LEGAL-02 written opinion received; ADR-003 Accepted or amended per opinion; all [PENDING-DEEP-RESEARCH] items filled with citations | Legal finding blocks model; economics negative | Signed Owner decision; counsel opinion; cited research |
-| **B — Network outreach (planned, not executed)** | Phase A incl. **GATE-LEGAL-02 passed**; operator entity verified (DEP-LEGAL-02) | Network shortlist & scorecard; advertiser application packs; outreach templates for Owner approval | Owner approves each application/message before it is sent by the Owner or on explicit instruction; mainstream-only terms confirmed | Brand safety; networks require live tracking/billing first | Approved shortlist; sent-log (only after approval) |
+| **A — Commercial readiness** | v1.3 merged; Deep Research report; GATE-OWN-MKT-01 (resolved) | ADR-003 finalised; OWN-PRICE-01 decision memo; verified fee/pricing sheet; unit-economics model; affiliate T&Cs & prohibited-practice policy drafts; optional legal question packet | Mark signs ADR-003 and decides OWN-PRICE-01; all [PENDING-DEEP-RESEARCH] items filled with citations | Owner-accepted legal risk materialises; economics negative | Signed ADR-003; OWN-PRICE-01 record; cited research |
+| **B — Network outreach (planned, not executed)** | Phase A (ADR-003 signed); operator entity verified by the Owner (DEP-LEGAL-02) | Network shortlist & scorecard; advertiser application packs; outreach templates for Owner approval | Owner approves each application/message before it is sent by the Owner or on explicit instruction; mainstream-only terms confirmed | Brand safety; networks require live tracking/billing first | Approved shortlist; sent-log (only after approval) |
 | **C — MVP affiliate program** | v1.2 P2-03/P2-04, P4 (Sandbox), P5-01/P5-03; ADR for affiliate migration | Tracking schema/RPCs, redirect, postbacks, ledger, admin views, partner landers — **synthetic data only** | pgTAP/RLS tests; S2S postback contract tests; reconciliation and clawback tests pass on synthetic Sandbox events | Scope creep into critical path | Merged PRs with CI evidence |
-| **D — Controlled pilot** | v1.2 Phase 6 PH gates; GATE-LEGAL-02; DEP-BILL-01 live billing; supply threshold (§B7); commission budget approved | 2–5 vetted partners, capped spend, weekly review | Commissions only on qualified conversions; reconciliation 100%; T&S metrics no worse than organic | Fraud; harm to supply-side members | Weekly pilot reports; audit of ledger |
+| **D — Controlled pilot** | v1.2 Phase 6 gates (lawyer-opinion part waived); OWN-PRICE-01 decided; DEP-BILL-01 live billing; supply threshold (§B7); commission/media spend approved by Mark | 2–5 vetted partners, capped spend, weekly review | Commissions only on qualified conversions; reconciliation 100%; T&S metrics no worse than organic | Fraud; harm to supply-side members | Weekly pilot reports; audit of ledger |
 | **E — Optimize & scale** | Phase D meets SC-AFF-01..08 | Experiment program, additional partners/networks, market expansion per Owner approval | SC-AFF targets sustained 2 consecutive cohorts | Over-scaling ahead of supply | Cohort reports; Owner scale approval |
 
 ### B11. Epics and tasks (separated; IDs for future PRs)
 
-- **EP-BD — BD & network outreach** (deps: Phase A, DEP-LEGAL-02). BD-1 network research scorecard; BD-2 direct-partner criteria & recruitment plan; BD-3 contract/T&Cs with counsel; BD-4 outreach templates (draft only). *Accept:* shortlist approved by Owner; nothing sent without approval.
+- **EP-BD — BD & network outreach** (deps: Phase A, DEP-LEGAL-02). BD-1 network research scorecard; BD-2 direct-partner criteria & recruitment plan; BD-3 affiliate contract/T&Cs (Owner-approved; counsel optional); BD-4 outreach templates (draft only). *Accept:* shortlist approved by Owner; nothing sent without approval.
 - **EP-CONV — Product & conversion** (deps: P1-01 screens, P3, P4). CONV-1 campaign-lander spec (SCR-01 variants, proposed SCR-25); CONV-2 funnel event taxonomy; CONV-3 experiment framework with guardrails; CONV-4 trust-signal & cancellation-clarity review. *Accept:* specs map to SCR IDs and P5-03 allowlist; no deceptive patterns.
 - **EP-TRK — Tracking & backend** (deps: 0003/0004 merged, ADR). TRK-1 ADR + schema; TRK-2 redirect & first-party attribution; TRK-3 qualification job off verified `payment_events`; TRK-4 S2S postbacks; TRK-5 ledger/payout/clawback. *Accept:* synthetic tests incl. replay, dedupe, refund, chargeback; no client writes.
 - **EP-FIN — Analytics & financial reporting** (deps: TRK, P5-03). FIN-1 KPI definitions (§B9) as SQL views; FIN-2 cohort LTV/CAC model; FIN-3 payout statements. *Accept:* every KPI has formula, source and test fixture; Sandbox data labelled.
-- **EP-RISK — Fraud, privacy & compliance** (deps: GATE-LEGAL-02, P5). RISK-1 fraud rules & auto-pause; RISK-2 DPA data map for attribution/postbacks; RISK-3 creative pre-approval & monitoring workflow; RISK-4 IMBRA/RA 10906 control checklist from counsel. *Accept:* counsel sign-off; privacy review.
-- **EP-MKT — Marketing materials & publisher enablement** (deps: ADR-002 copy rules, counsel). MKT-1 brand & copy guidelines for partners; MKT-2 approved creative library; MKT-3 partner FAQ & disclosure templates. *Accept:* every asset passes copy rules and counsel review.
+- **EP-RISK — Fraud, privacy & compliance** (deps: ADR-003 signed, P5). RISK-1 fraud rules & auto-pause; RISK-2 DPA data map for attribution/postbacks; RISK-3 creative pre-approval & monitoring workflow; RISK-4 binding-mitigation checklist (§B0 items 1–4) enforced on every lander/creative. *Accept:* Owner sign-off; Privacy Lead review; lawyer review optional.
+- **EP-MKT — Marketing materials & publisher enablement** (deps: ADR-002 copy rules until ADR-003 is signed, then ADR-003 copy rules). MKT-1 brand & copy guidelines for partners; MKT-2 approved creative library; MKT-3 partner FAQ & disclosure templates. *Accept:* every asset passes copy rules and the binding mitigations, and is approved by the Owner-appointed reviewer role.
 
 ### B12. Roles added (roles only; no people invented)
 Affiliate Program Manager; Partner Compliance Reviewer; Finance/Payout Approver (segregated from the Program Manager); Fraud Analyst (may be combined with Trust & Safety only if segregation holds). All appointed by the Owner. The AI coding agent may draft and test, never approve partners, creatives, commissions or payouts.
 
 ### B13. Risks and blockers added to §10
-- **Critical:** RA 10906 / IMBRA exposure of the Owner-selected international positioning (§B0, §B2); ADR-003 is Proposed and needs the lawyer's opinion first.
+- **Critical — OWNER-ACCEPTED RISK (2026-10-21 02:42 PHT; not legally cleared):**
+  - RA 10906 §3 (profit-making matching of Filipinos with foreign nationals for marriage, advertising it, soliciting Filipinos into it). ADR-002 summarises the penalties as 15–20 years' imprisonment and ₱500,000–₱5,000,000 fines, with personal liability for officers. [PRELIMINARY]
+  - IMBRA, 8 U.S.C. § 1375a: if Humbble falls outside the dating-site exemption, broker duties apply (US-client background certification, sex-offender registry search, disclosures, consent before sharing contact details).
+  - RA 11862 intermediary duties; RA 10173 privacy and cross-border transfers; other target-market consumer and online-safety rules.
+  - Independent legal review was **waived by the Owner**.
+  - **Binding mitigations:**
+    - (1) no bride/mail-order/marriage-broker language;
+    - (2) identical pricing and features regardless of gender or citizenship, subject to OWN-PRICE-01;
+    - (3) 18+ and all safety gates;
+    - (4) no fake profiles or deceptive claims;
+    - plus shared-interest discovery and ToS prohibiting trafficking/exploitation with a takedown path (ADR-002 / RA 11862 controls retained).
+  - Residual risk is the Owner's. Engaging counsel later is recommended, not required.
+- **High — OPEN owner decision OWN-PRICE-01:** current US$29.99 / ₱599 market pricing conflicts with mitigation (2). Equalize pricing, or accept the IMBRA-exemption risk.
 - **Critical:** no live billing → no real qualified conversion can exist; affiliate pilot is blocked behind DEP-BILL-01.
 - **High:** operator legal identity unverified (RED-APPLE proposed only; Banatao Systems is a brand) — networks and payouts need a contracting entity.
 - **High:** commission and media spend have no budget; ₱10,000/month ceiling is infra-only and planning-only.
@@ -225,29 +242,31 @@ Affiliate Program Manager; Partner Compliance Reviewer; Finance/Payout Approver 
 ### B14. Evidence classification for §V1.3
 - **[VERIFIED]**
   - Repo state at `cd90aab` (§B8).
-  - IMBRA definition and exemption text at 8 U.S.C. § 1375a(e)(4) (uscode.house.gov; law.cornell.edu). How it applies to Humbble is unverified.
+  - IMBRA definition and exemption text at 8 U.S.C. § 1375a(e)(4) (uscode.house.gov; law.cornell.edu). How it applies to Humbble is unverified, and no lawyer will verify it (waived).
 - **[OWNER]**
-  - **GATE-OWN-MKT-01 resolved, Option 2:** international men seeking Filipina singles; markets US/CA/AU/UK (2026-10-21 02:18 PHT). It supersedes the PH-only/neutral parts of the affiliate goal, effective via ADR-003 once Accepted.
-  - Still binding: PH-only pilot/launch until GATE-LEGAL-02 + ADR-003 Accepted; no public/paid launch before lawyer review and safety gates; Sandbox only; ₱599 / US$29.99 market prices; ₱10,000/mo planning ceiling; roles-only staffing; RED-APPLE proposed/unverified; vendor-independent verification with no raw selfie retention; no spend, applications or outreach.
+  - GATE-OWN-MKT-01 resolved, Option 2 (international men seeking Filipina singles; US/CA/AU/UK; 2026-10-21 02:18 PHT).
+  - **Independent lawyer review waived** (GATE-LEGAL-02 and the lawyer-opinion part of GATE-LEGAL-01; 2026-10-21 02:42 PHT). Owner risk acceptance, not legal clearance.
+  - Binding mitigations §B0 items 1–4; ADR-003 acceptance by Mark's signature alone.
+  - Still binding: Sandbox only until Mark approves live billing; spend approval; outreach approval by Mark; 18+/safety gates; ₱599 / US$29.99 market prices pending OWN-PRICE-01; ₱10,000/mo planning-only ceiling; roles only; RED-APPLE proposed/unverified; vendor-independent verification with no raw selfie retention; no spend, applications or outreach so far.
 - **[PRELIMINARY]**
   - Network public-page observations (rebll.com/advertisers, mastersincash.com, affmy.com, advidi.com, third-party directories).
   - RA 10906 / RA 11862 summaries carried from ADR-002.
-  - The IMBRA tension analysis in §B0.
+  - The IMBRA exemption analysis in §B0.
 - **[HYPOTHETICAL/ESTIMATE]** §B5 scenarios, attribution window, hold period, payout threshold, network-vs-direct recommendation.
 - **[UNRESOLVED]**
-  - GATE-LEGAL-02 opinion (lawyer not appointed); ADR-003 acceptance; whether Option 2 needs IMBRA broker compliance.
+  - OWN-PRICE-01; ADR-003 signature; whether Option 2 makes Humbble an IMBRA broker (legal question, now unreviewed).
   - Supply threshold, commission rates, commission/media budget, operator entity.
   - Whether networks will accept a mainstream non-adult offer.
 
 ### B15. First actionable tasks (priority order; no spend, no outreach)
-1. ~~Owner resolves GATE-OWN-MKT-01~~ — **done**: Option 2, 2026-10-21 02:18 PHT.
-2. Owner appoints the independent Philippine lawyer; send the GATE-LEGAL-02 packet (§B2 questions 1–9 plus ADR-003). This is the critical-path blocker.
-3. Fill all `[PENDING-DEEP-RESEARCH]` items from the owner-commissioned research report, with citations. Prioritise IMBRA, RA 10906 and the target-market consumer/privacy rules.
-4. Add the GATE-LEGAL-02 question set and ADR-003 to `docs/legal/review-packet.md` (separate docs PR).
-5. Unblock the schema critical path: fix PR #12 (0002) CI, then P2-03 (0003 `payment_events`/audit), the prerequisites for TRK.
-6. Draft affiliate T&Cs, the prohibited-practice policy and creative guidelines for the lawyer (EP-BD/EP-MKT).
-7. Write the affiliate attribution ADR and event taxonomy (EP-TRK/EP-CONV), design only.
-8. Build the verified cost/fee sheet and finalise §B5 with real fee data; request a separate commission budget decision.
+1. ~~Owner resolves GATE-OWN-MKT-01~~ — **done**: Option 2, 2026-10-21 02:18 PHT. ~~Lawyer review~~ — **waived by Owner** 2026-10-21 02:42 PHT (risk acceptance).
+2. Mark decides **OWN-PRICE-01** (equalize pricing vs accept IMBRA-exemption risk) and signs **ADR-003**. This is now the critical-path owner action.
+3. Fill all `[PENDING-DEEP-RESEARCH]` items from the owner-commissioned research report, with citations. Prioritise IMBRA, RA 10906 and the target-market consumer/privacy rules, since no lawyer will review them.
+4. Unblock the schema critical path: fix PR #12 (0002) CI, then P2-03 (0003 `payment_events`/audit), the prerequisites for TRK.
+5. Draft affiliate T&Cs, the prohibited-practice policy, creative guidelines and the binding-mitigation checklist for Owner approval (EP-BD/EP-MKT/EP-RISK).
+6. Write the affiliate attribution ADR and event taxonomy (EP-TRK/EP-CONV), design only.
+7. Build the verified cost/fee sheet and finalise §B5 with real fee data; request a separate commission/media budget decision.
+8. *Optional:* add the §B2 question set to `docs/legal/review-packet.md`, in case the Owner engages counsel later.
 
 ## V1.3 Changelog
 | Version | Date | Author | Change |
@@ -260,6 +279,7 @@ Affiliate Program Manager; Partner Compliance Reviewer; Finance/Payout Approver 
 | 1.3-draft | 2026-10-21 | Grok Bot | B6–B9 funnel experiments, supply/trust preconditions, tracking/fraud architecture (design only), KPI dashboard spec |
 | 1.3-draft | 2026-10-21 | Grok Bot | B10–B15 phases A–E, epics, roles, risks, evidence classes, first tasks |
 | 1.3-draft | 2026-10-21 | Grok Bot, recording Owner decision | GATE-OWN-MKT-01 RESOLVED (Option 2: international men, US/CA/AU/UK); B0 rewritten; ADR-003 (Proposed) added; GATE-LEGAL-02 is a hard blocker; B1, B2, B10, B13, B14, B15 updated |
+| 1.3-draft | 2026-10-21 | Grok Bot, recording Owner decision | Lawyer review WAIVED BY OWNER (GATE-LEGAL-02 and the lawyer-opinion part of GATE-LEGAL-01): owner risk acceptance, not legal clearance; binding mitigations; OWN-PRICE-01 opened; ADR-003 needs only Mark's signature; header, B0, B1, B2, B4, B10, B11, B13, B14, B15 updated |
 | 1.3-draft | — | Pending | Deep Research fill-in of PENDING-DEEP-RESEARCH items |
 
 ---
