@@ -1,11 +1,10 @@
 -- pgTAP tests for P2-02: discovery state, canonical matches, conversations,
--- messaging authorization, block severance, and concurrent reciprocal likes.
--- The concurrency test uses two independent dblink sessions against the local
--- database. This file owns and removes its reserved synthetic users at the end.
+-- messaging authorization, and block severance.
+-- Actual multi-session reciprocal-like concurrency is tested separately by
+-- supabase/tests/concurrency/reciprocal_likes.sh using independent psql clients.
 CREATE EXTENSION IF NOT EXISTS pgtap;
-CREATE EXTENSION IF NOT EXISTS dblink WITH SCHEMA extensions;
-SET search_path = public, extensions, pg_temp;
-SELECT plan(68);
+SET search_path = public, pg_temp;
+SELECT plan(67);
 
 -- Reserved synthetic identities. Remove leftovers first so reruns after a
 -- failed local test can recover without requiring a database reset.
@@ -24,8 +23,7 @@ VALUES
   ('00000000-0000-0000-0000-000000000013', 'authenticated', 'authenticated', 'p202-user-charlie@example.test', pg_catalog.now(), pg_catalog.now()),
   ('00000000-0000-0000-0000-000000000014', 'authenticated', 'authenticated', 'p202-user-delta@example.test', pg_catalog.now(), pg_catalog.now());
 
--- This fixture is inserted as the trusted migration/test owner, so all four
--- synthetic profiles are eligible for the discovery and reciprocal-like tests.
+-- Fixture users are synthetic and all profiles are eligible for discovery.
 INSERT INTO public.profiles
   (id, display_name, birth_date, verification_status, is_discoverable, is_suspended)
 VALUES
@@ -113,71 +111,14 @@ SELECT ok(
   'clients may create/remove only their own blocks and cannot update block rows'
 );
 
--- True two-session concurrency test. Session A holds the pair lock with an
--- uncommitted A->B like. Session B sends B->A asynchronously and must wait on
--- the same pair lock; when A commits, B sees the committed reverse like and
--- creates the unique match/conversation/participants once.
-CREATE TEMP TABLE p2_02_concurrency_observation (pair_lock_waited BOOLEAN NOT NULL);
-DO $concurrency$
-DECLARE
-  v_attempt INTEGER;
-  v_lock_waited BOOLEAN := FALSE;
-BEGIN
-  -- The Supabase CLI local Postgres stack exposes its CI credentials through
-  -- the standard local default (postgres/postgres). dblink makes a TCP
-  -- connection as a non-superuser, so it must include the password explicitly.
-  -- These are local-only fixture credentials, not project secrets.
-  PERFORM dblink_connect(
-    'p2_02_swipe_a',
-    'host=127.0.0.1 port=5432 dbname=postgres user=postgres password=postgres application_name=p2_02_swipe_a'
-  );
-  PERFORM dblink_connect(
-    'p2_02_swipe_b',
-    'host=127.0.0.1 port=5432 dbname=postgres user=postgres password=postgres application_name=p2_02_swipe_b'
-  );
-  PERFORM dblink_exec('p2_02_swipe_a', 'BEGIN');
-  PERFORM 1
-    FROM dblink(
-      'p2_02_swipe_a',
-      $$INSERT INTO public.swipes (actor_id, target_id, direction)
-        VALUES ('00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000012', 'like')
-        RETURNING id$$
-    ) AS t(id UUID);
+-- A pair creates at most one match/conversation/participant pair. Parallel race
+-- coverage lives in concurrency/reciprocal_likes.sh (not in the pgTAP process).
+INSERT INTO public.swipes (actor_id, target_id, direction)
+VALUES ('00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000012', 'like');
+INSERT INTO public.swipes (actor_id, target_id, direction)
+VALUES ('00000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000011', 'like');
 
-  PERFORM dblink_send_query(
-    'p2_02_swipe_b',
-    $$INSERT INTO public.swipes (actor_id, target_id, direction)
-      VALUES ('00000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000011', 'like')
-      RETURNING id$$
-  );
-
-  FOR v_attempt IN 1..250 LOOP
-    PERFORM pg_catalog.pg_stat_clear_snapshot();
-    SELECT EXISTS (
-      SELECT 1
-        FROM pg_catalog.pg_stat_activity AS a
-       WHERE a.application_name::TEXT COLLATE "C" = 'p2_02_swipe_b'::TEXT COLLATE "C"
-         AND a.wait_event_type::TEXT COLLATE "C" = 'Lock'::TEXT COLLATE "C"
-    )
-      INTO v_lock_waited;
-    EXIT WHEN v_lock_waited;
-    PERFORM pg_catalog.pg_sleep(0.02);
-  END LOOP;
-
-  INSERT INTO pg_temp.p2_02_concurrency_observation (pair_lock_waited)
-  VALUES (v_lock_waited);
-
-  PERFORM dblink_exec('p2_02_swipe_a', 'COMMIT');
-  PERFORM 1 FROM dblink_get_result('p2_02_swipe_b') AS t(id UUID);
-  -- Consume the terminal empty result so the connection is no longer busy.
-  PERFORM 1 FROM dblink_get_result('p2_02_swipe_b') AS t(id UUID);
-  PERFORM dblink_disconnect('p2_02_swipe_a');
-  PERFORM dblink_disconnect('p2_02_swipe_b');
-END;
-$concurrency$;
-
--- A second pair makes the block/messaging policy checks independent of the
--- concurrent pair above. The inserts execute as the trusted test owner.
+-- A second pair makes block/messaging policy checks independent of alpha/bravo.
 INSERT INTO public.swipes (actor_id, target_id, direction)
 VALUES ('00000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000014', 'like');
 INSERT INTO public.swipes (actor_id, target_id, direction)
@@ -203,10 +144,9 @@ SELECT 'charlie-delta'::TEXT COLLATE "C", c.id
    AND m.user_b_id = '00000000-0000-0000-0000-000000000014';
 GRANT SELECT ON p2_02_test_conversations TO authenticated;
 
--- Match/conversation concurrency and canonical pair results (9 assertions, 35-43).
-SELECT ok((SELECT pair_lock_waited FROM pg_temp.p2_02_concurrency_observation), 'concurrent reciprocal swipe waited on the canonical pair lock');
-SELECT is((SELECT count(*)::INTEGER FROM public.matches WHERE user_a_id = '00000000-0000-0000-0000-000000000011' AND user_b_id = '00000000-0000-0000-0000-000000000012'), 1, 'concurrent reciprocal likes create exactly one match');
-SELECT is((SELECT count(*)::INTEGER FROM public.conversations c JOIN public.matches m ON m.id = c.match_id WHERE m.user_a_id = '00000000-0000-0000-0000-000000000011' AND m.user_b_id = '00000000-0000-0000-0000-000000000012'), 1, 'concurrent reciprocal likes create exactly one conversation');
+-- Match/conversation uniqueness and canonical pair results (8 assertions, 35-42).
+SELECT is((SELECT count(*)::INTEGER FROM public.matches WHERE user_a_id = '00000000-0000-0000-0000-000000000011' AND user_b_id = '00000000-0000-0000-0000-000000000012'), 1, 'reciprocal likes create exactly one match');
+SELECT is((SELECT count(*)::INTEGER FROM public.conversations c JOIN public.matches m ON m.id = c.match_id WHERE m.user_a_id = '00000000-0000-0000-0000-000000000011' AND m.user_b_id = '00000000-0000-0000-0000-000000000012'), 1, 'reciprocal likes create exactly one conversation');
 SELECT is((SELECT count(*)::INTEGER FROM public.conversation_participants cp JOIN public.conversations c ON c.id = cp.conversation_id JOIN public.matches m ON m.id = c.match_id WHERE m.user_a_id = '00000000-0000-0000-0000-000000000011' AND m.user_b_id = '00000000-0000-0000-0000-000000000012'), 2, 'a match creates exactly two conversation participants');
 SELECT ok((SELECT user_a_id < user_b_id FROM public.matches WHERE user_a_id = '00000000-0000-0000-0000-000000000011' AND user_b_id = '00000000-0000-0000-0000-000000000012'), 'match user IDs are stored in canonical order');
 SELECT results_eq(
@@ -227,7 +167,7 @@ SELECT throws_ok(
   '23514', 'Self-swipes are not allowed', 'self-swipe is rejected'
 );
 
--- Row-owner privacy and client-supplied actor protection (7 assertions, 44-50).
+-- Row-owner privacy and client-supplied actor protection (7 assertions, 43-49).
 SET ROLE authenticated;
 SET "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000011","role":"authenticated"}';
 SELECT is((SELECT count(*)::INTEGER FROM public.swipes WHERE actor_id = '00000000-0000-0000-0000-000000000011'), 1, 'user A can read own outgoing swipe');
@@ -250,7 +190,7 @@ RESET ROLE;
 RESET "request.jwt.claims";
 
 -- A non-participant cannot send to a real but unrelated conversation; active
--- participants can message, and RLS gives both participants read access (7 assertions, 51-57).
+-- participants can message, and RLS gives both participants read access (7 assertions, 50-56).
 SET ROLE authenticated;
 SET "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000011","role":"authenticated"}';
 SELECT throws_ok(
@@ -323,8 +263,7 @@ SELECT throws_ok(
 RESET ROLE;
 RESET "request.jwt.claims";
 
--- Direct trusted-path guard test: a blocked pair is rejected before the unique
--- swipe constraint is reached. This is separate from the client grant denial.
+-- Direct trusted-path guard test is separate from client grant denial.
 SELECT throws_ok(
   $$INSERT INTO public.swipes (actor_id, target_id, direction) VALUES ('00000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000014', 'like')$$,
   '23514', 'Swipes are prohibited when either user has blocked the other', 'trusted swipe insertion also rejects blocked pairs'

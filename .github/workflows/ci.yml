@@ -54,6 +54,9 @@ jobs:
         with:
           version: 2.84.2
 
+      - name: Set up PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
       - name: Start local Supabase stack
         run: supabase start
 
@@ -62,3 +65,8 @@ jobs:
 
       - name: Run pgTAP database tests
         run: supabase test db
+
+      - name: Run concurrent reciprocal-like integration test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: bash supabase/tests/concurrency/reciprocal_likes.sh
