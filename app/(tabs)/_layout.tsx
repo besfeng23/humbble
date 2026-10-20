@@ -1,49 +1,30 @@
-import { Redirect, Tabs, useRouter, useSegments } from "expo-router";
-import React, { useEffect } from "react";
-import { ActivityIndicator, Platform, View } from "react-native";
+import {
+  FontAwesome,
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+import React from "react";
+import { Platform } from "react-native";
 
 import { HapticTab } from "@/components/HapticTab";
+import { DatingLayout } from "@/components/layout";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { useAuth } from "@/lib/AuthProvider";
-import {
-  FontAwesome,
-  FontAwesome6,
-  Ionicons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { session, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color={Colors[colorScheme ?? "light"].tint} />
-      </View>
-    );
-  }
-
-  if (!session) {
-    return <Redirect href="/auth/signin" />;
-  }
+  const scheme = colorScheme ?? "light";
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: Colors[colorScheme ?? "light"].background,
-      }}
-    >
+    <DatingLayout testID="tabs-dating-layout">
       <Tabs
         initialRouteName="people"
         screenOptions={{
           animation: "shift",
-          tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+          tabBarActiveTintColor: Colors[scheme].tint,
           headerShown: false,
           tabBarButton: HapticTab,
           tabBarBackground: TabBarBackground,
@@ -95,25 +76,44 @@ export default function TabLayout() {
             ),
           }}
         />
-        {/* <Tabs.Screen
-          name="likedYou"
-          options={{
-            title: "liked You",
-            tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={"heart"} size={24} color={color} />
-            ),
-          }}
-        /> */}
         <Tabs.Screen
           name="index"
           options={{
             title: "liked You",
-            tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={"heart"} size={24} color={color} />
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="heart" size={24} color={color} />
             ),
           }}
         />
+        <Tabs.Screen
+          name="discover/[id]"
+          options={{
+            href: null,
+            title: "Profile Inspector",
+          }}
+        />
+        <Tabs.Screen
+          name="discover/filters"
+          options={{
+            href: null,
+            title: "Discovery Filters",
+          }}
+        />
+        <Tabs.Screen
+          name="profile/settings"
+          options={{
+            href: null,
+            title: "Settings",
+          }}
+        />
+        <Tabs.Screen
+          name="profile/privacy-delete"
+          options={{
+            href: null,
+            title: "Privacy & Account Deletion",
+          }}
+        />
       </Tabs>
-    </SafeAreaView>
+    </DatingLayout>
   );
 }
