@@ -12,7 +12,12 @@
     "test": "jest --ci",
     "test:watch": "jest --watchAll",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "db:reset": "bash scripts/db/reset.sh",
+    "db:types": "bash scripts/db/gen-types.sh",
+    "db:types:check": "bash scripts/db/check-types-drift.sh",
+    "db:lint": "bash scripts/db/lint.sh",
+    "db:diff": "bash scripts/db/diff.sh"
   },
   "jest": {
     "preset": "jest-expo"

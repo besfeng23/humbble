@@ -111,3 +111,47 @@ DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres bash supaba
 ```
 
 The concurrency invariant is `15|5|15` (successful likes | quota errors | stored quota); the script separately verifies 15 persisted swipe rows. No dblink is used. Database RPCs remain a trusted transaction boundary, but generated TypeScript and UI state do not replace RLS, privilege checks, constraints, advisory locks, or provider-side payment verification.
+
+## P2-06 — Types, seed and local pipeline
+
+### Prerequisites and safety
+
+Install Docker and the Supabase CLI pinned in CI to **2.84.2**. Run these commands from the repository root. The local workflow uses the disposable local Supabase stack; no production/hosted database credentials are used or required. Do not use `supabase link`, `--linked`, `--db-url` with a hosted URL, or `supabase db push` as part of this pipeline. Hosted development changes, if later approved, are applied manually by the owner from merged migration files using the appropriate hosted-project dashboard/workflow.
+
+### Commands
+
+| Command | Purpose |
+|---|---|
+| `npm run db:reset` | Resets the **local** Supabase database, replays every migration and loads `supabase/seed.sql`. Refuses configured `SUPABASE_DB_URL`/`DATABASE_URL` destinations whose host is not `localhost` or `127.0.0.1`. |
+| `npm run db:types` | Runs `supabase gen types typescript --local --schema public` and replaces `lib/database.types.ts` with raw generated output. |
+| `npm run db:types:check` | Regenerates types to a temporary file and byte-compares them with the committed file. A mismatch fails with `database types are stale: run npm run db:types`; CI also prints the complete generated file for diagnosis. |
+| `npm run db:lint` | Runs `supabase db lint --local --level warning --fail-on error`. Warning-level output is visible, but only lint errors fail the command. |
+| `npm run db:diff` | Runs `supabase db diff --local`. If local schema changes exist beyond the migration chain, the command prints the diff and exits non-zero. |
+
+### Migration workflow
+
+After changing a migration, use this sequence:
+
+```sh
+npm run db:reset
+supabase test db
+npm run db:types
+npm run db:types:check
+npm run db:lint
+npm run db:diff
+# Commit the migration and the regenerated lib/database.types.ts together.
+```
+
+Migrations are the single source of truth. Never hand-edit `lib/database.types.ts`; move app-facing client-write restrictions, row aliases and RPC helper aliases to `lib/database.contracts.ts`. TypeScript narrowing is defense in depth only: grants, RLS, constraints and RPC authorization remain authoritative.
+
+### Synthetic seed policy
+
+`supabase/seed.sql` starts with an explicit fake-development-only header and a database/server-address guard. It creates ten entirely synthetic profiles using reserved UUIDs `00000000-0000-0000-0000-000000000901` through `...000000000910`, email addresses `seed-NN@example.test`, and display names beginning with `Seed `. Eight are verified/discoverable adults; one is unverified and one is suspended. Each profile has preferences. Generic regions are limited to `Metro Manila`, `Cebu`, `Davao`, and `Iloilo`. Placeholder photo paths are metadata only; the seed never writes `storage.objects`. Two normal reciprocal swipe inserts exercise the match trigger and create one match/conversation, with two synthetic messages. The fixture includes one block and one report. It creates no subscription, entitlement or payment-event rows. Hosted projects must never receive this file.
+
+The seed's reserved UUID range is separate from pgTAP/concurrency fixtures (`0x00–0x99`). Tests use their own transaction-scoped fixtures, and RLS must continue hiding the seeded conversation/messages from other users. Do not add unscoped `storage.*` mutations to seed cleanup or tests.
+
+### CI pipeline
+
+The `Database (Supabase + pgTAP)` job pins `supabase/setup-cli@v1` to CLI `2.84.2`, starts a fresh local stack, resets and replays migrations plus seed, then runs the checks in order: **Lint database**, **Check schema drift**, **Check generated types are current**, and the existing pgTAP suite. It then runs the existing host-side reciprocal-like and swipe-quota concurrency scripts. A lint failure indicates database errors (warnings are emitted but do not fail this gate); a schema-diff failure means the local schema and migrations disagree; a type-drift failure means the committed generated file needs regeneration/review; a pgTAP/concurrency failure indicates a behavior, RLS, or race invariant regression. The independent **Lint, Typecheck & Test** job is unchanged.
+
+No remote credentials are used or needed for reset, type generation, lint, schema diff, pgTAP, or the two concurrency checks.

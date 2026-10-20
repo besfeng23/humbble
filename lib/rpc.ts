@@ -5,13 +5,13 @@
  * RPC validation remain authoritative.
  */
 import { supabase } from './supabase';
+import type { Database } from './database.types';
 import type {
-  Database,
   ModerationCaseStatus,
   PrivacyRequestType,
   ReportCategory,
   SwipeDirection,
-} from './database.types';
+} from './database.contracts';
 
 export type RpcError = {
   message: string;
