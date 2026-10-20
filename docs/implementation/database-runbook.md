@@ -76,3 +76,38 @@ Generated types can reflect schema columns without expressing row-level authoriz
 - Before merge, review table grants, role-specific RLS, Storage bucket flags/limits, object path policies, and privacy impact. Run local reset, the full pgTAP suite, and the host-side concurrency test; record actual results in the PR.
 - Only reset a disposable local database. A shared/deployed database needs a forward migration and a reviewed rollback plan.
 - Do not enable real-user verification evidence, a public media bucket, automated retention purging, production moderator provisioning, payment settlement, or premium entitlements solely because schema work merges. Each requires its corresponding implementation and approval.
+
+## P2-05 — Hardened RPCs and atomic invariants
+
+Migration `20261020000005_hardened_rpcs.sql` introduces eight explicitly granted functions. Each function uses a fixed `search_path`; sensitive user actions derive the acting identity only from `auth.uid()`. `SECURITY DEFINER` functions are owned by `postgres`, use schema-qualified table/helper references, and have `EXECUTE` revoked from `PUBLIC` and `anon`. Only the intended `authenticated`/`service_role` roles receive execute grants. Do not widen the `private` schema or directly grant client writes to server-owned tables as a workaround.
+
+| Function | Principal and grants | Invariants enforced |
+|---|---|---|
+| `get_discovery_feed(p_limit, p_cursor)` | Authenticated only; `SECURITY DEFINER` because candidate profiles and photo metadata are private to their owners. | Requires eligible caller; candidates must be verified, discoverable, not suspended, 18+, and not incognito; excludes self, previously swiped accounts, and blocks in either direction; respects `user_preferences` age range; clamps page size to 1–50. Returns age and approved profile fields only—never `birth_date`, verification state, suspension state, or internal account flags. |
+| `has_active_entitlement(p_user_id)` | Authenticated and `service_role`; `STABLE SECURITY INVOKER`. | Authenticated callers can check only their own entitlement (cross-user probe returns false); service-role JWT may check another user. True only if an entitlement is active and `valid_from`/`valid_until` contain the current time. Subscription UI/client state never grants access. |
+| `record_swipe(p_target_id, p_direction)` | Authenticated only; `SECURITY DEFINER`. | Actor comes from `auth.uid()`; verifies actor and target eligibility, age, and bidirectional block status; rejects self and duplicate swipes. Free likes use a UTC-day atomic upsert/row lock capped at 15. `pass` does not consume quota; active entitlements bypass the free counter (`likes_remaining = -1`). The existing 0002 pair-lock/match trigger remains responsible for canonical reciprocal match, conversation, and participants. |
+| `block_user(p_target_id)` | Authenticated only; `SECURITY DEFINER`. | Adds only the caller's block; rejects self/missing targets; is idempotent; relies on the 0002 block trigger to terminate active matches; audits only a newly inserted block. |
+| `unblock_user(p_target_id)` | Authenticated only; `SECURITY DEFINER`. | Deletes only the caller's block and returns whether one was removed. Audit row is written only when a row is removed. Does not reactivate an ended match/conversation. |
+| `submit_report(p_reported_user_id, p_category, p_context_summary)` | Authenticated only; `SECURITY DEFINER`. | Reporter comes from `auth.uid()`; self-report rejected; context limited to the existing 1,000-character column constraint; a transaction advisory lock enforces at most 10 reports per reporter in a rolling 24-hour window. Creates a privacy-minimized audit event without copying report context. |
+| `request_privacy_action(p_request_type, p_idempotency_key)` | Authenticated only; `SECURITY DEFINER`. | User comes from `auth.uid()`; serializes per-user submissions; retries with the same key return the same request ID; only one `requested`/`in_progress` request per type may be open; new requests are audited. Existing worker-only transition trigger remains authoritative. |
+| `moderation_transition_case(p_case_id, p_new_status, p_note)` | Authenticated and `service_role`; `SECURITY DEFINER`. | Requires trusted `app_metadata.role = 'moderator'` or a verified `service_role` JWT role; ignores `user_metadata`; validates allowed transitions under a row lock; sets `closed_at` consistently and writes an audit event. A service-role system action may have no Auth subject; the audit row records `actor_id = NULL` and `metadata.actor_principal = 'service_role'`. Direct client updates to case workflow remain denied. |
+
+Message insertion continues to use the existing participant-guarded policy and `private.can_send_message`; P2-05 adds no duplicate message RPC. The pair lock, block trigger and message-policy check must continue to serialize/block unsafe relationship state changes.
+
+### P2-05 tests and quota race
+
+`0005_hardened_rpcs.test.sql` runs under a transaction and rolls all synthetic fixtures back. It tests function catalog metadata, `SECURITY DEFINER`/`INVOKER` modes, owner/search-path/grants, `anon` denial, safe discovery projection, caller/candidate eligibility, age/block/swipe filtering, free and entitled swipe quotas, reciprocal matching, blocking/unblocking, report rate limiting/ownership, privacy idempotency/open-request rules, trusted moderation transitions, and temporary-object search-path shadowing.
+
+`supabase/tests/concurrency/swipe_quota.sh` must run on the CI host after `supabase test db`, against the disposable local `DATABASE_URL`. It runs 20 independent `psql` processes using one synthetic actor and distinct verified targets, then checks exactly 15 successful likes, 5 `quota_exceeded` errors, `likes_used = 15`, and 15 persisted swipe rows. It deletes only its reserved Auth users; FK cascades clean associated application rows. Never point this script at a shared or production database.
+
+Commands:
+
+```sh
+supabase start
+supabase db reset
+supabase test db
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres bash supabase/tests/concurrency/reciprocal_likes.sh
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres bash supabase/tests/concurrency/swipe_quota.sh
+```
+
+The concurrency invariant is `15|5|15` (successful likes | quota errors | stored quota); the script separately verifies 15 persisted swipe rows. No dblink is used. Database RPCs remain a trusted transaction boundary, but generated TypeScript and UI state do not replace RLS, privilege checks, constraints, advisory locks, or provider-side payment verification.

@@ -1,5 +1,5 @@
 /**
- * Committed schema types for Humbble migrations 0001–0003.
+ * Committed schema types for Humbble migrations 0001–0005.
  * Regenerate with `supabase gen types typescript --local > lib/database.types.ts`
  * and review the client-write contracts below. Postgres grants/RLS remain the
  * authorization boundary; TypeScript restrictions are defense in depth.
@@ -176,7 +176,36 @@ export type Database = {
       }, never, never>;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_discovery_feed: {
+        Args: { p_limit?: number; p_cursor?: string | null };
+        Returns: {
+          profile_id: string;
+          display_name: string;
+          age: number;
+          city_region: string | null;
+          relationship_intention: RelationshipIntention;
+          shared_interests: string[];
+          primary_photo_path: string | null;
+        }[];
+      };
+      record_swipe: {
+        Args: { p_target_id: string; p_direction: SwipeDirection };
+        Returns: { swipe_id: string; matched: boolean; match_id: string | null; likes_remaining: number }[];
+      };
+      has_active_entitlement: { Args: { p_user_id: string }; Returns: boolean };
+      block_user: { Args: { p_target_id: string }; Returns: string };
+      unblock_user: { Args: { p_target_id: string }; Returns: boolean };
+      submit_report: {
+        Args: { p_reported_user_id: string; p_category: ReportCategory; p_context_summary: string | null };
+        Returns: string;
+      };
+      request_privacy_action: { Args: { p_request_type: PrivacyRequestType; p_idempotency_key: string }; Returns: string };
+      moderation_transition_case: {
+        Args: { p_case_id: string; p_new_status: ModerationCaseStatus; p_note: string | null };
+        Returns: undefined;
+      };
+    };
     Enums: {
       verification_state: VerificationState;
       relationship_intention: RelationshipIntention;

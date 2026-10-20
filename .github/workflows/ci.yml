@@ -70,3 +70,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: bash supabase/tests/concurrency/reciprocal_likes.sh
+
+      - name: Run concurrent swipe quota integration test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: bash supabase/tests/concurrency/swipe_quota.sh
