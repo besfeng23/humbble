@@ -38,12 +38,20 @@ cd Humbble
 npm install
 ```
 
-### Supabase auth setup
+### Supabase auth & environment setup
 
-Copy `.env.example` to `.env` and set your Supabase project credentials:
+1. Copy `.env.example` to `.env` (note that `.env` and `.env.*` are gitignored; never commit real credentials):
 
-- `EXPO_PUBLIC_SUPABASE_URL`: Your Supabase project URL (e.g., `https://<project-ref>.supabase.co`)
+```sh
+cp .env.example .env
+```
+
+2. Set your local or development Supabase project public configuration in `.env`:
+
+- `EXPO_PUBLIC_SUPABASE_URL`: Your Supabase project URL (e.g., `https://<project-ref>.supabase.co` or `http://127.0.0.1:54321` for local Supabase CLI)
 - `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or `EXPO_PUBLIC_SUPABASE_ANON_KEY`): Your Supabase publishable / anonymous public key
+
+> **Security note:** Only public client variables may use the `EXPO_PUBLIC_*` prefix. Never place `SUPABASE_SERVICE_ROLE_KEY`, PayPal secrets, webhook IDs, or production credentials in `.env`. When required variables are missing or set to placeholders, `lib/supabase.ts` fails closed and disables auth network calls. See [`docs/setup/P0-04-environment.md`](docs/setup/P0-04-environment.md) for the full environment contract and setup guide.
 
 ### Running the Project
 
@@ -56,7 +64,7 @@ npm start
 For Android:
 
 ```sh
-npn run android
+npm run android
 ```
 
 For iOS:
