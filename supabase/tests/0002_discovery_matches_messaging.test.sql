@@ -3,7 +3,7 @@
 -- Actual multi-session reciprocal-like concurrency is tested separately by
 -- supabase/tests/concurrency/reciprocal_likes.sh using independent psql clients.
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SET search_path = public, pg_temp;
+SET search_path = public, extensions, pg_temp;
 SELECT plan(67);
 
 -- Reserved synthetic identities. Remove leftovers first so reruns after a
