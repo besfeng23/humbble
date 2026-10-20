@@ -1,0 +1,38 @@
+project_id = "humbble"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[api.tls]
+enabled = false
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+
+[db.seed]
+enabled = false
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+site_url = "http://localhost:8081"
+additional_redirect_urls = ["humbble://", "http://localhost:8081"]
