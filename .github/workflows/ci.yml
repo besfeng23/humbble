@@ -63,6 +63,15 @@ jobs:
       - name: Reset database and replay migrations
         run: supabase db reset
 
+      - name: Lint database
+        run: bash scripts/db/lint.sh
+
+      - name: Check schema drift
+        run: bash scripts/db/diff.sh
+
+      - name: Check generated types are current
+        run: bash scripts/db/check-types-drift.sh
+
       - name: Run pgTAP database tests
         run: supabase test db
 
