@@ -1,39 +1,48 @@
-# Database runbook — Humbble P2-01 through P2-03
+# Database runbook — Humbble P2-01 through P2-04
 
 ## Scope and safety boundaries
 
-Migration `20261020000001_enums_and_profiles.sql` establishes the identity/profile domain (`profiles`, `profile_photos`, `user_preferences`, and `verification_requests`). Migration `20261020000002_discovery_matches_messaging.sql` adds `swipes`, `daily_swipe_quotas`, `matches`, `conversations`, `conversation_participants`, `messages`, and `blocks`. Migration `20261020000003_safety_billing_privacy_audit.sql` adds reports, moderation cases, subscription/entitlement state, provider payment events, consent evidence, privacy requests, and audit events. Run the migration chain against the local Supabase stack and synthetic users first. Do not link the local CLI to a remote project or apply these files to production as part of P2-01–P2-03.
+The ordered local schema is:
 
-All public tables in migrations 0001–0003 enable Row Level Security. Profile reads are owner-only; no client-facing cross-user profile read or discovery projection exists in these migrations. Other users must never receive `profiles.birth_date`. A separately reviewed safe discovery RPC or `security_invoker` projection is required before shipping discovery.
+1. `20261020000001_enums_and_profiles.sql` — identity/profile domain (`profiles`, `profile_photos`, `user_preferences`, `verification_requests`).
+2. `20261020000002_discovery_matches_messaging.sql` — `swipes`, `daily_swipe_quotas`, `matches`, `conversations`, `conversation_participants`, `messages`, and `blocks`.
+3. `20261020000003_safety_billing_privacy_audit.sql` — reports, moderation cases, subscriptions, entitlements, payment events, consent records, privacy requests, and audit events.
+4. `20261020000004_rls_storage_and_hardened_rpcs.sql` — reasserts RLS/grant boundaries and configures private Storage buckets and policies.
 
-`profiles` grants client UPDATE only for `display_name`, `city_region`, `occupation`, `education_level`, `languages_spoken`, `shared_interests`, `relationship_intention`, `prompts`, and `is_incognito`. Triggers enforce the 18+ age gate and reject changes to `birth_date`, `verification_status`, `is_discoverable`, and `is_suspended` except through trusted roles. `verification_requests` is owner-readable but has no client write path. It stores provider metadata only; the schema does not store raw selfies or biometric templates. `profile_photos` stores object-path metadata, not file contents; Storage bucket/policy configuration remains a later reviewed migration.
+Use the local Supabase stack and synthetic data first. Do not link the local CLI to a remote project, copy production credentials into CI, or apply this chain to production without the applicable review and approval.
 
-P2-02 client reads are owner/participant-scoped. Direct authenticated writes to swipe history, daily quotas, matches, conversations, and participant membership are denied; swipes are intended to be written through a later actor-derived transactional RPC. A reciprocal pair is stored once in canonical UUID order (`user_a_id < user_b_id`). A pair-keyed transaction advisory lock plus uniqueness constraints serializes concurrent reciprocal likes so the second committed like can create at most one match, conversation, and two participants. CI verifies concurrency using `supabase/tests/concurrency/reciprocal_likes.sh`, which runs two independent host-side `psql` clients; it is intentionally outside pgTAP because Supabase local Postgres does not support opening a second authenticated database connection from the non-superuser test session. The P2-02 tests reserve synthetic Auth IDs `...0011` through `...0014` and remove their records when complete.
+## Row-level security, grants, and trust boundaries
 
-## P2-03 safety, billing, privacy and audit
+Migration 0004 explicitly enables RLS on all 19 public application tables from migrations 0001–0003. Table grants control whether a role may access a relation; RLS controls which rows are visible or mutable. Both must remain restrictive. Client TypeScript types are not an authorization control.
 
-- **Reports:** an authenticated user may insert a report with `reporter_id = auth.uid()` and read only reports they submitted. Client roles cannot update or delete reports. Moderation state changes are server-owned. The reported user is not given direct access to the report.
-- **Moderation cases:** all table access is server-role-only. Case rows refer to reports using `ON DELETE SET NULL`, so deleting a report does not accidentally erase a case. There is no client-controlled moderator role or assignment field.
-- **Subscriptions and entitlements:** `subscription_status` distinguishes `approval_pending`, `active`, `past_due`, `suspended`, `cancelled`, `expired`, `refunded`, and `revoked`. Clients may read only their own subscription and entitlement rows. They cannot create or change subscriptions or grant/revoke entitlements. No database trigger converts an `active` subscription row into an entitlement. The later payment/reconciliation service must require independently verified settlement and matching server-catalogue amount/currency before entitlement is granted; browser redirects or client flags are not proof of payment.
-- **Payment events:** `(provider, provider_event_id)` is unique and is the provider-event idempotency key. `amount` and `currency` are stored together when an event is financial, supporting later commission reconciliation without introducing affiliate tables. The raw webhook payload is not persisted; an optional SHA-256 digest can identify a processed payload without storing it. Client roles cannot access payment events. The service role may advance processing fields but cannot rewrite the provider event ID, resource association, amount, currency, or other event facts through its column grants; a trigger adds defense in depth. The unique provider event and financial fields do not by themselves verify a provider signature or authorize an entitlement.
-- **Consent records:** consent choices are append-only for client and service roles. A later consent decision is a new row, not an edit to history. The retention policy, purpose/legal basis, notice wording, and whether any particular consent is required must be approved separately.
-- **Privacy requests:** a user can submit and read their own export/deletion request, using a stable `idempotency_key` across retries. Only the service role advances workflow state. Allowed transitions are `requested → in_progress|failed|cancelled`, `in_progress → completed|failed|cancelled`, and `failed → in_progress`; completed and cancelled are terminal. Completion requires a completion timestamp. The request row tracks workflow, not proof that all storage cleanup has completed; callers must not claim deletion is complete before downstream cleanup is confirmed.
-- **Audit events:** client roles have no table access. Service-role access is read/insert only. Application/server roles cannot update or delete stored audit rows; use compensating events to correct the record. Only privileged database maintenance can purge records after an approved retention decision.
+`profiles` remains owner-readable only, including `birth_date`. There is no direct cross-user profile projection or public profile policy in this migration. Discovery must use a separately reviewed RPC or safe projection that omits exact birth dates and returns only the intended public fields. Profile updates remain restricted to the nine approved client-editable fields; triggers protect birth date, verification status, discovery eligibility, and suspension.
 
-### Deletion and retention policy boundaries
+Preferences, profile-photo metadata, subscriptions, entitlements, consent history, privacy requests, conversations, messages, and other user-visible records remain owner- or participant-scoped under RLS. Client writes to swipe history, quotas, matches, conversations, participant membership, subscription state, entitlements, payment events, moderation workflow, and audit history are not enabled by this migration. Messages remain append-only for client roles, and the existing active-match/unblocked participant check governs inserts.
 
-The migration distinguishes ephemeral authorization state from potentially retained safety/financial evidence:
+A trusted moderator is represented only by a server-controlled JWT `app_metadata.role = "moderator"` claim. The database helper intentionally ignores the user-editable `user_metadata` field and any profile column. Moderators may read reports and moderation cases; this migration does not grant them payment-event, audit-event, or verification-artifact access, and it does not give them direct write privileges for moderation workflow. Server endpoints and role provisioning need a separate controlled implementation and audit trail.
 
-- `entitlements.user_id` references `profiles` with `ON DELETE CASCADE`; derived access state does not survive account deletion.
-- `reports.reporter_id` and `reported_user_id`, `subscriptions.user_id`, `payment_events.user_id` and `subscription_id`, `consent_records.user_id`, `privacy_requests.user_id`, `moderation_cases.assigned_moderator_id`, and `audit_events.actor_id` use `ON DELETE SET NULL` so the durable record can survive while direct foreign-key identity references are removed.
-- `moderation_cases.report_id` uses `ON DELETE SET NULL`. Audit `target_id` is a non-FK reference so deleting a target does not erase event history. It can therefore retain a direct or indirect identifier after account deletion; the approved deletion policy must decide whether a given target reference is safe to retain, null, or tokenize. The migration does not assume all target references are lawfully retainable. Payment events retain provider event identifiers, optional amount/currency, processing status, and safe references for financial reconciliation.
-- `retention_until` is nullable. `legal_hold` is also nullable: **NULL means not assessed**, not “no legal hold.” There are no hard-coded retention durations, blanket deletion windows, or legal-hold decisions in this migration. Counsel and the owner must approve retention schedules and legal-hold procedures before a production retention worker or purge operation is enabled.
+`payment_events` remains server-only. `(provider, provider_event_id)` provides idempotency, and `amount` / `currency` are stored together for future settlement and commission reconciliation. Those fields are not evidence of a valid provider signature and do not independently grant entitlements. Do not introduce affiliate tables as part of P2-04.
 
-These rules are a technical foreign-key strategy, not a legal conclusion that every record may or must be retained. Review records, fields, purposes, and legal obligations with counsel before using real-user data. The local synthetic-data tests verify that selected report, subscription, payment, consent, privacy-request, and audit records survive test-account deletion with identity FKs nulled, while entitlement rows cascade.
+## Storage buckets and access strategy
+
+Migration 0004 creates/updates two **private** buckets:
+
+- `profile_photos`: maximum **5 MiB** per object; accepted MIME types are `image/jpeg`, `image/png`, and `image/webp`.
+- `verification_artifacts`: maximum **10 MiB** and the same MIME allowlist, but no `anon` or `authenticated` client policy permits uploading, listing, downloading, moving, or deleting its objects. A restrictive deny policy provides defense in depth if a broad Storage policy is accidentally added later. Creating this empty private bucket does not authorize raw selfie or biometric retention; the default verification design still persists provider outcomes/opaque references only. Any future server-side evidence workflow requires separate privacy, legal, security, and vendor approval.
+
+Profile-photo object names must begin with the authenticated user's UUID as the first path segment, for example `<auth.uid()>/photo-1.jpg`. The RLS policies check both that folder prefix and Storage's `owner_id`; operations outside the caller's folder fail. Bucket-level file size and MIME settings reject disallowed uploads independently of path policy. The `public` flag must remain false on both buckets.
+
+**Signed URL strategy:** a private object's normal download is subject to Storage RLS. An authenticated owner may create a time-limited signed URL only for an object they can select under the owner-folder policy. Keep signed URLs short-lived (typically 60–300 seconds), treat the URL as a bearer credential while it is valid, and never log or store the signed URL as durable metadata. Never create signed URLs for `verification_artifacts` for client use. A different user must not receive a profile-photo URL directly from a guessed path; any future discovery/photo-sharing flow must first authorize that viewer in a reviewed server-side endpoint/RPC and return only a short-lived URL. Do not make either bucket public as a shortcut.
+
+Supabase documents the relevant behavior in [Storage access control](https://supabase.com/docs/guides/storage/security/access-control), [bucket fundamentals and private access](https://supabase.com/docs/guides/storage/buckets/fundamentals), [upload limits](https://supabase.com/docs/guides/storage/uploads/file-limits), and [signed downloads](https://supabase.com/docs/guides/storage/serving/downloads). These references describe product behavior; the repository migration and CI tests remain the source of truth for this application.
+
+## Retention, account deletion, and legal holds
+
+`retention_until` remains nullable and `legal_hold IS NULL` means **not assessed**. Do not infer a statutory period or automatically purge records simply because a column exists. P2-03 uses `ON DELETE SET NULL` for selected safety/financial/privacy actor references and cascades user entitlements, but `audit_events.target_id` is intentionally non-FK and may retain an identifier. Counsel and the owner must decide which records and references may be retained, tokenized, nullified, or purged before enabling a retention worker on real-user data. These are schema/foreign-key choices, not a legal conclusion that retention is lawful or required.
 
 ## Local setup and verification
 
-Prerequisites: Docker running, Node/npm for application checks, PostgreSQL client (`psql`), and Supabase CLI. CI uses Supabase CLI `2.84.2` and requires no linked remote project or application secrets.
+Prerequisites: Docker, Supabase CLI, and PostgreSQL client (`psql`). CI pins Supabase CLI **2.84.2** and does not require a linked remote project or application secrets.
 
 From the repository root:
 
@@ -47,21 +56,23 @@ npm run typecheck
 npm test
 ```
 
-`supabase db reset` replays the local migration chain from a clean database on PostgreSQL major version 17. `supabase test db` runs pgTAP tests under `supabase/tests/`. The host-side concurrency test runs after pgTAP in the **Database (Supabase + pgTAP)** workflow; keep its connection string scoped to the disposable local stack and never substitute a remote or production URL. The SQL test fixtures use reserved synthetic ID ranges and explicit `p203-` provider references; do not reuse them for unrelated tests or real user data.
+`supabase db reset` replays migrations from a clean local PostgreSQL 17 database. `supabase test db` includes `0001_profiles.test.sql`, `0002_discovery_matches_messaging.test.sql`, `0003_safety_billing_privacy_audit.test.sql`, and `0004_rls_storage.test.sql`. The independent two-client reciprocal-like check runs after pgTAP in the **Database (Supabase + pgTAP)** workflow; keep its connection string scoped to the disposable local stack, never substitute a remote URL, and never add provider credentials to this workflow.
+
+The P2-04 test reserves synthetic Auth IDs `00000000-0000-0000-0000-000000000041` through `...0045`; it runs inside a transaction and rolls its fixtures back. Do not reuse these IDs or `p204-` fixture labels for unrelated data. Role matrix checks use `SET LOCAL ROLE anon` / `authenticated` with synthetic `request.jwt.claims`. The moderator case is simulated by trusted `app_metadata`, and a negative test confirms `user_metadata.role` cannot grant access. `service_role` checks prove server access to selected protected records; this is not permission to expose a service credential to a client.
 
 ## Type generation
 
-After a local schema reset, regenerate the database type baseline with:
+Migration 0004 changes RLS, grants, and the `storage` schema, not the shape of the `public` application tables. Therefore it requires no change to `lib/database.types.ts`. After future schema-shape changes, regenerate and review the diff:
 
 ```sh
 supabase gen types typescript --local > lib/database.types.ts
 ```
 
-Review the diff before committing. Generated types describe schema shape; grants, RLS and triggers remain authoritative. If regenerated types allow client writes that the role should not perform, preserve or restore the narrower application-facing `Insert`/`Update` contracts after generation.
+Generated types can reflect schema columns without expressing row-level authorization. Preserve narrow client-facing `Insert`/`Update` contracts where needed; database grants, RLS, and triggers remain authoritative.
 
-## Change, rollback and release practice
+## Change, rollback, and release practice
 
-- Add a new ordered migration for future changes; do not edit a migration already applied to a shared environment.
-- Before merge, inspect DDL, grants and RLS; run local reset, pgTAP and the concurrency integration test; record actual command results in the PR.
-- Migrations are safe to reset only in a disposable local database. A deployed/shared database requires a forward migration; do not manually drop tables or history as a rollback shortcut.
-- Do not turn on a real payment webhook, entitlement grant, moderation workflow, privacy purge, backup policy, retention schedule or legal-hold behavior solely because schema work merged. Each needs a server-side implementation and the relevant owner/legal/security approval.
+- Add new ordered migrations for future changes; do not rewrite migrations already applied to a shared environment.
+- Before merge, review table grants, role-specific RLS, Storage bucket flags/limits, object path policies, and privacy impact. Run local reset, the full pgTAP suite, and the host-side concurrency test; record actual results in the PR.
+- Only reset a disposable local database. A shared/deployed database needs a forward migration and a reviewed rollback plan.
+- Do not enable real-user verification evidence, a public media bucket, automated retention purging, production moderator provisioning, payment settlement, or premium entitlements solely because schema work merges. Each requires its corresponding implementation and approval.
