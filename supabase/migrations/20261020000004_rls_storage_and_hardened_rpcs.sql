@@ -157,12 +157,9 @@ SET name = EXCLUDED.name,
     file_size_limit = EXCLUDED.file_size_limit,
     allowed_mime_types = EXCLUDED.allowed_mime_types;
 
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-GRANT USAGE ON SCHEMA storage TO authenticated, service_role;
-REVOKE ALL ON TABLE storage.objects FROM PUBLIC, anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE storage.objects TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE storage.objects TO service_role;
-GRANT EXECUTE ON FUNCTION storage.foldername(TEXT) TO authenticated, service_role;
+-- Supabase owns Storage system tables and provisions RLS/ACLs. Do not ALTER/GRANT/REVOKE
+-- storage.objects or storage.buckets here; migrations execute as postgres, not their owner.
+-- The Storage API policies below are additive and scope object access.
 
 -- Private photo keys must start with the caller's Auth UUID. owner_id is checked
 -- as a second guard so a path prefix alone cannot claim another account's object.

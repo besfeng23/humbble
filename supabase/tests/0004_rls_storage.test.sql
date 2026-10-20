@@ -156,6 +156,7 @@ SELECT is((SELECT count(*)::INTEGER FROM public.messages), 0, 'user A sees no me
 SELECT lives_ok($$INSERT INTO public.messages (conversation_id, sender_id, body) SELECT c.id, auth.uid(), 'p204 message' FROM public.conversations c$$, 'participant can send in own active conversation');
 SELECT is((SELECT count(*)::INTEGER FROM public.reports WHERE context_summary::TEXT COLLATE "C" = 'p204-report-a'::TEXT COLLATE "C"), 1, 'user A reads own report');
 SELECT is_empty($$SELECT id FROM public.reports WHERE context_summary::TEXT COLLATE "C" = 'p204-report-b'::TEXT COLLATE "C"$$, 'user A cannot read user B report without moderator claim');
+SELECT is_empty($$SELECT id FROM public.moderation_cases$$, 'normal authenticated user cannot read moderation cases');
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000041","role":"authenticated","user_metadata":{"role":"moderator"}}';
 SELECT is_empty($$SELECT id FROM public.reports WHERE context_summary::TEXT COLLATE "C" = 'p204-report-b'::TEXT COLLATE "C"$$, 'user-editable user_metadata cannot grant moderator access');
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000041","role":"authenticated"}';
@@ -169,7 +170,6 @@ SELECT is((SELECT count(*)::INTEGER FROM public.privacy_requests WHERE user_id =
 SELECT is_empty($$SELECT id FROM public.privacy_requests WHERE user_id = '00000000-0000-0000-0000-000000000042'$$, 'user A cannot read user B privacy request');
 SELECT throws_ok($$SELECT id FROM public.payment_events$$, '42501', NULL, 'user A cannot read payment events');
 SELECT throws_ok($$SELECT id FROM public.audit_events$$, '42501', NULL, 'user A cannot read audit events');
-SELECT is_empty($$SELECT id FROM public.moderation_cases$$, 'regular user cannot read moderation cases');
 SELECT throws_ok($$UPDATE public.entitlements SET status = 'active' WHERE user_id = auth.uid()$$, '42501', NULL, 'user A cannot grant or activate own entitlement');
 RESET ROLE;
 RESET "request.jwt.claims";
