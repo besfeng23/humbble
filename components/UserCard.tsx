@@ -1,18 +1,25 @@
-import { View, Text, ImageBackground } from "react-native";
-import { EvilIcons, Octicons } from "@expo/vector-icons";
+import { EvilIcons } from "@expo/vector-icons";
+import React from "react";
+import { ImageBackground, Pressable, Text, View } from "react-native";
+
 interface UserCardProp {
   data: any;
-  size: "small" | "large";
-  showLikeIcon: boolean;
+  size?: "small" | "large";
+  showLikeIcon?: boolean;
+  onPress?: () => void;
 }
+
 const UserCard = ({
   data,
   size = "small",
   showLikeIcon = false,
+  onPress,
 }: UserCardProp) => {
   const isLarge = size === "large";
+  const initial = data?.name ? data.name[0].toUpperCase() : "U";
+  const age = data?.age ?? 24;
 
-  return (
+  const content = (
     <View
       style={{
         padding: 16,
@@ -39,12 +46,26 @@ const UserCard = ({
         }}
       >
         <Text style={{ fontSize: 18, fontWeight: "800" }}>
-          {data?.name[0].toUpperCase()}, {data.age}
+          {initial}, {age}
         </Text>
         {showLikeIcon && <EvilIcons name="heart" size={24} color="black" />}
       </View>
     </View>
   );
+
+  if (onPress) {
+    return (
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`Inspect profile ${initial}, ${age}`}
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return content;
 };
 
 export default UserCard;

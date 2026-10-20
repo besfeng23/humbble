@@ -40,9 +40,13 @@ export default function RootLayout() {
             name="(tabs)"
             options={{ headerShown: false, title: "chats" }}
           />
-          <Stack.Screen name="auth/signin" options={{ headerShown: false }} />
-          <Stack.Screen name="auth/signup" options={{ headerShown: false }} />
-          <Stack.Screen name="charscreenf" options={{ headerShown: true }} />
+          <Stack.Screen name="(public)" options={{ headerShown: false }} />
+          <Stack.Screen name="auth" options={{ headerShown: false }} />
+          <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+          <Stack.Screen name="(paywall)" options={{ headerShown: false }} />
+          <Stack.Screen name="(safety)" options={{ headerShown: false }} />
+          <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+          <Stack.Screen name="charscreenf" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />
