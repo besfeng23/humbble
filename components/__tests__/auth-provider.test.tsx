@@ -2,6 +2,7 @@ import React from 'react';
 import { Text } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
 import { AuthProvider, useAuth } from '@/lib/AuthProvider';
+import { textContent } from '../test-utils/textContent';
 
 jest.mock('@/lib/supabase', () => {
   const listeners: Array<(event: string, session: any) => void> = [];
@@ -33,29 +34,29 @@ describe('AuthProvider session authority', () => {
   test('restores the persisted session before exposing the app, including after remount', async () => {
     let tree!: renderer.ReactTestRenderer;
     await act(async () => { tree = renderer.create(<AuthProvider><Probe /></AuthProvider>); await Promise.resolve(); await Promise.resolve(); });
-    expect(tree.root.findByType(Text).children.join('')).toBe('session:restored-user');
+    expect(textContent(tree.root.findByType(Text).children)).toBe('session:restored-user');
     act(() => tree.unmount());
     await act(async () => { tree = renderer.create(<AuthProvider><Probe /></AuthProvider>); await Promise.resolve(); await Promise.resolve(); });
-    expect(tree.root.findByType(Text).children.join('')).toBe('session:restored-user');
+    expect(textContent(tree.root.findByType(Text).children)).toBe('session:restored-user');
   });
   test('clears the local session when hydration reports an expired or invalid session', async () => {
     mockSupabase.supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: new Error('expired session') });
     let tree!: renderer.ReactTestRenderer;
     await act(async () => { tree = renderer.create(<AuthProvider><Probe /></AuthProvider>); await Promise.resolve(); await Promise.resolve(); });
     expect(mockSupabase.supabase.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
-    expect(tree.root.findByType(Text).children.join('')).toBe('signed-out:Please sign in again.');
+    expect(textContent(tree.root.findByType(Text).children)).toBe('signed-out:Please sign in again.');
   });
   test('sets a calm reauthentication message after an unexpected sign-out', async () => {
     let tree!: renderer.ReactTestRenderer;
     await act(async () => { tree = renderer.create(<AuthProvider><Probe /></AuthProvider>); await Promise.resolve(); await Promise.resolve(); });
     await act(async () => { mockSupabase.__listeners[0]('SIGNED_OUT', null); });
-    expect(tree.root.findByType(Text).children.join('')).toBe('signed-out:Please sign in again.');
+    expect(textContent(tree.root.findByType(Text).children)).toBe('signed-out:Please sign in again.');
   });
   test('clears session and does not mark a user-requested sign-out as expired', async () => {
     let tree!: renderer.ReactTestRenderer;
     function SignOutProbe() { const auth = useAuth(); return <Text onPress={() => void auth.signOut()}>{auth.session ? 'signed-in' : `signed-out:${auth.authMessage ?? ''}`}</Text>; }
     await act(async () => { tree = renderer.create(<AuthProvider><SignOutProbe /></AuthProvider>); await Promise.resolve(); await Promise.resolve(); });
     await act(async () => { tree.root.findByType(Text).props.onPress(); await Promise.resolve(); });
-    expect(tree.root.findByType(Text).children.join('')).toBe('signed-out:');
+    expect(textContent(tree.root.findByType(Text).children)).toBe('signed-out:');
   });
 });

@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Text } from 'react-native';
-import { AuthScreen } from '@/components/layout/AuthScreen';
+import { AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
 import { Button, TextField } from '@/components/ui';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -66,8 +66,8 @@ export default function OnboardingBasicsScreen() {
   </AuthScreen>;
 
   return <AuthScreen testID="onboarding-basics-screen" title="Date of birth" subtitle="Enter your date of birth to continue.">
-    {unavailable ? <Text accessibilityRole="alert" style={{ color: palette.textSecondary }}>Sign-in is unavailable in this build</Text> : null}
+    {unavailable ? <Text numberOfLines={1} accessibilityRole="alert" style={{ color: palette.text, fontSize: 14 }}>Sign-in is unavailable in this build</Text> : null}
     <TextField testID="birth-date-field" label="Date of birth" placeholder="YYYY-MM-DD" value={birthDate} onChangeText={setBirthDate} autoCapitalize="none" keyboardType="numbers-and-punctuation" maxLength={10} returnKeyType="go" onSubmitEditing={submit} error={error} required />
-    <Button testID="birth-date-continue" label="Continue" size="lg" disabled={unavailable || busy || !user} loading={busy} onPress={submit} />
+    <AuthPrimaryButton testID="birth-date-continue" label={busy ? "Saving details..." : "Continue"} disabled={unavailable || busy || !user} loading={busy} onPress={submit} />
   </AuthScreen>;
 }

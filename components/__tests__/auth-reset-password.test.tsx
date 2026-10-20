@@ -3,6 +3,7 @@ import { Text } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
 import ResetPasswordScreen from '@/app/auth/reset-password';
 import { validatePasswordPair } from '@/lib/auth/password';
+import { textContent } from '../test-utils/textContent';
 
 var mockConfigured = false;
 var mockReplace = jest.fn();
@@ -14,13 +15,13 @@ jest.mock('@/lib/supabase', () => ({ get isSupabaseConfigured() { return mockCon
 
 beforeEach(() => { mockConfigured = false; mockReplace.mockReset(); mockUpdateUser.mockReset().mockResolvedValue({ error: null }); mockSignOut.mockReset().mockResolvedValue(undefined); });
 describe('password recovery reset', () => {
-  test('rejects too-short passwords', () => expect(validatePasswordPair('12345', '12345')).toBe('too_short'));
+  test('rejects too-short passwords', () => expect(validatePasswordPair('1234567', '1234567')).toBe('too_short'));
   test('rejects mismatched confirmation', () => expect(validatePasswordPair('longpassword', 'different')).toBe('mismatch'));
   test('accepts matching passwords at the configured minimum', () => expect(validatePasswordPair('12345678', '12345678')).toBeNull());
   test('shows the neutral unavailable notice and disables update', () => {
     const tree = renderer.create(<ResetPasswordScreen />);
     expect(tree.root.findByProps({ testID: 'reset-password-submit' }).props.disabled).toBe(true);
-    expect(tree.root.findAllByType(Text).some((node) => node.children.join('') === 'Sign-in is unavailable in this build')).toBe(true);
+    expect(tree.root.findAllByType(Text).some((node) => textContent(node.children) === 'Sign-in is unavailable in this build')).toBe(true);
   });
   test('component rejects a short password without calling Supabase', async () => {
     mockConfigured = true;
@@ -28,7 +29,7 @@ describe('password recovery reset', () => {
     act(() => { tree.root.findByProps({ testID: 'reset-password' }).props.onChangeText('12345'); tree.root.findByProps({ testID: 'reset-password-confirm' }).props.onChangeText('12345'); });
     await act(async () => { tree.root.findByProps({ testID: 'reset-password-submit' }).props.onPress({}); await Promise.resolve(); });
     expect(mockUpdateUser).not.toHaveBeenCalled();
-    expect(tree.root.findByProps({ testID: 'reset-password-error' }).children.join('')).toContain('at least 8 characters');
+    expect(textContent(tree.root.findByProps({ testID: 'reset-password-error' }).children)).toContain('at least 8 characters');
   });
   test('component rejects mismatched passwords without calling Supabase', async () => {
     mockConfigured = true;
@@ -36,7 +37,7 @@ describe('password recovery reset', () => {
     act(() => { tree.root.findByProps({ testID: 'reset-password' }).props.onChangeText('longpassword'); tree.root.findByProps({ testID: 'reset-password-confirm' }).props.onChangeText('different'); });
     await act(async () => { tree.root.findByProps({ testID: 'reset-password-submit' }).props.onPress({}); await Promise.resolve(); });
     expect(mockUpdateUser).not.toHaveBeenCalled();
-    expect(tree.root.findByProps({ testID: 'reset-password-error' }).children.join('')).toBe('Passwords do not match.');
+    expect(textContent(tree.root.findByProps({ testID: 'reset-password-error' }).children)).toBe('Passwords do not match.');
   });
   test('successful reset signs out and routes to sign-in', async () => {
     mockConfigured = true;

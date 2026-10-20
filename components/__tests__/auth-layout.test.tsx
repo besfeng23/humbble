@@ -26,8 +26,8 @@ describe('authentication navigation chrome', () => {
 
   test('registers only the intended auth routes', () => {
     const tree = renderer.create(<AuthStackLayout />);
-    const names = tree.root.findAll((node) => Boolean(node.props.testID?.startsWith('auth-screen-')))
-      .map((node) => node.props.testID.replace('auth-screen-', ''));
+    const names = Array.from(new Set(tree.root.findAll((node) => Boolean(node.props.testID?.startsWith('auth-screen-')))
+      .map((node) => node.props.testID.replace('auth-screen-', ''))));
     expect(names).toEqual(['signin', 'signup', 'recovery', 'callback', 'reset-password', 'check-email', 'preview']);
   });
 });

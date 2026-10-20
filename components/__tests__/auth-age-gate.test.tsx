@@ -3,6 +3,7 @@ import { Text } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
 import OnboardingBasicsScreen from '@/app/(onboarding)/basics';
 import { UNDERAGE_MESSAGE } from '@/app/(onboarding)/basics';
+import { textContent } from '../test-utils/textContent';
 
 var mockParams: Record<string, string> = {};
 var mockReplace = jest.fn();
@@ -32,7 +33,8 @@ describe('18+ onboarding gate', () => {
       await Promise.resolve();
     });
     expect(mockFrom).not.toHaveBeenCalled();
-    expect(tree.root.findAllByType(Text).some((node) => node.children.join('') === UNDERAGE_MESSAGE)).toBe(true);
+    expect(tree.root.findByProps({ testID: 'underage-block-screen' })).toBeDefined();
+    expect(tree.root.findAllByType(Text).some((node) => textContent(node.children) === UNDERAGE_MESSAGE)).toBe(true);
   });
   test('writes an adult birth date via profile insert and leaves server-owned fields untouched', async () => {
     const tree = renderer.create(<OnboardingBasicsScreen />);
@@ -46,13 +48,13 @@ describe('18+ onboarding gate', () => {
     const tree = renderer.create(<OnboardingBasicsScreen />);
     act(() => { tree.root.findByProps({ testID: 'birth-date-field' }).props.onChangeText('1990-01-01'); });
     await act(async () => { tree.root.findByProps({ testID: 'birth-date-continue' }).props.onPress({}); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
-    expect(tree.root.findAllByType(Text).some((node) => node.children.join('') === UNDERAGE_MESSAGE)).toBe(true);
+    expect(tree.root.findAllByType(Text).some((node) => textContent(node.children) === UNDERAGE_MESSAGE)).toBe(true);
   });
   test('maps database age constraint rejection to the same blocking state', async () => {
     configureInsert({ code: '23514', message: 'birth_date age check' });
     const tree = renderer.create(<OnboardingBasicsScreen />);
     act(() => { tree.root.findByProps({ testID: 'birth-date-field' }).props.onChangeText('1990-01-01'); });
     await act(async () => { tree.root.findByProps({ testID: 'birth-date-continue' }).props.onPress({}); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
-    expect(tree.root.findAllByType(Text).some((node) => node.children.join('') === UNDERAGE_MESSAGE)).toBe(true);
+    expect(tree.root.findAllByType(Text).some((node) => textContent(node.children) === UNDERAGE_MESSAGE)).toBe(true);
   });
 });

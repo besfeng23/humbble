@@ -4,8 +4,9 @@ import { AuthGuard } from '@/components/layout';
 
 export default function OnboardingStackLayout() {
   const params = useLocalSearchParams<{ preview?: string }>();
-  const browserPreview = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('preview') : params.preview;
-  const previewAllowed = __DEV__ && ['underage', 'verify'].includes(String(browserPreview ?? ''));
+  const locationSearch = typeof window !== 'undefined' && window.location && typeof window.location.search === 'string' ? window.location.search : '';
+  const browserPreview = locationSearch ? new URLSearchParams(locationSearch).get('preview') : params.preview;
+  const previewAllowed = __DEV__ && ['dob', 'underage', 'verify'].includes(String(browserPreview ?? ''));
   const stack = <Stack screenOptions={{ headerShown: false, headerShadowVisible: false }}>
     <Stack.Screen name="basics" />
     <Stack.Screen name="intentions" />

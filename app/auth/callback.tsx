@@ -2,8 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useURL } from 'expo-linking';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text } from 'react-native';
-import { AuthScreen } from '@/components/layout/AuthScreen';
-import { Button } from '@/components/ui';
+import { AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { PendingState } from '@/components/state';
@@ -28,15 +27,19 @@ export default function AuthCallbackScreen() {
     Object.entries(params).forEach(([key, value]) => fromParams.set(key, Array.isArray(value) ? value[0] : value));
     let query = fromParams;
     let fragment = new URLSearchParams();
-    let routeUrl = linkUrl ?? (typeof window === 'undefined' ? 'humbble://auth/callback' : '');
-    if (typeof window !== 'undefined') {
-      routeUrl = window.location.href;
-      query = new URLSearchParams(window.location.search);
-      fragment = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const browserLocation = typeof window !== 'undefined' ? window.location : undefined;
+    const readableBrowserLocation = Boolean(browserLocation && typeof browserLocation.href === 'string');
+    let routeUrl = linkUrl ?? (readableBrowserLocation ? browserLocation!.href : 'humbble://auth/callback');
+    if (readableBrowserLocation) {
+      routeUrl = browserLocation!.href;
+      query = new URLSearchParams(typeof browserLocation!.search === 'string' ? browserLocation!.search : '');
+      fragment = new URLSearchParams(typeof browserLocation!.hash === 'string' ? browserLocation!.hash.replace(/^#/, '') : '');
       // PKCE codes, token hashes, and auth parameters must not remain in browser history.
-      window.history.replaceState({}, document.title, window.location.pathname);
+      if (typeof window !== 'undefined' && window.history && typeof window.history.replaceState === 'function') {
+        window.history.replaceState({}, typeof document !== 'undefined' ? document.title : '', browserLocation!.pathname || '/');
+      }
     } else if (linkUrl) {
-      try { fragment = new URL(linkUrl).hash ? new URLSearchParams(new URL(linkUrl).hash.slice(1)) : fragment; } catch { /* Invalid links fail the allowlist check below. */ }
+      try { const parsed = new URL(linkUrl); fragment = parsed.hash ? new URLSearchParams(parsed.hash.slice(1)) : fragment; } catch { /* Invalid links fail the allowlist check below. */ }
     }
     const getParam = (key: string) => query.get(key) ?? fragment.get(key) ?? fromParams.get(key) ?? undefined;
     const code = getParam('code');
@@ -79,13 +82,13 @@ export default function AuthCallbackScreen() {
     if (!isSupabaseConfigured || !email) { router.replace((flow === 'recovery' ? '/auth/recovery' : '/auth/signup') as any); return; }
     setBusy(true);
     try {
-      const redirectTo = buildAuthRedirectUrl(flow, { platform: typeof window !== 'undefined' ? 'web' : 'native', browserOrigin: typeof window !== 'undefined' ? window.location.origin : undefined });
+      const redirectTo = buildAuthRedirectUrl(flow, { platform: typeof window !== 'undefined' ? 'web' : 'native', browserOrigin: typeof window !== 'undefined' && window.location ? window.location.origin : undefined });
       if (flow === 'recovery') await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       else await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: redirectTo } });
     } catch { /* Keep retry response neutral. */ }
     router.replace({ pathname: '/auth/check-email', params: { flow } } as any);
   };
 
-  if (failure) return <AuthScreen testID="callback-failure" title="This link can’t be used" subtitle="It may have expired. Request a new link to continue."><Button testID="callback-resend" label="Send a new link" size="lg" loading={busy} onPress={() => void sendNewLink()} /><Pressable accessibilityRole="link" onPress={() => router.replace('/auth/signin' as any)} style={{ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }}><Text style={{ color: palette.link, textDecorationLine: 'underline' }}>Return to sign in</Text></Pressable></AuthScreen>;
+  if (failure) return <AuthScreen testID="callback-failure" title="This link can’t be used" subtitle="It may have expired. Request a new link to continue."><AuthPrimaryButton testID="callback-resend" label={busy ? 'Sending link...' : 'Send a new link'} loading={busy} onPress={() => void sendNewLink()} /><Pressable accessibilityRole="link" onPress={() => router.replace('/auth/signin' as any)} style={{ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }}><Text style={{ color: palette.link, textDecorationLine: 'underline' }}>Return to sign in</Text></Pressable></AuthScreen>;
   return <PendingState fullScreen title="Checking your link" message="Please wait while we verify it." testID="callback-pending" />;
 }

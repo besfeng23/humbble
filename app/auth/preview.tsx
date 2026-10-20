@@ -13,6 +13,7 @@ const destinations = [
   ['Password recovery', '/auth/recovery'],
   ['Reset password', '/auth/reset-password'],
   ['Callback failure', '/auth/callback?preview=fail'],
+  ['Date of birth', '/(onboarding)/basics?preview=dob'],
   ['Under-18 block', '/(onboarding)/basics?preview=underage'],
   ['Verification unavailable', '/(onboarding)/verify?preview=verify'],
 ] as const;

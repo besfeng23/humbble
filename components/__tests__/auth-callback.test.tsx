@@ -2,6 +2,7 @@ import React from 'react';
 import { Text } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
 import AuthCallbackScreen from '@/app/auth/callback';
+import { textContent } from '../test-utils/textContent';
 
 var mockConfigured = false;
 var mockParams: Record<string, string> = {};
@@ -26,9 +27,9 @@ describe('auth callback', () => {
   test('invalid or unconfigured callback shows retry path without exposing tokens', async () => {
     let tree!: renderer.ReactTestRenderer;
     await act(async () => { tree = renderer.create(<AuthCallbackScreen />); await Promise.resolve(); });
-    expect(tree.root.findAllByType(Text).some((node) => node.children.join('').includes('This link can’t be used'))).toBe(true);
+    expect(tree.root.findAllByType(Text).some((node) => textContent(node.children).includes('This link can’t be used'))).toBe(true);
     expect(tree.root.findByProps({ testID: 'callback-resend' })).toBeTruthy();
-    expect(tree.root.findAllByType(Text).some((node) => /token_hash|access_token|code=/.test(node.children.join('')))).toBe(false);
+    expect(tree.root.findAllByType(Text).some((node) => /token_hash|access_token|code=/.test(textContent(node.children)))).toBe(false);
   });
   test('verifies a recovery token hash then routes only to password reset', async () => {
     mockConfigured = true;

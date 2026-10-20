@@ -1,9 +1,9 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { AuthScreen } from '@/components/layout/AuthScreen';
+import { AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
 import { PendingState } from '@/components/state';
-import { Button, TextField } from '@/components/ui';
+import { TextField } from '@/components/ui';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -19,13 +19,15 @@ export function getSignInError(error: { code?: string; status?: number; message?
 export default function SigninScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ reason?: string; reset?: string }>();
-  const { authMessage } = useAuth();
+  const { authMessage, session } = useAuth();
   const palette = Colors[useColorScheme() ?? 'light'];
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const unavailable = !isSupabaseConfigured;
+
+  if (session) return <Redirect href="/(tabs)/people" />;
 
   const submit = async () => {
     if (busy || unavailable) return;
@@ -61,16 +63,17 @@ export default function SigninScreen() {
   };
 
   return <AuthScreen testID="signin-screen" title="Sign in" subtitle="Sign in to continue.">
-    {unavailable ? <Text testID="auth-unavailable" accessibilityRole="alert" style={[styles.notice, { color: palette.textSecondary }]}>Sign-in is unavailable in this build</Text> : null}
+    {unavailable ? <Text testID="auth-unavailable" numberOfLines={1} accessibilityRole="alert" style={[styles.notice, { color: palette.text, fontSize: 14 }]}>Sign-in is unavailable in this build</Text> : null}
     {params.reason === 'reauth' || authMessage === 'Please sign in again.' ? <Text accessibilityRole="alert" style={{ color: palette.textSecondary }}>Please sign in again.</Text> : null}
     {params.reset === 'complete' ? <Text style={{ color: palette.textSecondary }}>Password updated. Sign in with your new password.</Text> : null}
     <TextField testID="signin-email" label="Email address" value={email} onChangeText={setEmail} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" returnKeyType="next" required />
     <TextField testID="signin-password" label="Password" value={password} onChangeText={setPassword} secureTextEntry textContentType="password" returnKeyType="go" onSubmitEditing={submit} required />
     {error ? <Text testID="signin-error" accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.error, { color: palette.errorText }]}>{error}</Text> : null}
     {busy ? <PendingState compact title="Signing in..." /> : null}
-    <Button testID="signin-submit" label="Sign in" size="lg" disabled={unavailable || busy} loading={busy} onPress={submit} />
-    <Pressable accessibilityRole="link" onPress={() => router.push('/auth/recovery' as any)} style={styles.link}><Text style={[styles.linkText, { color: palette.link }]}>Forgot password?</Text></Pressable>
+    <AuthPrimaryButton testID="signin-submit" label={busy ? "Signing in..." : "Sign in"} disabled={unavailable || busy} loading={busy} onPress={submit} />
+    <Pressable accessibilityRole="link" onPress={() => router.push('/auth/recovery' as any)} style={styles.link}><Text style={[styles.quietLinkText, { color: palette.textSecondary }]}>Forgot password?</Text></Pressable>
+    <Pressable testID="signin-create-account" accessibilityRole="link" onPress={() => router.push('/auth/signup' as any)} style={styles.link}><Text style={[styles.linkText, { color: palette.link }]}>Create account</Text></Pressable>
     {/* Google and Facebook remain absent until provider configuration is approved. */}
   </AuthScreen>;
 }
-const styles = StyleSheet.create({ notice: { marginBottom: Spacing.xs }, error: { marginBottom: Spacing.xs }, link: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' }, linkText: { textDecorationLine: 'underline' } });
+const styles = StyleSheet.create({ notice: { marginBottom: Spacing.xs }, error: { marginBottom: Spacing.xs }, link: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' }, linkText: { textDecorationLine: 'underline' }, quietLinkText: { fontSize: 14 } });

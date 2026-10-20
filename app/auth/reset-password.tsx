@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Text } from 'react-native';
-import { AuthScreen } from '@/components/layout/AuthScreen';
-import { Button, TextField } from '@/components/ui';
+import { AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
+import { TextField } from '@/components/ui';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/lib/AuthProvider';
@@ -35,11 +35,11 @@ export default function ResetPasswordScreen() {
       setError('Could not update your password. Request a new recovery link and try again.');
     } finally { setBusy(false); }
   };
-  return <AuthScreen testID="reset-password-screen" title="Choose a new password" subtitle={`Use at least ${MIN_PASSWORD_LENGTH} characters.`}>
-    {unavailable ? <Text accessibilityRole="alert" style={{ color: palette.textSecondary }}>Sign-in is unavailable in this build</Text> : null}
+  return <AuthScreen testID="reset-password-screen" title="Choose a new password" subtitle="Use at least 8 characters.">
+    {unavailable ? <Text numberOfLines={1} accessibilityRole="alert" style={{ color: palette.text, fontSize: 14 }}>Sign-in is unavailable in this build</Text> : null}
     <TextField testID="reset-password" label="New password" value={password} onChangeText={setPassword} secureTextEntry textContentType="newPassword" autoComplete="new-password" required />
     <TextField testID="reset-password-confirm" label="Confirm new password" value={confirmation} onChangeText={setConfirmation} secureTextEntry textContentType="newPassword" autoComplete="new-password" returnKeyType="go" onSubmitEditing={submit} required />
     {error ? <Text testID="reset-password-error" accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ color: palette.errorText }}>{error}</Text> : null}
-    <Button testID="reset-password-submit" label="Update password" size="lg" loading={busy} disabled={unavailable || busy} onPress={submit} />
+    <AuthPrimaryButton testID="reset-password-submit" label={busy ? "Updating password..." : "Update password"} loading={busy} disabled={unavailable || busy} onPress={submit} />
   </AuthScreen>;
 }

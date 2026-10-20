@@ -5,6 +5,7 @@ import SigninScreen from '@/app/auth/signin';
 import SignupScreen from '@/app/auth/signup';
 import RecoveryScreen from '@/app/auth/recovery';
 import { useAuth } from '@/lib/AuthProvider';
+import { textContent } from '../test-utils/textContent';
 
 var mockReplace = jest.fn();
 var mockSignIn = jest.fn();
@@ -53,7 +54,7 @@ describe('auth request flows', () => {
     const tree = renderer.create(<SigninScreen />);
     act(() => { tree.root.findByProps({ testID: 'signin-email' }).props.onChangeText('person@example.test'); tree.root.findByProps({ testID: 'signin-password' }).props.onChangeText('wrongpassword'); });
     await act(async () => { tree.root.findByProps({ testID: 'signin-submit' }).props.onPress({}); await Promise.resolve(); await Promise.resolve(); });
-    expect(tree.root.findByProps({ testID: 'signin-error' }).children.join('')).toBe('Email or password is incorrect');
+    expect(textContent(tree.root.findByProps({ testID: 'signin-error' }).children)).toBe('Email or password is incorrect');
   });
   test('sign-up routes a duplicate-email response to the same neutral check-email screen', async () => {
     mockSignUp.mockResolvedValue({ error: { code: 'user_already_exists', status: 400, message: 'User already registered' } });
@@ -61,7 +62,7 @@ describe('auth request flows', () => {
     act(() => { tree.root.findByProps({ testID: 'signup-email' }).props.onChangeText('person@example.test'); tree.root.findByProps({ testID: 'signup-password' }).props.onChangeText('safe-password'); });
     await act(async () => { tree.root.findByProps({ testID: 'signup-submit' }).props.onPress({}); await Promise.resolve(); await Promise.resolve(); });
     expect(mockReplace).toHaveBeenCalledWith({ pathname: '/auth/check-email', params: { flow: 'confirm' } });
-    expect(tree.root.findAllByType(Text).some((node) => /already registered/i.test(node.children.join('')))).toBe(false);
+    expect(tree.root.findAllByType(Text).some((node) => /already registered/i.test(textContent(node.children)))).toBe(false);
   });
   test('recovery still routes to a neutral response when the provider returns an error', async () => {
     mockRecovery.mockRejectedValue(new Error('unknown user')); 
