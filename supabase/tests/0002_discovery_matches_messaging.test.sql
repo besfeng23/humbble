@@ -123,8 +123,18 @@ DECLARE
   v_attempt INTEGER;
   v_lock_waited BOOLEAN := FALSE;
 BEGIN
-  PERFORM dblink_connect('p2_02_swipe_a', 'dbname=postgres user=postgres application_name=p2_02_swipe_a');
-  PERFORM dblink_connect('p2_02_swipe_b', 'dbname=postgres user=postgres application_name=p2_02_swipe_b');
+  -- The Supabase CLI local Postgres stack exposes its CI credentials through
+  -- the standard local default (postgres/postgres). dblink makes a TCP
+  -- connection as a non-superuser, so it must include the password explicitly.
+  -- These are local-only fixture credentials, not project secrets.
+  PERFORM dblink_connect(
+    'p2_02_swipe_a',
+    'host=127.0.0.1 port=54322 dbname=postgres user=postgres password=postgres application_name=p2_02_swipe_a'
+  );
+  PERFORM dblink_connect(
+    'p2_02_swipe_b',
+    'host=127.0.0.1 port=54322 dbname=postgres user=postgres password=postgres application_name=p2_02_swipe_b'
+  );
   PERFORM dblink_exec('p2_02_swipe_a', 'BEGIN');
   PERFORM 1
     FROM dblink(
