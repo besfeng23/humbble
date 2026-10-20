@@ -129,11 +129,11 @@ BEGIN
   -- These are local-only fixture credentials, not project secrets.
   PERFORM dblink_connect(
     'p2_02_swipe_a',
-    'host=127.0.0.1 port=54322 dbname=postgres user=postgres password=postgres application_name=p2_02_swipe_a'
+    'host=127.0.0.1 port=5432 dbname=postgres user=postgres password=postgres application_name=p2_02_swipe_a'
   );
   PERFORM dblink_connect(
     'p2_02_swipe_b',
-    'host=127.0.0.1 port=54322 dbname=postgres user=postgres password=postgres application_name=p2_02_swipe_b'
+    'host=127.0.0.1 port=5432 dbname=postgres user=postgres password=postgres application_name=p2_02_swipe_b'
   );
   PERFORM dblink_exec('p2_02_swipe_a', 'BEGIN');
   PERFORM 1
