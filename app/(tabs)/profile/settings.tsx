@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { StyleSheet, Switch, Text, View } from "react-native";
 
 import { SettingsLayout } from "@/components/layout";
-import { EmptyState, FormStateView, type FormStatus } from "@/components/state";
+import { FormStateView, type FormStatus } from "@/components/state";
 import { Button, Card } from "@/components/ui";
 import { Colors } from "@/constants/Colors";
 import { Spacing } from "@/constants/Spacing";
@@ -119,13 +119,13 @@ export default function PrivacyAndSafetySettingsScreen() {
           </View>
         </Card>
 
-        <EmptyState
-          testID="scr-18-blocked-empty"
-          title="You haven't blocked anyone"
-          message="Blocked accounts are immediately severed from discovery, matches, and conversations."
-          actionLabel="Open Safety Report Modal"
-          onAction={() => router.push("/(safety)/report-modal" as any)}
-        />
+        <Card testID="scr-18-blocked-users-card" variant="outlined">
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: palette.text }]}>Blocked users</Text>
+            <Text style={[styles.sublabel, { color: palette.textSecondary }]}>Review blocked accounts and unblock someone if you choose. Old matches are never restored.</Text>
+            <Button testID="scr-18-blocked-users-btn" label="Manage blocked users" variant="secondary" size="md" onPress={() => router.push("/(tabs)/profile/blocked-users" as any)} />
+          </View>
+        </Card>
 
         <Card testID="scr-18-links-card" variant="outlined">
           <View style={styles.linksRow}>

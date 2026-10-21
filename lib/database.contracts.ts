@@ -66,14 +66,8 @@ export type MessageClientInsert = Pick<
   Database['public']['Tables']['messages']['Insert'],
   'conversation_id' | 'sender_id' | 'body'
 >;
-export type BlockClientInsert = Pick<
-  Database['public']['Tables']['blocks']['Insert'],
-  'blocker_id' | 'blocked_id'
->;
-export type ReportClientInsert = Pick<
-  Database['public']['Tables']['reports']['Insert'],
-  'reporter_id' | 'reported_user_id' | 'category' | 'context_summary'
->;
+// Block and report mutations deliberately have no direct table-write contract.
+// Use the authenticated-only block_user / unblock_user / submit_report RPCs.
 export type ConsentRecordClientInsert = Pick<
   Database['public']['Tables']['consent_records']['Insert'],
   'user_id' | 'consent_key' | 'version' | 'choice' | 'source' | 'metadata'
@@ -92,6 +86,8 @@ export type HasActiveEntitlementArgs = Database['public']['Functions']['has_acti
 export type BlockUserArgs = Database['public']['Functions']['block_user']['Args'];
 export type UnblockUserArgs = Database['public']['Functions']['unblock_user']['Args'];
 export type SubmitReportArgs = Database['public']['Functions']['submit_report']['Args'];
+export type UnmatchArgs = Database['public']['Functions']['unmatch']['Args'];
+export type BlockedUserRow = Database['public']['Functions']['list_blocked_users']['Returns'][number];
 export type RequestPrivacyActionArgs = Database['public']['Functions']['request_privacy_action']['Args'];
 export type ModerationTransitionCaseArgs = Database['public']['Functions']['moderation_transition_case']['Args'];
 

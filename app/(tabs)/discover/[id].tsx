@@ -49,7 +49,7 @@ export default function ProfileInspectorScreen() {
   };
   return <AuthGuard mode="protected" redirectTo="/auth/signin" testID="scr-12-guard">
     <View testID="scr-12-profile-inspector" style={[styles.root, { backgroundColor: palette.background }]}>
-      <ResponsiveNavHeader testID="scr-12-header" title="Profile" subtitle="Discovery profile" showBack fallbackHref="/(tabs)/discover" rightSlot={<Button testID="scr-12-shield-btn" label="Shield / Report" variant="danger" size="sm" shape="pill" onPress={() => router.push('/(safety)/report-modal' as any)} />} />
+      <ResponsiveNavHeader fadeEdge testID="scr-12-header" title="Profile" subtitle="Discovery profile" showBack fallbackHref="/(tabs)/discover" rightSlot={<Button testID="scr-12-shield-btn" label="Safety" variant="danger" size="sm" shape="pill" onPress={() => router.push({ pathname: '/(safety)/report-modal', params: { targetId: candidate?.profile_id ?? candidateId, targetName: candidate?.display_name ?? 'this person', source: 'profile' } } as any)} />} />
       {loading ? <View style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Loading profile…</Text></View> : candidate ? <ScrollView contentContainerStyle={styles.content}>
         <ProfileMedia testID="scr-12-media" name={candidate.display_name} age={candidate.age} imageUri={candidate.imageUrl ?? undefined} subtitle={candidate.city_region} verified size="large" />
         <Card testID="scr-12-prompts-card" variant="elevated"><View style={styles.prompts}>

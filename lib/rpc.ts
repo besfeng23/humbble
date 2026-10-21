@@ -87,13 +87,27 @@ export function submitReport(input: {
   reportedUserId: string;
   category: ReportCategory;
   contextSummary?: string | null;
+  clientReportId?: string;
 }): Promise<RpcResult<string>> {
   return typedResult<string>(
     supabase.rpc('submit_report', {
       p_reported_user_id: input.reportedUserId,
       p_category: input.category,
-      p_context_summary: input.contextSummary ?? null,
+      p_context_summary: input.contextSummary ?? '',
+      p_client_report_id: input.clientReportId,
     }),
+  );
+}
+
+/** Ends an active match for both participants; never deletes the conversation. */
+export function unmatchUser(targetId: string): Promise<RpcResult<boolean>> {
+  return typedResult<boolean>(supabase.rpc('unmatch', { p_target_id: targetId }));
+}
+
+/** Returns only blocks placed by the current authenticated user. */
+export function listBlockedUsers(): Promise<RpcResult<Database['public']['Functions']['list_blocked_users']['Returns']>> {
+  return typedResult<Database['public']['Functions']['list_blocked_users']['Returns']>(
+    supabase.rpc('list_blocked_users'),
   );
 }
 

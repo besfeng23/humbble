@@ -31,6 +31,8 @@ export interface SettingsLayoutProps {
   activeNavId?: string;
   /** Override reduced motion */
   reduceMotion?: boolean;
+  /** Replace the header divider with the shared FadeEdge treatment */
+  fadeEdge?: boolean;
   /** Test identifier prefix */
   testID?: string;
   /** Settings/privacy/billing/safety view content */
@@ -43,6 +45,7 @@ export function SettingsLayout({
   fallbackHref = "/(tabs)/profile",
   activeNavId,
   reduceMotion,
+  fadeEdge = false,
   testID = "settings-layout",
   children,
 }: SettingsLayoutProps) {
@@ -65,6 +68,7 @@ export function SettingsLayout({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ResponsiveNavHeader
+          fadeEdge={fadeEdge}
           testID={`${testID}-header`}
           title={title}
           subtitle={subtitle}

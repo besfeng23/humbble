@@ -30,10 +30,10 @@ export default function Chats() {
       {loading ? <View style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Loading conversations…</Text></View> :
         error ? <View style={styles.center}><Text style={[styles.message, { color: palette.text }]}>{error}</Text><Pressable onPress={() => void load()}><Text style={styles.link}>Try again</Text></Pressable></View> :
         items.length === 0 ? <View style={styles.center}><Text style={[styles.heading, { color: palette.text }]}>No conversations yet</Text><Text style={[styles.message, { color: palette.textSecondary }]}>When you and someone like each other, you can message each other for free.</Text><Pressable onPress={() => router.push('/(tabs)/discover' as any)}><Text style={styles.link}>Explore Discover</Text></Pressable></View> :
-        <ScrollView contentContainerStyle={styles.list}>{items.map(item => <Pressable key={item.id} testID={`conversation-${item.id}`} onPress={() => router.push(`/(tabs)/(chats)/${item.id}` as any)} style={styles.row}>
+        <ScrollView contentContainerStyle={styles.list}>{items.map(item => <Pressable key={item.id} testID={`conversation-${item.id}`} accessibilityHint="Long-press for Block, Report, or Unmatch" onLongPress={() => router.push({ pathname: '/(safety)/report-modal', params: { targetId: item.counterpartId, targetName: item.counterpartName, source: 'conversation-list' } } as any)} onPress={() => router.push(`/(tabs)/(chats)/${item.id}` as any)} style={styles.row}>
           <View style={styles.avatar}><Text style={styles.avatarText}>{item.counterpartName.slice(0,1).toUpperCase()}</Text></View>
           <View style={styles.copy}><Text style={[styles.name, { color: palette.text }]}>{item.counterpartName}</Text><Text numberOfLines={1} style={[styles.preview, { color: palette.textSecondary }]}>{item.lastMessage}</Text></View>
-          <Text style={[styles.time, { color: palette.textSecondary }]}>{item.lastMessageAt ? new Date(item.lastMessageAt).toLocaleDateString() : ''}</Text>
+          <View style={styles.meta}><Text style={[styles.time, { color: palette.textSecondary }]}>{item.lastMessageAt ? new Date(item.lastMessageAt).toLocaleDateString() : ''}</Text><Text style={[styles.safetyHint, { color: palette.textMuted }]}>Hold for safety</Text></View>
         </Pressable>)}</ScrollView>}
     </View>
   </AuthGuard>;
@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#EAE5DA', alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 20, fontWeight: '600', color: '#24221D' },
   copy: { flex: 1, gap: 5 }, name: { fontSize: 16, fontWeight: '700' }, preview: { fontSize: 13 },
-  time: { fontSize: 11 }, center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, gap: 12 },
+  time: { fontSize: 11 }, meta: { alignItems: 'flex-end', gap: 5 }, safetyHint: { fontSize: 10 }, center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, gap: 12 },
   heading: { fontSize: 21, fontWeight: '700', textAlign: 'center' }, message: { fontSize: 14, lineHeight: 21, textAlign: 'center' },
   link: { color: '#9A702C', fontWeight: '700', padding: 8 },
 });

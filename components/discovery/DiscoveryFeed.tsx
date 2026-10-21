@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/Colors';
@@ -13,6 +14,7 @@ const PREVIEW_ITEMS: DiscoveryCard[] = [
 ];
 
 export function DiscoveryFeed({ previewState }: { previewState?: PreviewState }) {
+  const router = useRouter();
   const palette = Colors[useColorScheme() ?? 'light'];
   const [items, setItems] = useState<DiscoveryCard[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -105,7 +107,7 @@ export function DiscoveryFeed({ previewState }: { previewState?: PreviewState })
 
   if (loading) return <View testID="discovery-loading" style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Finding people for you…</Text></View>;
   if (error && items.length === 0) return <View testID="discovery-error" style={styles.center}><Text style={[styles.stateTitle, { color: palette.text }]}>Discovery could not load</Text><Text style={{ color: palette.textSecondary, textAlign: 'center' }}>{error}</Text><Pressable accessibilityRole="button" onPress={() => { seenIds.current.clear(); void load(false); }} style={[styles.stateButton, { backgroundColor: palette.primary }]}><Text style={{ color: palette.onPrimary, fontWeight: '700' }}>Try again</Text></Pressable></View>;
-  if (match) return <View testID="discovery-match" style={styles.center}><Text style={[styles.stateTitle, { color: palette.text }]}>It’s a match</Text><Text style={{ color: palette.textSecondary, textAlign: 'center' }}>You and {match.display_name} liked each other.</Text>{match.imageUrl ? <Image source={{ uri: match.imageUrl }} style={styles.matchPhoto} /> : null}<Pressable accessibilityRole="button" onPress={() => setMatch(null)} style={[styles.stateButton, { backgroundColor: palette.primary }]}><Text style={{ color: palette.onPrimary, fontWeight: '700' }}>Continue discovering</Text></Pressable></View>;
+  if (match) return <View testID="discovery-match" style={styles.center}><Text style={[styles.stateTitle, { color: palette.text }]}>It’s a match</Text><Text style={{ color: palette.textSecondary, textAlign: 'center' }}>You and {match.display_name} liked each other.</Text>{match.imageUrl ? <Image source={{ uri: match.imageUrl }} style={styles.matchPhoto} /> : null}<Pressable testID="discovery-match-safety" accessibilityRole="button" onPress={() => router.push({ pathname: '/(safety)/report-modal', params: { targetId: match.profile_id, targetName: match.display_name, source: 'match' } } as any)} style={[styles.stateButton, { backgroundColor: palette.dangerSolid }]}><Text style={{ color: palette.onDangerSolid, fontWeight: '700' }}>Block, report or unmatch</Text></Pressable><Pressable accessibilityRole="button" onPress={() => setMatch(null)} style={[styles.stateButton, { backgroundColor: palette.primary }]}><Text style={{ color: palette.onPrimary, fontWeight: '700' }}>Continue discovering</Text></Pressable></View>;
   if (quotaReached) return <View testID="discovery-quota" style={styles.center}><Text style={[styles.stateTitle, { color: palette.text }]}>You’re out of likes for today</Text><Text style={{ color: palette.textSecondary, textAlign: 'center' }}>Your daily free like limit has been reached. You can keep browsing and come back when your allowance refreshes.</Text><Pressable accessibilityRole="button" onPress={() => setQuotaReached(false)} style={[styles.stateButton, { backgroundColor: palette.primary }]}><Text style={{ color: palette.onPrimary, fontWeight: '700' }}>Keep browsing</Text></Pressable></View>;
   if (items.length === 0) return <View testID="discovery-empty" style={styles.center}><Text style={[styles.stateTitle, { color: palette.text }]}>You’re all caught up</Text><Text style={{ color: palette.textSecondary, textAlign: 'center' }}>There are no more eligible profiles right now. Check back later or adjust your age preferences.</Text><Pressable accessibilityRole="button" onPress={() => { seenIds.current.clear(); void load(false); }} style={[styles.stateButton, { backgroundColor: palette.primary }]}><Text style={{ color: palette.onPrimary, fontWeight: '700' }}>Refresh discovery</Text></Pressable></View>;
 
