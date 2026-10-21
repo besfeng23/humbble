@@ -1,11 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Text } from 'react-native';
 import { AuthGuard } from '@/components/layout/AuthGuard';
-import { AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
-import { Button, TextField } from '@/components/ui';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { AuthNotice, AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
+import { DatePickerField } from '@/components/layout/DatePickerField';
+import { Button } from '@/components/ui';
 import { ageFromBirthDate, isAdult } from '@/lib/auth/age';
 import { useAuth } from '@/lib/AuthProvider';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
@@ -23,7 +21,6 @@ export default function OnboardingBasicsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ preview?: string }>();
   const { user, signOut } = useAuth();
-  const palette = Colors[useColorScheme() ?? 'light'];
   const [birthDate, setBirthDate] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,8 +71,8 @@ export default function OnboardingBasicsScreen() {
   </AuthScreen>);
 
   return renderGuarded(<AuthScreen testID="onboarding-basics-screen" title="Date of birth" subtitle="Enter your date of birth to continue.">
-    {unavailable ? <Text numberOfLines={1} accessibilityRole="alert" style={{ color: palette.text, fontSize: 14 }}>Sign-in is unavailable in this build</Text> : null}
-    <TextField testID="birth-date-field" label="Date of birth" placeholder="YYYY-MM-DD" value={birthDate} onChangeText={setBirthDate} autoCapitalize="none" keyboardType="numbers-and-punctuation" maxLength={10} returnKeyType="go" onSubmitEditing={submit} error={error} required />
+    {unavailable ? <AuthNotice testID="auth-unavailable">Sign-in is unavailable in this build</AuthNotice> : null}
+    <DatePickerField testID="birth-date-field" value={birthDate} onChange={setBirthDate} error={error} />
     <AuthPrimaryButton testID="birth-date-continue" label={busy ? "Saving details..." : "Continue"} disabled={unavailable || busy || !user} loading={busy} onPress={submit} />
   </AuthScreen>);
 }

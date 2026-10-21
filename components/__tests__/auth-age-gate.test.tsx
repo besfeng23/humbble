@@ -22,14 +22,36 @@ function configureInsert(error: any = null) {
     return { select: jest.fn().mockReturnValue({ eq }), insert: mockInsert, update: jest.fn().mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) }) };
   });
 }
+function setBirthDate(tree: renderer.ReactTestRenderer, isoDate: string) {
+  const field = tree.root.findAll((node) => node.props.testID === 'birth-date-field' && (typeof node.props.onChangeText === 'function' || typeof node.props.onPress === 'function'))[0];
+  if (typeof field.props.onChangeText === 'function') {
+    act(() => field.props.onChangeText(isoDate));
+    return;
+  }
+  const [yearText, monthText, dayText] = isoDate.split('-');
+  act(() => field.props.onPress());
+  act(() => tree.root.findByProps({ testID: 'birth-date-field-select-year' }).props.onPress());
+  act(() => tree.root.findByProps({ testID: `birth-date-field-year-${Number(yearText)}` }).props.onPress());
+  const desiredMonth = Number(monthText) - 1;
+  const currentMonth = Number(new Date().toISOString().slice(5, 7)) - 1;
+  if (desiredMonth < currentMonth) {
+    for (let i = currentMonth; i > desiredMonth; i -= 1) {
+      act(() => tree.root.findByProps({ testID: 'birth-date-field-previous-month' }).props.onPress());
+    }
+  } else {
+    for (let i = currentMonth; i < desiredMonth; i += 1) {
+      act(() => tree.root.findByProps({ testID: 'birth-date-field-next-month' }).props.onPress());
+    }
+  }
+  act(() => tree.root.findByProps({ testID: `birth-date-field-day-${Number(dayText)}` }).props.onPress());
+}
+
 beforeEach(() => { mockParams = {}; mockReplace.mockReset(); mockInsert.mockReset(); mockFrom.mockReset(); configureInsert(); });
 
 describe('18+ onboarding gate', () => {
   test('blocks an under-18 date before any profile read or write', async () => {
     const tree = renderer.create(<OnboardingBasicsScreen />);
-    act(() => {
-      tree.root.findByProps({ testID: 'birth-date-field' }).props.onChangeText('2010-01-01');
-    });
+    setBirthDate(tree, '2010-01-01');
     await act(async () => {
       tree.root.findByProps({ testID: 'birth-date-continue' }).props.onPress({});
       await Promise.resolve();
@@ -40,7 +62,7 @@ describe('18+ onboarding gate', () => {
   });
   test('writes an adult birth date via profile insert and leaves server-owned fields untouched', async () => {
     const tree = renderer.create(<OnboardingBasicsScreen />);
-    act(() => { tree.root.findByProps({ testID: 'birth-date-field' }).props.onChangeText('1990-01-01'); });
+    setBirthDate(tree, '1990-01-01');
     await act(async () => { tree.root.findByProps({ testID: 'birth-date-continue' }).props.onPress({}); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
     expect(mockInsert).toHaveBeenCalledWith({ id: 'user-1', display_name: 'Test Person', birth_date: '1990-01-01' });
     expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/verify');
@@ -48,14 +70,14 @@ describe('18+ onboarding gate', () => {
   test('maps a P0001 age-policy rejection to the same blocking state', async () => {
     configureInsert({ code: 'P0001', message: 'age policy' });
     const tree = renderer.create(<OnboardingBasicsScreen />);
-    act(() => { tree.root.findByProps({ testID: 'birth-date-field' }).props.onChangeText('1990-01-01'); });
+    setBirthDate(tree, '1990-01-01');
     await act(async () => { tree.root.findByProps({ testID: 'birth-date-continue' }).props.onPress({}); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
     expect(tree.root.findAllByType(Text).some((node) => textContent(node.children) === UNDERAGE_MESSAGE)).toBe(true);
   });
   test('maps database age constraint rejection to the same blocking state', async () => {
     configureInsert({ code: '23514', message: 'birth_date age check' });
     const tree = renderer.create(<OnboardingBasicsScreen />);
-    act(() => { tree.root.findByProps({ testID: 'birth-date-field' }).props.onChangeText('1990-01-01'); });
+    setBirthDate(tree, '1990-01-01');
     await act(async () => { tree.root.findByProps({ testID: 'birth-date-continue' }).props.onPress({}); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
     expect(tree.root.findAllByType(Text).some((node) => textContent(node.children) === UNDERAGE_MESSAGE)).toBe(true);
   });

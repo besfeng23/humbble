@@ -1,7 +1,7 @@
 import { Redirect, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
+import { AuthNotice, AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
 import { TextField } from '@/components/ui';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -40,7 +40,7 @@ export default function SignupScreen() {
     } finally { setBusy(false); }
   };
   return <AuthScreen testID="signup-screen" title="Create account" subtitle="Use your email to get started.">
-    {unavailable ? <Text testID="auth-unavailable" numberOfLines={1} accessibilityRole="alert" style={{ color: palette.text, fontSize: 14 }}>Sign-in is unavailable in this build</Text> : null}
+    {unavailable ? <AuthNotice testID="auth-unavailable">Sign-in is unavailable in this build</AuthNotice> : null}
     <TextField testID="signup-email" label="Email address" value={email} onChangeText={setEmail} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" required />
     <TextField testID="signup-password" label="Password" value={password} onChangeText={setPassword} secureTextEntry textContentType="newPassword" returnKeyType="go" onSubmitEditing={submit} required />
     {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ color: palette.errorText }}>{error}</Text> : null}

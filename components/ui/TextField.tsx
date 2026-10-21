@@ -1,5 +1,6 @@
-import React, { useId, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import {
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -39,6 +40,25 @@ export interface TextFieldProps extends Omit<TextInputProps, "style"> {
   labelStyle?: StyleProp<TextStyle>;
   /** Error text style override */
   errorStyle?: StyleProp<TextStyle>;
+  /** Web only: HTML input attributes react-native-web does not forward (e.g. type="date", min, max). */
+  webInputAttributes?: WebInputAttributes;
+}
+
+export interface WebInputAttributes {
+  type?: string;
+  min?: string;
+  max?: string;
+}
+
+/** Apply (or clear) HTML input attributes on a DOM node. No-op for non-DOM refs. */
+export function applyWebInputAttributes(node: unknown, attrs: WebInputAttributes | undefined): void {
+  const el = node as { setAttribute?: (k: string, v: string) => void; removeAttribute?: (k: string) => void } | null;
+  if (!el || typeof el.setAttribute !== "function" || !attrs) return;
+  (["type", "min", "max"] as const).forEach((key) => {
+    const value = attrs[key];
+    if (value) el.setAttribute!(key, value);
+    else el.removeAttribute?.(key);
+  });
 }
 
 export function TextField({
@@ -59,8 +79,17 @@ export function TextField({
   labelStyle,
   errorStyle,
   testID,
+  webInputAttributes,
   ...rest
 }: TextFieldProps) {
+  const inputRef = useRef<TextInput>(null);
+  const webType = webInputAttributes?.type;
+  const webMin = webInputAttributes?.min;
+  const webMax = webInputAttributes?.max;
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    applyWebInputAttributes(inputRef.current, { type: webType, min: webMin, max: webMax });
+  }, [webType, webMin, webMax]);
   const scheme = useColorScheme() ?? "light";
   const palette = Colors[scheme];
   const generatedId = useId();
@@ -121,6 +150,7 @@ export function TextField({
 
       <TextInput
         {...rest}
+        ref={inputRef}
         testID={testID}
         editable={!isDisabled}
         onFocus={handleFocus}
