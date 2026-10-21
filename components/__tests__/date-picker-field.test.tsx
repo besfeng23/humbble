@@ -1,17 +1,36 @@
 import React from 'react';
 import { Platform, Text } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
-import { AccessibleWebDatePickerField, DatePickerField } from '@/components/layout/DatePickerField';
+import { AccessibleWebDatePickerField, DatePickerField, adultMaxIsoDate } from '@/components/layout/DatePickerField';
+import { applyWebInputAttributes } from '@/components/ui/TextField';
 import { textContent } from '../test-utils/textContent';
+
+describe('web date attributes', () => {
+  test('adultMaxIsoDate is today minus 18 years (UTC)', () => {
+    expect(adultMaxIsoDate(new Date('2026-10-21T12:00:00Z'))).toBe('2008-10-21');
+    expect(adultMaxIsoDate(new Date('2024-02-29T00:00:00Z'))).toBe('2006-03-01');
+  });
+  test('applyWebInputAttributes sets DOM attributes and ignores non-DOM refs', () => {
+    const attrs: Record<string, string> = {};
+    const el = { setAttribute: (k: string, v: string) => { attrs[k] = v; }, removeAttribute: (k: string) => { delete attrs[k]; } };
+    applyWebInputAttributes(el, { type: 'date', max: '2008-10-21' });
+    expect(attrs).toEqual({ type: 'date', max: '2008-10-21' });
+    expect(() => applyWebInputAttributes(null, { type: 'date' })).not.toThrow();
+    expect(() => applyWebInputAttributes({}, { type: 'date' })).not.toThrow();
+  });
+});
 
 describe('DatePickerField', () => {
   test('web fallback is a labelled HTML date input with a future-date limit', () => {
     const onChange = jest.fn();
     const tree = renderer.create(<AccessibleWebDatePickerField testID="web-dob" value="" onChange={onChange} />);
     const input = tree.root.findAll((node) => node.props.testID === 'web-dob' && typeof node.props.onChangeText === 'function')[0];
-    expect(input.props.type).toBe('date');
+    const field = tree.root.findAll((node) => node.props.testID === 'web-dob' && node.props.webInputAttributes != null)[0];
+    expect(field.props.webInputAttributes.type).toBe('date');
+    expect(field.props.webInputAttributes.max).toBe(adultMaxIsoDate());
+    expect(field.props.webInputAttributes.min).toBe('1900-01-01');
+    expect(input.props.placeholder).toBe('YYYY-MM-DD');
     expect(input.props.accessibilityLabel).toBe('Date of birth');
-    expect(input.props.max).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     act(() => input.props.onChangeText('1990-01-01'));
     expect(onChange).toHaveBeenCalledWith('1990-01-01');
   });

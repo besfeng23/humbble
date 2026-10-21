@@ -45,6 +45,12 @@ function parseLocalDate(value: string): Date | null {
   return date;
 }
 
+/** Latest selectable birth date on web: today (UTC) minus 18 years. The server still enforces 18+. */
+export function adultMaxIsoDate(today: Date = new Date()): string {
+  const d = new Date(Date.UTC(today.getUTCFullYear() - 18, today.getUTCMonth(), today.getUTCDate()));
+  return d.toISOString().slice(0, 10);
+}
+
 function maxIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -66,7 +72,11 @@ export function AccessibleWebDatePickerField({ value, onChange, error, testID = 
       accessibilityHint="Choose your birth date. Future dates are unavailable."
       error={error}
       required
-      {...({ type: 'date', max: maxIsoDate() } as any)}
+      placeholder="YYYY-MM-DD"
+      helperText="Format: YYYY-MM-DD"
+      autoCapitalize="none"
+      maxLength={10}
+      webInputAttributes={{ type: 'date', min: '1900-01-01', max: adultMaxIsoDate() }}
     />
   );
 }
