@@ -104,10 +104,11 @@ BEGIN
   END IF;
   INSERT INTO public.push_tokens(user_id, token, platform)
   VALUES (v_user, p_token, p_platform)
-  ON CONFLICT (token) DO UPDATE SET platform = EXCLUDED.platform, updated_at = pg_catalog.now()
-    WHERE public.push_tokens.user_id = EXCLUDED.user_id
+  -- Shared phones: the newest sign-in takes over the device token. The single
+  -- upsert reassigns the row atomically, so the previous account stops receiving
+  -- alerts on this device.
+  ON CONFLICT (token) DO UPDATE SET user_id = EXCLUDED.user_id, platform = EXCLUDED.platform, updated_at = pg_catalog.now()
   RETURNING id INTO v_id;
-  IF v_id IS NULL THEN RAISE EXCEPTION 'push_token_already_registered' USING ERRCODE = '23505'; END IF;
   RETURN v_id;
 END;
 $function$;
@@ -128,6 +129,20 @@ $function$;
 ALTER FUNCTION public.unregister_push_token(TEXT) OWNER TO postgres;
 REVOKE EXECUTE ON FUNCTION public.unregister_push_token(TEXT) FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.unregister_push_token(TEXT) TO authenticated;
+
+-- Per-device delivery ledger: a retry only resends to tokens that have not
+-- succeeded for this job. Keyed by token text, never exposed to clients.
+CREATE TABLE public.notification_deliveries (
+  job_id BIGINT NOT NULL REFERENCES public.notification_jobs(id) ON DELETE CASCADE,
+  token TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('sent', 'failed')),
+  last_error_code TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT pg_catalog.now(),
+  PRIMARY KEY (job_id, token)
+);
+ALTER TABLE public.notification_deliveries ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.notification_deliveries FROM PUBLIC, anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.notification_deliveries TO service_role;
 
 -- Only the service-role Edge Function can claim jobs; the atomic claim avoids
 -- two concurrent drainers sending the same outbox row.

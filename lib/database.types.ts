@@ -407,6 +407,38 @@ export type Database = {
           },
         ]
       }
+      notification_deliveries: {
+        Row: {
+          job_id: number
+          last_error_code: string | null
+          status: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          job_id: number
+          last_error_code?: string | null
+          status: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          job_id?: number
+          last_error_code?: string | null
+          status?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "notification_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_jobs: {
         Row: {
           conversation_id: string | null

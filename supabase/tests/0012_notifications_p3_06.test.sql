@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET search_path = public, extensions, pg_temp;
-SELECT plan(42);
+SELECT plan(47);
 
 DELETE FROM auth.users WHERE id BETWEEN '00000000-0000-0000-0000-000000000061' AND '00000000-0000-0000-0000-000000000068';
 INSERT INTO auth.users (id, aud, role, email, created_at, updated_at) VALUES
@@ -86,10 +86,17 @@ SET LOCAL ROLE authenticated;
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000063","role":"authenticated"}';
 SELECT lives_ok($$SELECT public.register_push_token('ExponentPushToken[owner-63-token]','android')$$,'authenticated user can register their own device token');
 SELECT lives_ok($$SELECT public.register_push_token('ExponentPushToken[owner-63-token]','android')$$,'re-registering the same token is idempotent for its owner');
-SELECT throws_ok($$SELECT public.register_push_token('ExponentPushToken[owner-61-token]','ios')$$,'23505','push_token_already_registered','a token owned by another user cannot be taken over');
+-- Shared phone: the newest sign-in takes over a token previously owned by 61.
+SELECT lives_ok($$SELECT public.register_push_token('ExponentPushToken[owner-61-token]','android')$$,'newest login takes over a device token owned by another user');
+RESET ROLE;
+SELECT is((SELECT user_id::text FROM public.push_tokens WHERE token='ExponentPushToken[owner-61-token]'),'00000000-0000-0000-0000-000000000063','taken-over token now belongs to the newest login');
+SELECT is((SELECT count(*)::integer FROM public.push_tokens WHERE user_id='00000000-0000-0000-0000-000000000061'),0,'previous owner no longer has the device token');
+SELECT is((SELECT count(*)::integer FROM public.push_tokens WHERE token='ExponentPushToken[owner-61-token]'),1,'takeover reassigns the row instead of duplicating it');
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000063","role":"authenticated"}';
 SELECT throws_ok($$SELECT public.register_push_token('short','ios')$$,'22023','invalid_push_token','malformed tokens are rejected');
 SELECT throws_ok($$SELECT public.register_push_token('ExponentPushToken[owner-63-web]','web')$$,'22023','invalid_push_token','unsupported platforms are rejected');
-SELECT is(public.unregister_push_token('ExponentPushToken[owner-61-token]'),FALSE,'a user cannot unregister another users token');
+SELECT is(public.unregister_push_token('ExponentPushToken[owner-62-token]'),FALSE,'a user cannot unregister another users token');
 SELECT is(public.unregister_push_token('ExponentPushToken[owner-63-token]'),TRUE,'a user can unregister their own token');
 UPDATE public.notification_preferences SET matches_enabled=FALSE WHERE user_id='00000000-0000-0000-0000-000000000061';
 RESET ROLE;
@@ -102,6 +109,9 @@ UPDATE public.notification_preferences SET messages_enabled=FALSE WHERE user_id=
 RESET ROLE;
 SELECT is((SELECT count(*)::integer FROM public.notification_jobs WHERE recipient_id='00000000-0000-0000-0000-000000000068' AND notification_type='message' AND status IN ('pending','failed')),0,'opting out cancels pending message jobs');
 
+SELECT ok(NOT has_table_privilege('authenticated','public.notification_deliveries','SELECT') AND NOT has_table_privilege('anon','public.notification_deliveries','SELECT')
+  AND has_table_privilege('service_role','public.notification_deliveries','INSERT'),'per-device delivery ledger is service-role only');
+SELECT has_pk('public','notification_deliveries','delivery ledger is keyed per (job, token)');
 SET LOCAL ROLE service_role;
 SELECT ok((SELECT count(*) FROM public.claim_notification_jobs(100)) > 0,'service role claims pending jobs');
 SELECT is((SELECT count(*)::integer FROM public.claim_notification_jobs(100)),0,'claimed jobs are not handed out twice');

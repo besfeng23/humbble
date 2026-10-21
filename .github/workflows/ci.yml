@@ -41,6 +41,15 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Edge function tests (Deno)
+        working-directory: supabase/functions
+        run: deno test --node-modules-dir=none --allow-env --allow-net send-push/
+
   database:
     name: Database (Supabase + pgTAP)
     runs-on: ubuntu-latest

@@ -6,6 +6,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { loadConversationList } from '@/lib/messaging';
 import { enablePushAndRegister } from '@/lib/notifications';
+import { setViewingMatch } from '@/lib/notificationFocus';
 
 export default function MatchScreen() {
   const router = useRouter();
@@ -13,6 +14,9 @@ export default function MatchScreen() {
   const palette = Colors[useColorScheme() ?? 'light'];
   const [conversationId, setConversationId] = useState('');
   const [busy, setBusy] = useState(true);
+  const [alertsOn, setAlertsOn] = useState(false);
+  // While this match landing screen is open, its own match alert is suppressed.
+  useEffect(() => (matchId ? setViewingMatch(String(matchId)) : undefined), [matchId]);
   useEffect(() => {
     let alive = true;
     void loadConversationList().then(rows => {
@@ -20,16 +24,17 @@ export default function MatchScreen() {
     }).catch(() => undefined).finally(() => { if (alive) setBusy(false); });
     return () => { alive = false; };
   }, [matchId]);
+  const openChat = () => conversationId ? router.replace(`/(tabs)/(chats)/${conversationId}` as any) : router.replace('/(tabs)/(chats)' as any);
+  // Sparse: one header title, one line of copy, one outline action, one quiet text opt-in.
   return <AuthGuard mode="protected" redirectTo="/auth/signin" testID="match-notification-guard">
     <View style={[styles.root, { backgroundColor: palette.background }]}>
-      <ResponsiveNavHeader fadeEdge title="A new match" subtitle="You both liked each other" showBack fallbackHref="/(tabs)/(chats)" />
+      <ResponsiveNavHeader fadeEdge title="New match" showBack fallbackHref="/(tabs)/(chats)" />
       <View style={styles.content}>
-        <Text style={[styles.title, { color: palette.text }]}>It’s a match</Text>
-        <Text style={[styles.copy, { color: palette.textSecondary }]}>Start a conversation when you’re ready.</Text>
-        {busy ? <ActivityIndicator /> : <Pressable testID="match-notification-message" accessibilityRole="button" onPress={() => conversationId ? router.replace(`/(tabs)/(chats)/${conversationId}` as any) : router.replace('/(tabs)/(chats)' as any)} style={styles.button}><Text style={styles.buttonText}>{conversationId ? 'Send a message' : 'View conversations'}</Text></Pressable>}
-        <Pressable testID="match-notification-enable-push" onPress={() => void enablePushAndRegister().catch(() => undefined)}><Text style={styles.link}>Enable match and message alerts</Text></Pressable>
+        <Text style={[styles.copy, { color: palette.textSecondary }]}>You both liked each other.</Text>
+        {busy ? <ActivityIndicator /> : <Pressable testID="match-notification-message" accessibilityRole="button" onPress={openChat} style={[styles.outline, { borderColor: palette.borderStrong }]}><Text style={[styles.outlineText, { color: palette.text }]}>{conversationId ? 'Send a message' : 'View conversations'}</Text></Pressable>}
+        {alertsOn ? null : <Pressable testID="match-notification-enable-push" accessibilityRole="button" hitSlop={8} onPress={() => void enablePushAndRegister().then(setAlertsOn).catch(() => undefined)}><Text style={[styles.link, { color: palette.textSecondary }]}>Turn on notifications</Text></Pressable>}
       </View>
     </View>
   </AuthGuard>;
 }
-const styles = StyleSheet.create({ root: { flex: 1, paddingHorizontal: 20 }, content: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 18 }, title: { fontSize: 30, fontWeight: '700' }, copy: { fontSize: 15, textAlign: 'center' }, button: { backgroundColor: '#24221D', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14 }, buttonText: { color: '#FFFFFF', fontWeight: '700' }, link: { color: '#9A702C', padding: 10, fontWeight: '600' } });
+const styles = StyleSheet.create({ root: { flex: 1, paddingHorizontal: 20 }, content: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 20 }, copy: { fontSize: 17, textAlign: 'center' }, outline: { borderWidth: 1.5, paddingHorizontal: 22, paddingVertical: 12, borderRadius: 999 }, outlineText: { fontSize: 15, fontWeight: '600' }, link: { padding: 8, fontSize: 15, fontWeight: '600', textDecorationLine: 'underline' } });

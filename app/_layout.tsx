@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
+import { foregroundBehavior, type PushData } from '@/lib/notificationFocus';
 import 'react-native-reanimated';
 import { SafetyReportRetry } from '@/components/safety/SafetyReportRetry';
 import { PendingState } from '@/components/state';
@@ -13,7 +14,10 @@ import { AuthProvider, useAuth } from '@/lib/AuthProvider';
 
 SplashScreen.preventAutoHideAsync();
 
-Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: false, shouldSetBadge: false }) });
+Notifications.setNotificationHandler({
+  // Suppress the foreground banner when the user is already viewing that chat or match.
+  handleNotification: async (notification) => foregroundBehavior(notification.request.content.data as PushData),
+});
 
 function RootNavigator() {
   const { loading } = useAuth();

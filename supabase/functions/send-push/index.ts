@@ -21,14 +21,6 @@ export function buildRetryUpdate(job: Job, errorCode: string, now = Date.now()) 
     last_error_code: errorCode };
 }
 
-async function updateJob(job: Job, outcome: 'sent' | 'failed', errorCode?: string) {
-  // Failures reuse the tested retry builder so locked_at is cleared and backoff is bounded.
-  const update = outcome === 'sent'
-    ? { status: 'sent', sent_at: new Date().toISOString(), last_error_code: null, locked_at: null }
-    : buildRetryUpdate(job, errorCode ?? 'delivery_error');
-  await db.from('notification_jobs').update(update).eq('id', job.id);
-}
-
 export function bearerMatches(header: string | null, secret: string): boolean {
   const expected = `Bearer ${secret}`;
   if (header === null || header.length !== expected.length) return false;
@@ -37,39 +29,89 @@ export function bearerMatches(header: string | null, secret: string): boolean {
   return diff === 0;
 }
 
-async function deliver(job: Job) {
-  const preferenceColumn = job.notification_type === 'match' ? 'matches_enabled' : 'messages_enabled';
-  const { data: preference, error: preferenceError } = await db.from('notification_preferences').select('matches_enabled,messages_enabled').eq('user_id', job.recipient_id).maybeSingle();
-  if (preferenceError) { await updateJob(job, 'failed', 'preference_lookup_failed'); return; }
-  if (preference && preference[preferenceColumn] === false) { await updateJob(job, 'sent'); return; }
-  const { data: tokens, error } = await db.from('push_tokens').select('id,token').eq('user_id', job.recipient_id);
-  if (error) { await updateJob(job, 'failed', 'token_lookup_failed'); return; }
-  if (!tokens?.length) { await updateJob(job, 'sent'); return; }
-  const payloads = tokens.map((token: { id: string; token: string }) => buildExpoPayload(job, token.token));
+type TokenRow = { id: string; token: string };
+type DeliveryRecord = { token: string; status: 'sent' | 'failed'; last_error_code: string | null };
+export type DeliveryStore = {
+  getPreference(userId: string): Promise<{ matches_enabled: boolean; messages_enabled: boolean } | null>;
+  getTokens(userId: string): Promise<TokenRow[]>;
+  getSentTokens(jobId: number): Promise<string[]>;
+  recordDeliveries(jobId: number, rows: DeliveryRecord[]): Promise<void>;
+  deleteToken(id: string): Promise<void>;
+  updateJob(jobId: number, update: Record<string, unknown>): Promise<void>;
+};
+type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
+
+function jobUpdate(job: Job, outcome: 'sent' | 'failed', errorCode?: string, now = Date.now()) {
+  // Failures reuse the tested retry builder so locked_at is cleared and backoff is bounded.
+  return outcome === 'sent'
+    ? { status: 'sent', sent_at: new Date(now).toISOString(), last_error_code: null, locked_at: null }
+    : buildRetryUpdate(job, errorCode ?? 'delivery_error', now);
+}
+
+// Delivery is tracked per (job, token): a retry only resends to devices that
+// have not yet succeeded for this job, so successful devices never get duplicates.
+export async function deliverJob(job: Job, store: DeliveryStore, fetchFn: FetchLike = fetch, now = Date.now()): Promise<'sent' | 'failed'> {
+  const finish = async (outcome: 'sent' | 'failed', errorCode?: string) => { await store.updateJob(job.id, jobUpdate(job, outcome, errorCode, now)); return outcome; };
+  let tokens: TokenRow[]; let sent: Set<string>;
   try {
-    const response = await fetch(EXPO_PUSH_URL, {
+    const preference = await store.getPreference(job.recipient_id);
+    const column = job.notification_type === 'match' ? 'matches_enabled' : 'messages_enabled';
+    if (preference && preference[column] === false) return finish('sent');
+  } catch { return finish('failed', 'preference_lookup_failed'); }
+  try {
+    tokens = await store.getTokens(job.recipient_id);
+    sent = new Set(await store.getSentTokens(job.id));
+  } catch { return finish('failed', 'token_lookup_failed'); }
+  const pending = tokens.filter(token => !sent.has(token.token));
+  if (!pending.length) return finish('sent');
+  const payloads = pending.map(token => buildExpoPayload(job, token.token));
+  let tickets: ExpoTicket[];
+  try {
+    const response = await fetchFn(EXPO_PUSH_URL, {
       method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json', 'accept-encoding': 'gzip, deflate' },
       body: JSON.stringify(payloads),
     });
-    if (!response.ok) { await updateJob(job, 'failed', `expo_http_${response.status}`); return; }
-    const result = await response.json() as { data?: ExpoTicket[] };
-    const tickets = result.data ?? [];
-    let retry = tickets.length !== payloads.length;
-    for (let i = 0; i < tickets.length; i++) {
-      const ticket = tickets[i];
-      if (ticket.status === 'ok') continue;
-      if (isInvalidDeviceTicket(ticket)) {
-        // Never log token values; remove only the exact invalid registration.
-        await db.from('push_tokens').delete().eq('id', tokens[i].id);
-      } else {
-        retry = true;
-      }
+    if (!response.ok) return finish('failed', `expo_http_${response.status}`);
+    tickets = ((await response.json()) as { data?: ExpoTicket[] }).data ?? [];
+  } catch { return finish('failed', 'expo_network_error'); }
+  const records: DeliveryRecord[] = [];
+  let retry = false;
+  for (let i = 0; i < pending.length; i++) {
+    const ticket = tickets[i];
+    if (ticket?.status === 'ok') { records.push({ token: pending[i].token, status: 'sent', last_error_code: null }); continue; }
+    if (ticket && isInvalidDeviceTicket(ticket)) {
+      // Never log token values; remove only the exact invalid registration.
+      await store.deleteToken(pending[i].id);
+      continue;
     }
-    await updateJob(job, retry ? 'failed' : 'sent', retry ? 'expo_ticket_error' : undefined);
-  } catch {
-    await updateJob(job, 'failed', 'expo_network_error');
+    retry = true;
+    records.push({ token: pending[i].token, status: 'failed', last_error_code: ticket?.details?.error ?? 'expo_ticket_missing' });
   }
+  try { if (records.length) await store.recordDeliveries(job.id, records); }
+  catch { return finish('failed', 'delivery_record_failed'); }
+  return finish(retry ? 'failed' : 'sent', retry ? 'expo_ticket_error' : undefined);
 }
+
+const supabaseStore: DeliveryStore = {
+  async getPreference(userId) {
+    const { data, error } = await db.from('notification_preferences').select('matches_enabled,messages_enabled').eq('user_id', userId).maybeSingle();
+    if (error) throw error; return data;
+  },
+  async getTokens(userId) {
+    const { data, error } = await db.from('push_tokens').select('id,token').eq('user_id', userId);
+    if (error) throw error; return data ?? [];
+  },
+  async getSentTokens(jobId) {
+    const { data, error } = await db.from('notification_deliveries').select('token').eq('job_id', jobId).eq('status', 'sent');
+    if (error) throw error; return (data ?? []).map((row: { token: string }) => row.token);
+  },
+  async recordDeliveries(jobId, rows) {
+    const { error } = await db.from('notification_deliveries').upsert(rows.map(row => ({ job_id: jobId, ...row, updated_at: new Date().toISOString() })), { onConflict: 'job_id,token' });
+    if (error) throw error;
+  },
+  async deleteToken(id) { await db.from('push_tokens').delete().eq('id', id); },
+  async updateJob(jobId, update) { await db.from('notification_jobs').update(update).eq('id', jobId); },
+};
 
 if (import.meta.main) Deno.serve(async (request: Request) => {
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
@@ -78,7 +120,7 @@ if (import.meta.main) Deno.serve(async (request: Request) => {
   try {
     const { data: jobs, error } = await db.rpc('claim_notification_jobs', { p_limit: 100 });
     if (error) return Response.json({ error: 'claim_failed' }, { status: 500 });
-    await Promise.all(((jobs ?? []) as Job[]).map(deliver));
+    await Promise.all(((jobs ?? []) as Job[]).map(job => deliverJob(job, supabaseStore)));
     return Response.json({ processed: jobs?.length ?? 0 });
   } catch {
     return Response.json({ error: 'drain_failed' }, { status: 500 });
