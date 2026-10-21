@@ -1182,6 +1182,8 @@ export const Constants = {
         "underage",
         "impersonation",
         "other",
+        "explicit_content",
+        "fake_profile",
       ],
       report_severity: ["low", "normal", "high", "urgent"],
       report_status: [
