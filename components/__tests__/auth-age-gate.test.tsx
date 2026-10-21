@@ -9,7 +9,7 @@ var mockParams: Record<string, string> = {};
 var mockReplace = jest.fn();
 var mockInsert = jest.fn();
 var mockFrom = jest.fn();
-var mockAuth = { user: { id: 'user-1', user_metadata: { full_name: 'Test Person' } }, signOut: jest.fn().mockResolvedValue(undefined) };
+var mockAuth = { session: { user: { id: 'user-1' } }, user: { id: 'user-1', user_metadata: { full_name: 'Test Person' } }, authMessage: null, signOut: jest.fn().mockResolvedValue(undefined) };
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }), useLocalSearchParams: () => mockParams }));
 jest.mock('@/lib/AuthProvider', () => ({ useAuth: () => mockAuth }));
 jest.mock('@/lib/supabase', () => ({ isSupabaseConfigured: true, supabase: { from: (...args: any[]) => mockFrom(...args) } }));
@@ -27,8 +27,10 @@ beforeEach(() => { mockParams = {}; mockReplace.mockReset(); mockInsert.mockRese
 describe('18+ onboarding gate', () => {
   test('blocks an under-18 date before any profile read or write', async () => {
     const tree = renderer.create(<OnboardingBasicsScreen />);
-    await act(async () => {
+    act(() => {
       tree.root.findByProps({ testID: 'birth-date-field' }).props.onChangeText('2010-01-01');
+    });
+    await act(async () => {
       tree.root.findByProps({ testID: 'birth-date-continue' }).props.onPress({});
       await Promise.resolve();
     });

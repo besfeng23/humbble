@@ -1,6 +1,6 @@
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
 import { PendingState } from '@/components/state';
 import { TextField } from '@/components/ui';
@@ -71,9 +71,11 @@ export default function SigninScreen() {
     {error ? <Text testID="signin-error" accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.error, { color: palette.errorText }]}>{error}</Text> : null}
     {busy ? <PendingState compact title="Signing in..." /> : null}
     <AuthPrimaryButton testID="signin-submit" label={busy ? "Signing in..." : "Sign in"} disabled={unavailable || busy} loading={busy} onPress={submit} />
-    <Pressable accessibilityRole="link" onPress={() => router.push('/auth/recovery' as any)} style={styles.link}><Text style={[styles.quietLinkText, { color: palette.textSecondary }]}>Forgot password?</Text></Pressable>
-    <Pressable testID="signin-create-account" accessibilityRole="link" onPress={() => router.push('/auth/signup' as any)} style={styles.link}><Text style={[styles.linkText, { color: palette.link }]}>Create account</Text></Pressable>
+    <View testID="signin-links" style={styles.linkRow}>
+      <Pressable testID="signin-forgot-password" accessibilityRole="link" onPress={() => router.push('/auth/recovery' as any)} style={styles.link}><Text style={[styles.quietLinkText, { color: palette.textSecondary }]}>Forgot password?</Text></Pressable>
+      <Pressable testID="signin-create-account" accessibilityRole="link" onPress={() => router.push('/auth/signup' as any)} style={styles.link}><Text style={[styles.quietLinkText, { color: palette.textSecondary }]}>Create account</Text></Pressable>
+    </View>
     {/* Google and Facebook remain absent until provider configuration is approved. */}
   </AuthScreen>;
 }
-const styles = StyleSheet.create({ notice: { marginBottom: Spacing.xs }, error: { marginBottom: Spacing.xs }, link: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' }, linkText: { textDecorationLine: 'underline' }, quietLinkText: { fontSize: 14 } });
+const styles = StyleSheet.create({ notice: { marginBottom: Spacing.xs }, error: { marginBottom: Spacing.xs }, linkRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.lg }, link: { minHeight: 44, justifyContent: 'center' }, quietLinkText: { fontSize: 14, textDecorationLine: 'underline' } });

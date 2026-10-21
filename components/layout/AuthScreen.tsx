@@ -22,7 +22,7 @@ export function AuthScreen({ title, subtitle, children, testID }: { title: strin
     </KeyboardAvoidingView>
   );
 }
-const styles = StyleSheet.create({ fill: { flex: 1 }, scroll: { flexGrow: 1, justifyContent: 'center', padding: Spacing.xl }, scrollCompact: { justifyContent: 'flex-start', paddingTop: Spacing['3xl'] }, content: { width: '100%', maxWidth: 440, alignSelf: 'center', gap: Spacing.lg }, title: { ...Typography.h1 }, subtitle: { ...Typography.body }, });
+const styles = StyleSheet.create({ fill: { flex: 1 }, scroll: { flexGrow: 1, justifyContent: 'center', padding: Spacing.xl }, scrollCompact: { justifyContent: 'flex-start', paddingTop: Spacing['5xl'] }, content: { width: '100%', maxWidth: 440, alignSelf: 'center', gap: Spacing.lg }, title: { ...Typography.h1 }, subtitle: { ...Typography.body }, disabledOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.18)', borderRadius: 12 }, });
 
 /** A primary auth action keeps its normal color when disabled; state is communicated by dimming. */
 export function AuthPrimaryButton({ testID, label, disabled = false, loading = false, onPress }: { testID: string; label: string; disabled?: boolean; loading?: boolean; onPress: () => void }) {
@@ -49,9 +49,11 @@ export function AuthPrimaryButton({ testID, label, disabled = false, loading = f
         backgroundColor: palette.primary,
         borderColor: focused ? palette.focusRing : 'transparent',
         borderWidth: focused ? 2 : 0,
-        opacity: isDisabled ? 0.5 : pressed ? 0.86 : 1,
+        overflow: 'hidden',
+        opacity: pressed && !isDisabled ? 0.86 : 1,
       })}
     >
+      {isDisabled ? <View testID={`${testID}-disabled-overlay`} pointerEvents="none" style={styles.disabledOverlay} /> : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.md }}>{loading ? <ActivityIndicator size="small" color={palette.onPrimary} /> : null}<Text style={[Typography.buttonLarge, { color: palette.onPrimary }]}>{label}</Text></View>
     </Pressable>
   );

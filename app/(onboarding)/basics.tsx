@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Text } from 'react-native';
+import { AuthGuard } from '@/components/layout/AuthGuard';
 import { AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
 import { Button, TextField } from '@/components/ui';
 import { Colors } from '@/constants/Colors';
@@ -26,6 +27,7 @@ export default function OnboardingBasicsScreen() {
   const [birthDate, setBirthDate] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const previewAllowed = __DEV__ && ['dob', 'underage'].includes(String(params.preview ?? ''));
   const [underageBlocked, setUnderageBlocked] = useState(__DEV__ && params.preview === 'underage');
   const unavailable = !isSupabaseConfigured;
 
@@ -61,13 +63,19 @@ export default function OnboardingBasicsScreen() {
     } finally { setBusy(false); }
   };
 
-  if (underageBlocked) return <AuthScreen testID="underage-block-screen" title="You can’t continue" subtitle={UNDERAGE_MESSAGE}>
-    <Button testID="underage-signout" label="Sign out" size="lg" variant="charcoal" onPress={() => void doSignOut()} />
-  </AuthScreen>;
+  const renderGuarded = (screen: React.ReactNode) => previewAllowed ? screen : (
+    <AuthGuard mode="protected" redirectTo="/auth/signin" testID="onboarding-basics-guard">
+      {screen}
+    </AuthGuard>
+  );
 
-  return <AuthScreen testID="onboarding-basics-screen" title="Date of birth" subtitle="Enter your date of birth to continue.">
+  if (underageBlocked) return renderGuarded(<AuthScreen testID="underage-block-screen" title="You can’t continue" subtitle={UNDERAGE_MESSAGE}>
+    <Button testID="underage-signout" label="Sign out" size="lg" variant="charcoal" onPress={() => void doSignOut()} />
+  </AuthScreen>);
+
+  return renderGuarded(<AuthScreen testID="onboarding-basics-screen" title="Date of birth" subtitle="Enter your date of birth to continue.">
     {unavailable ? <Text numberOfLines={1} accessibilityRole="alert" style={{ color: palette.text, fontSize: 14 }}>Sign-in is unavailable in this build</Text> : null}
     <TextField testID="birth-date-field" label="Date of birth" placeholder="YYYY-MM-DD" value={birthDate} onChangeText={setBirthDate} autoCapitalize="none" keyboardType="numbers-and-punctuation" maxLength={10} returnKeyType="go" onSubmitEditing={submit} error={error} required />
     <AuthPrimaryButton testID="birth-date-continue" label={busy ? "Saving details..." : "Continue"} disabled={unavailable || busy || !user} loading={busy} onPress={submit} />
-  </AuthScreen>;
+  </AuthScreen>);
 }

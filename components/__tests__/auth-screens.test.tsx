@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
 import SigninScreen, { getSignInError } from '@/app/auth/signin';
 import SignupScreen from '@/app/auth/signup';
@@ -35,9 +35,16 @@ describe('enumeration-safe, unconfigured auth UI', () => {
     expect(textContent(tree.root.findByProps({ testID: 'auth-unavailable' }).children)).toBe('Sign-in is unavailable in this build');
     expect(tree.root.findByProps({ testID: 'signin-submit' }).props.disabled).toBe(true);
     expect(tree.root.findByProps({ testID: 'signin-create-account' })).toBeTruthy();
-    const disabledStyle = tree.root.findByProps({ testID: 'signin-submit' }).props.style({ pressed: false });
+    // Pressable renders composite + host nodes; inspect the one carrying the style callback/object.
+    const submitButton = tree.root.findAll((node) => node.props.testID === 'signin-submit' && node.props.style != null)[0];
+    const rawStyle = submitButton.props.style;
+    const disabledStyle = StyleSheet.flatten(typeof rawStyle === 'function' ? rawStyle({ pressed: false }) : rawStyle);
     expect(disabledStyle.backgroundColor).toBe('#FFD600');
-    expect(disabledStyle.opacity).toBe(0.5);
+    // Keep the label at full contrast; the overlay dims only the primary fill.
+    expect(disabledStyle.opacity).toBe(1);
+    expect(tree.root.findByProps({ testID: 'signin-submit-disabled-overlay' })).toBeTruthy();
+    const signInLabel = submitButton.findAllByType(Text).find((node) => textContent(node.children) === 'Sign in');
+    expect(StyleSheet.flatten(signInLabel?.props.style)?.color).toBe('#1A1A1A');
     expect(tree.root.findAllByType(Text).some((node) => /Google|Facebook/.test(textContent(node.children)))).toBe(false);
     expect(tree.root.findAll((node) => /signin-(google|facebook)/.test(String(node.props.testID ?? '')))).toHaveLength(0);
   });

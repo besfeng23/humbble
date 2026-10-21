@@ -30,6 +30,6 @@ describe('AuthGuard', () => {
   test('renders protected content for a restored session', () => {
     mockUseAuth.mockReturnValue({ loading: false, session: { user: { id: 'u' } }, user: { id: 'u' }, authMessage: null });
     const tree = renderer.create(<AuthGuard><Text>protected-content</Text></AuthGuard>);
-    expect(tree.root.findAllByType(Text).some((node) => node.children.includes('protected-content'))).toBe(true);
+    expect(tree.root.findAllByType(Text).some((node) => textContent(node.children) === 'protected-content')).toBe(true);
   });
 });

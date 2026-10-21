@@ -4,9 +4,10 @@ import { AuthGuard } from '@/components/layout';
 
 export default function OnboardingStackLayout() {
   const params = useLocalSearchParams<{ preview?: string }>();
-  const locationSearch = typeof window !== 'undefined' && window.location && typeof window.location.search === 'string' ? window.location.search : '';
-  const browserPreview = locationSearch ? new URLSearchParams(locationSearch).get('preview') : params.preview;
-  const previewAllowed = __DEV__ && ['dob', 'underage', 'verify'].includes(String(browserPreview ?? ''));
+  // Dev previews are explicit Expo Router query params only. Do not infer a
+  // preview from ambient window.location, which can leak between web tests and
+  // accidentally bypass the logged-out redirect.
+  const previewAllowed = __DEV__ && ['dob', 'underage', 'verify'].includes(String(params.preview ?? ''));
   const stack = <Stack screenOptions={{ headerShown: false, headerShadowVisible: false }}>
     <Stack.Screen name="basics" />
     <Stack.Screen name="intentions" />
