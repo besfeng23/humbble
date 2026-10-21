@@ -13,31 +13,15 @@
       "bundleIdentifier": "com.banataosystems.humbble"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
+      "adaptiveIcon": { "foregroundImage": "./assets/images/adaptive-icon.png", "backgroundColor": "#ffffff" },
       "package": "com.banataosystems.humbble"
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
+    "web": { "bundler": "metro", "output": "static", "favicon": "./assets/images/favicon.png" },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 300,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffca55"
-        }
-      ]
+      ["expo-splash-screen", { "image": "./assets/images/splash-icon.png", "imageWidth": 300, "resizeMode": "contain", "backgroundColor": "#ffca55" }],
+      ["expo-image-picker", { "photosPermission": "Humbble accesses selected photos so you can add them to your profile.", "cameraPermission": false, "microphonePermission": false }]
     ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    "experiments": { "typedRoutes": true }
   }
 }

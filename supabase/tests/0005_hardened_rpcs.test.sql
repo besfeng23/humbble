@@ -43,6 +43,23 @@ VALUES ('00000000-0000-0000-0000-000000000051', 30, 40, 100);
 INSERT INTO public.profile_photos (user_id, storage_path, position)
 VALUES ('00000000-0000-0000-0000-000000000052',
         '00000000-0000-0000-0000-000000000052/p205-primary.jpg', 0);
+-- P3-02 feed eligibility: three answered prompts and at least two photos.
+UPDATE public.profiles
+   SET city_region = 'Manila',
+       prompts = '[{"key":"weekend","question":"A perfect weekend looks like","answer":"a"},{"key":"values","question":"What I value most","answer":"b"},{"key":"relationship_goal","question":"The relationship I hope to build","answer":"c"}]'::JSONB
+ WHERE id BETWEEN '00000000-0000-0000-0000-000000000051' AND '00000000-0000-0000-0000-000000000120';
+INSERT INTO public.profile_photos (user_id, storage_path, position)
+SELECT ('00000000-0000-0000-0000-' || pg_catalog.lpad(g::TEXT, 12, '0'))::UUID,
+       '00000000-0000-0000-0000-' || pg_catalog.lpad(g::TEXT, 12, '0') || '/p302-' || n || '.jpg',
+       CASE WHEN g = 52 THEN n ELSE n - 1 END
+  FROM pg_catalog.generate_series(51, 120) AS series(g)
+ CROSS JOIN pg_catalog.generate_series(1, 2) AS photos(n);
+-- The discovery RPC requires the private Storage objects to exist and match photo metadata.
+INSERT INTO storage.objects (bucket_id, name, owner_id, metadata)
+SELECT 'profile_photos', ph.storage_path, ph.user_id::TEXT, '{"mimetype":"image/jpeg","size":1024}'::JSONB
+  FROM public.profile_photos ph
+ WHERE ph.user_id BETWEEN '00000000-0000-0000-0000-000000000051'::UUID AND '00000000-0000-0000-0000-000000000120'::UUID
+ON CONFLICT DO NOTHING;
 INSERT INTO public.blocks (blocker_id, blocked_id) VALUES
  ('00000000-0000-0000-0000-000000000051', '00000000-0000-0000-0000-000000000057'),
  ('00000000-0000-0000-0000-000000000058', '00000000-0000-0000-0000-000000000051');

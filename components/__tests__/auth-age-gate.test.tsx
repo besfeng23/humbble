@@ -65,7 +65,7 @@ describe('18+ onboarding gate', () => {
     setBirthDate(tree, '1990-01-01');
     await act(async () => { tree.root.findByProps({ testID: 'birth-date-continue' }).props.onPress({}); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
     expect(mockInsert).toHaveBeenCalledWith({ id: 'user-1', display_name: 'Test Person', birth_date: '1990-01-01' });
-    expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/verify');
+    expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/intentions');
   });
   test('maps a P0001 age-policy rejection to the same blocking state', async () => {
     configureInsert({ code: 'P0001', message: 'age policy' });
