@@ -112,6 +112,13 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="profile/notifications"
+          options={{
+            href: null,
+            title: "Notifications",
+          }}
+        />
+        <Tabs.Screen
           name="profile/blocked-users"
           options={{
             href: null,

@@ -12,6 +12,7 @@ export default function ChatsStackLayout() {
           options={{ title: "chats", headerShown: false }}
         />
         <Stack.Screen name="chatScreen" options={{ headerShown: false, title: "Conversation", gestureEnabled: true, animation: "slide_from_right" }} />
+        <Stack.Screen name="match" options={{ headerShown: false, title: "A new match", gestureEnabled: true, animation: "fade" }} />
         <Stack.Screen
           name="[conversationId]"
           options={{ headerShown: false, title: "Conversation", gestureEnabled: true, animation: "slide_from_right" }}
