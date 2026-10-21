@@ -27,11 +27,25 @@ describe('P3-05 safety controls entry points', () => {
     expect(list).toContain("source: 'conversation-list'");
   });
 
-  test('shared safety screen has separate block, unmatch, and report actions', () => {
+  test('safety screen is a sparse three-row list; Unmatch only when matched', () => {
     const safety = source('app/(safety)/report-modal.tsx');
     expect(safety).toContain('safety-block-btn');
-    expect(safety).toContain('safety-unmatch-btn');
+    expect(safety).toContain('safety-report-btn');
+    expect(safety).toContain("{matched ? <Row testID=\"safety-unmatch-btn\"");
     expect(safety).toContain('safety-report-submit-btn');
-    expect(safety).toContain('variant="danger"');
+    // No solid danger buttons: dangerSolid is only a text/outline colour in the confirm step.
+    expect(safety).not.toContain('variant="danger"');
+    expect(safety).not.toMatch(/backgroundColor:\s*palette\.dangerSolid/);
+    expect(safety.match(/palette\.dangerSolid/g)?.length).toBe(3);
+    expect(safety).toContain('fadeEdge');
+  });
+
+  test('discovery profile opens Safety without match (no Unmatch); matched entry points pass matched=1', () => {
+    const profile = source('app/(tabs)/discover/[id].tsx');
+    expect(profile).not.toContain("matched: '1'");
+    expect(profile).not.toContain('variant="danger"');
+    for (const file of ['components/discovery/DiscoveryFeed.tsx', 'app/(tabs)/(chats)/chatScreen.tsx', 'app/(tabs)/(chats)/index.tsx']) {
+      expect(source(file)).toContain("matched: '1'");
+    }
   });
 });

@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET search_path = public, extensions, pg_temp;
-SELECT plan(40);
+SELECT plan(48);
 
 SELECT ok(pg_catalog.to_regprocedure('public.unmatch(uuid)') IS NOT NULL, 'unmatch RPC exists');
 SELECT ok((SELECT prosecdef FROM pg_catalog.pg_proc WHERE oid='public.unmatch(uuid)'::REGPROCEDURE), 'unmatch is SECURITY DEFINER');
@@ -23,6 +23,8 @@ SELECT ok(EXISTS (SELECT 1 FROM pg_catalog.pg_policies WHERE schemaname='public'
 SELECT ok(NOT pg_catalog.has_function_privilege('anon','public.block_user(uuid)','EXECUTE') AND NOT pg_catalog.has_function_privilege('anon','public.unblock_user(uuid)','EXECUTE') AND NOT pg_catalog.has_function_privilege('anon','public.submit_report(uuid,public.report_category,text,uuid)','EXECUTE') AND NOT pg_catalog.has_function_privilege('anon','public.unmatch(uuid)','EXECUTE') AND NOT pg_catalog.has_function_privilege('anon','public.list_blocked_users()','EXECUTE'), 'anon cannot execute any safety RPC');
 SELECT ok(NOT pg_catalog.has_function_privilege('service_role','public.block_user(uuid)','EXECUTE') AND NOT pg_catalog.has_function_privilege('service_role','public.unblock_user(uuid)','EXECUTE') AND NOT pg_catalog.has_function_privilege('service_role','public.submit_report(uuid,public.report_category,text,uuid)','EXECUTE') AND NOT pg_catalog.has_function_privilege('service_role','public.unmatch(uuid)','EXECUTE') AND NOT pg_catalog.has_function_privilege('service_role','public.list_blocked_users()','EXECUTE'), 'service_role cannot execute user-facing safety RPCs');
 SELECT ok(pg_catalog.has_function_privilege('authenticated','public.block_user(uuid)','EXECUTE') AND pg_catalog.has_function_privilege('authenticated','public.unblock_user(uuid)','EXECUTE') AND pg_catalog.has_function_privilege('authenticated','public.submit_report(uuid,public.report_category,text,uuid)','EXECUTE') AND pg_catalog.has_function_privilege('authenticated','public.unmatch(uuid)','EXECUTE') AND pg_catalog.has_function_privilege('authenticated','public.list_blocked_users()','EXECUTE'), 'authenticated users can execute safety RPCs');
+
+SELECT ok('explicit_content' = ANY(enum_range(NULL::public.report_category)::TEXT[]) AND 'fake_profile' = ANY(enum_range(NULL::public.report_category)::TEXT[]),'report_category has explicit_content and fake_profile');
 
 INSERT INTO auth.users (id,aud,role,email,created_at,updated_at) VALUES
  ('00000000-0000-0000-0000-000000000981','authenticated','authenticated','p305-a@example.test',pg_catalog.now(),pg_catalog.now()),
@@ -84,12 +86,21 @@ SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000981",
 SELECT throws_ok($$SELECT * FROM public.send_message('00000000-0000-0000-0000-000000000991','blocked message','00000000-0000-0000-0000-000000000996')$$,'42501','conversation_not_sendable','blocked peer cannot receive a message');
 SELECT is(public.unblock_user('00000000-0000-0000-0000-000000000982'),TRUE,'user may remove their own block');
 SELECT is((SELECT count(*)::INTEGER FROM public.matches WHERE user_a_id='00000000-0000-0000-0000-000000000981' AND user_b_id='00000000-0000-0000-0000-000000000982' AND status='active'),0,'unblocking does not restore the previous match');
-SELECT is((SELECT count(*)::INTEGER FROM public.get_discovery_feed(20,NULL) WHERE profile_id='00000000-0000-0000-0000-000000000982'),1,'unblocking restores feed eligibility where no swipe/report excludes the profile');
-SELECT ok((SELECT matched=FALSE FROM public.record_swipe('00000000-0000-0000-0000-000000000982','like')),'a fresh like after unblocking cannot restore the ended match');
+SELECT is((SELECT count(*)::INTEGER FROM public.list_blocked_users() WHERE blocked_id='00000000-0000-0000-0000-000000000982'),0,'unblock removes the person from the Blocked users list');
+SELECT is((SELECT count(*)::INTEGER FROM public.get_discovery_feed(20,NULL) WHERE profile_id='00000000-0000-0000-0000-000000000982'),0,'after unblock the blocker still never sees the person in discovery');
+SELECT throws_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-000000000982','like')$$,'42501','blocked_pair','after unblock the blocker cannot like or re-match');
+SELECT throws_ok($$SELECT * FROM public.send_message('00000000-0000-0000-0000-000000000991','after unblock','00000000-0000-0000-0000-000000000999')$$,'42501','conversation_not_sendable','after unblock the old chat stays closed');
+SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000982","role":"authenticated"}';
+SELECT is((SELECT count(*)::INTEGER FROM public.get_discovery_feed(20,NULL) WHERE profile_id='00000000-0000-0000-0000-000000000981'),0,'after unblock the formerly blocked person never sees the blocker in discovery');
+SELECT throws_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-000000000981','like')$$,'42501','blocked_pair','after unblock the formerly blocked person cannot like or re-match');
+SELECT ok(NOT has_table_privilege('authenticated','private.pair_exclusions','SELECT') AND NOT has_table_privilege('authenticated','private.pair_exclusions','DELETE'),'clients cannot read or remove the permanent pair exclusion');
+SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000981","role":"authenticated"}';
 SELECT is((SELECT count(*)::INTEGER FROM public.matches WHERE user_a_id='00000000-0000-0000-0000-000000000981' AND user_b_id='00000000-0000-0000-0000-000000000982' AND status='active'),0,'old match remains ended after a new one-way like');
 CREATE TEMP TABLE p305_report_replay AS
 SELECT public.submit_report('00000000-0000-0000-0000-000000000982','scam','minimal safety report','00000000-0000-0000-0000-000000000997'::UUID) AS first_id,
        public.submit_report('00000000-0000-0000-0000-000000000982','scam','minimal safety report','00000000-0000-0000-0000-000000000997'::UUID) AS retry_id;
+SELECT ok(public.submit_report('00000000-0000-0000-0000-000000000982','explicit_content',NULL,'00000000-0000-0000-0000-0000000009a1'::UUID) IS NOT NULL,'explicit_content is a real report category');
+SELECT ok(public.submit_report('00000000-0000-0000-0000-000000000982','fake_profile',NULL,'00000000-0000-0000-0000-0000000009a2'::UUID) IS NOT NULL,'fake_profile is a real report category');
 SELECT is((SELECT first_id FROM p305_report_replay),(SELECT retry_id FROM p305_report_replay),'report retry returns original report id');
 SELECT is((SELECT count(*)::INTEGER FROM public.reports WHERE reporter_id='00000000-0000-0000-0000-000000000981' AND client_report_id='00000000-0000-0000-0000-000000000997'),1,'same client_report_id creates exactly one report');
 RESET ROLE; -- audit_events is not readable by authenticated clients; verify as owner.

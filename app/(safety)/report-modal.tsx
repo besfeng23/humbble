@@ -1,180 +1,149 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
-import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SettingsLayout, navigateBackOrFallback } from '@/components/layout';
-import { Button, Card, TextField } from '@/components/ui';
+import React, { useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SettingsLayout } from '@/components/layout';
 import { Colors } from '@/constants/Colors';
 import { Spacing, TouchTargets } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import {
-  getQueuedSafetyReportCount,
-  retryQueuedSafetyReports,
-  submitSafetyReport,
   blockPerson,
-  unmatchPerson,
   MAX_REPORT_NOTE_LENGTH,
+  REPORT_CATEGORIES,
+  submitSafetyReport,
+  unmatchPerson,
   type SafetyReportCategory,
 } from '@/lib/safety';
 
-const REPORT_CATEGORIES: { id: SafetyReportCategory; label: string }[] = [
-  { id: 'fake_profile', label: 'Fake profile' },
-  { id: 'scam_money_request', label: 'Scam or money request' },
-  { id: 'harassment', label: 'Harassment' },
-  { id: 'underage', label: 'Underage concern' },
-  { id: 'explicit_content', label: 'Explicit content' },
-  { id: 'other', label: 'Other' },
-];
 
-type PendingAction = 'block' | 'unmatch' | null;
+type Step = 'menu' | 'report' | 'report-note' | 'block' | 'unmatch' | 'done';
+type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-export default function BlockAndReportModalScreen() {
+function Row({ testID, icon, label, onPress, palette }: { testID: string; icon?: IconName; label: string; onPress: () => void; palette: (typeof Colors)['light'] }) {
+  return (
+    <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.row, pressed && { backgroundColor: palette.surfaceMuted }]}>
+      {icon ? <Ionicons name={icon} size={20} color={palette.text} /> : null}
+      <Text style={[styles.rowLabel, { color: palette.text }]}>{label}</Text>
+      <Ionicons name="chevron-forward" size={16} color={palette.textSecondary} />
+    </Pressable>
+  );
+}
+
+export default function SafetyScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ targetId?: string; targetName?: string; source?: string; help?: string }>();
+  const params = useLocalSearchParams<{ targetId?: string; targetName?: string; source?: string; matched?: string; step?: string }>();
   const targetId = String(params.targetId ?? '');
   const targetName = String(params.targetName ?? 'this person');
   const source = String(params.source ?? 'safety');
+  const matched = params.matched === '1';
   const palette = Colors[useColorScheme() ?? 'light'];
-  const [selectedCategory, setSelectedCategory] = useState<SafetyReportCategory>('scam_money_request');
-  const [details, setDetails] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
-  const [statusMessage, setStatusMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [queuedReports, setQueuedReports] = useState(0);
+  const initialStep = (['report', 'block', 'unmatch'] as string[]).includes(String(params.step)) ? (params.step as Step) : 'menu';
+  const [step, setStep] = useState<Step>(initialStep === 'unmatch' && !matched ? 'menu' : initialStep);
+  const [category, setCategory] = useState<SafetyReportCategory | null>(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
-  const refreshQueue = useCallback(async () => {
-    try { setQueuedReports(await getQueuedSafetyReportCount()); } catch { /* Keep existing count visible if local storage is temporarily unavailable. */ }
-  }, []);
-
-  const retryQueued = useCallback(async () => {
-    try {
-      const result = await retryQueuedSafetyReports();
-      await refreshQueue();
-      setStatusMessage(result.remaining
-        ? `${result.remaining} report${result.remaining === 1 ? '' : 's'} still waiting for a connection. Retry again when online.`
-        : result.sent ? `Saved report${result.sent === 1 ? '' : 's'} sent securely.` : 'No reports are waiting to retry.');
-    } catch {
-      setErrorMessage('Pending reports could not be retried. They remain saved on this device.');
-    }
-  }, [refreshQueue]);
-
-  useEffect(() => {
-    void refreshQueue();
-    void retryQueuedSafetyReports().then(refreshQueue).catch(() => undefined);
-    const listener = AppState.addEventListener('change', state => {
-      if (state === 'active') void retryQueuedSafetyReports().then(refreshQueue).catch(() => undefined);
-    });
-    return () => listener.remove();
-  }, [refreshQueue]);
-
-  const submitReport = async () => {
-    if (!targetId || submitting) return;
-    setSubmitting(true); setErrorMessage(''); setStatusMessage('');
-    try {
-      const result = await submitSafetyReport({ reportedUserId: targetId, category: selectedCategory, contextSummary: details });
-      await refreshQueue();
-      setStatusMessage(result.status === 'submitted'
-        ? 'Report submitted. Thank you for helping keep Humbble safe. Reports are private to Trust & Safety.'
-        : 'Connection unavailable. Your report is saved on this device and will retry when the connection returns. You can also retry below.');
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'The report could not be submitted. Try again.');
-    } finally { setSubmitting(false); }
+  const run = async (task: () => Promise<string>) => {
+    if (!targetId || busy) return;
+    setBusy(true); setError('');
+    try { setMessage(await task()); setStep('done'); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'That did not work. Try again.'); }
+    finally { setBusy(false); }
   };
 
-  const confirmAction = async () => {
-    if (!targetId || !pendingAction || submitting) return;
-    const action = pendingAction;
-    setSubmitting(true); setErrorMessage(''); setStatusMessage('');
-    try {
-      if (action === 'block') {
-        await blockPerson(targetId);
-        setStatusMessage(`${targetName} is blocked. The match and conversation are ended for both people, and this profile will not appear while blocked.`);
-      } else {
-        const ended = await unmatchPerson(targetId);
-        setStatusMessage(ended
-          ? `You unmatched ${targetName}. The conversation is now hidden for both people.`
-          : 'There is no active match to end.');
-      }
-      setPendingAction(null);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'The safety action could not be completed. Try again.');
-    } finally { setSubmitting(false); }
-  };
+  const confirmBlock = () => run(async () => { await blockPerson(targetId); return `${targetName} is blocked.`; });
+  const confirmUnmatch = () => run(async () => (await unmatchPerson(targetId)) ? `You unmatched ${targetName}.` : 'No active match.');
+  const sendReport = () => run(async () => {
+    if (!category) throw new Error('Choose a reason.');
+    const result = await submitSafetyReport({ reportedUserId: targetId, category, contextSummary: note });
+    return result.status === 'submitted' ? 'Report sent.' : 'Saved. It will send when you’re back online.';
+  });
 
-  const exit = () => {
+  const back = () => { setError(''); setStep(step === 'report-note' ? 'report' : 'menu'); };
+  const done = () => {
     if (source === 'chat' || source === 'conversation-list') router.replace('/(tabs)/(chats)' as any);
-    else navigateBackOrFallback(router, '/(tabs)/people');
+    else router.replace('/(tabs)/discover' as any);
   };
+
+  const confirm = (testID: string, label: string, onPress: () => void) => (
+    <View style={styles.confirmRow}>
+      <Pressable testID="safety-cancel-btn" accessibilityRole="button" onPress={back} disabled={busy} style={styles.textButton}>
+        <Text style={[styles.textButtonLabel, { color: palette.textSecondary }]}>Cancel</Text>
+      </Pressable>
+      <Pressable testID={testID} accessibilityRole="button" onPress={onPress} disabled={busy} style={[styles.textButton, styles.outline, { borderColor: palette.dangerSolid }]}>
+        {busy ? <ActivityIndicator color={palette.dangerSolid} /> : <Text style={[styles.textButtonLabel, { color: palette.dangerSolid }]}>{label}</Text>}
+      </Pressable>
+    </View>
+  );
 
   return (
-    <SettingsLayout
-      fadeEdge
-      testID="scr-22-report-modal"
-      title="Safety controls"
-      subtitle="Free for every Humbble member"
-      fallbackHref={source === 'chat' ? '/(tabs)/(chats)' : '/(tabs)/people'}
-      activeNavId="settings-report"
-    >
-      <Card testID="safety-target-card" variant="elevated">
-        <View style={styles.section}>
-          <Text accessibilityRole="header" style={[styles.heading, { color: palette.text }]}>Safety for {targetName}</Text>
-          {!targetId ? (
-            <Text style={[styles.body, { color: palette.textSecondary }]}>Open Safety from a person's profile or conversation to block, report, or unmatch that account.</Text>
-          ) : (
-            <>
-              <View style={styles.actions}>
-                <Button testID="safety-block-btn" label="Block this person" variant="danger" size="md" onPress={() => { setErrorMessage(''); setPendingAction('block'); }} />
-                <Button testID="safety-unmatch-btn" label="Unmatch" variant="danger" size="md" onPress={() => { setErrorMessage(''); setPendingAction('unmatch'); }} />
-              </View>
-              {pendingAction ? (
-                <View testID="safety-confirm-action" style={[styles.confirm, { backgroundColor: palette.errorSurface }]}>
-                  <Text accessibilityRole="header" style={[styles.confirmTitle, { color: palette.errorText }]}>{pendingAction === 'block' ? `Block ${targetName}?` : `Unmatch ${targetName}?`}</Text>
-                  <Text style={[styles.body, { color: palette.errorText }]}>{pendingAction === 'block'
-                    ? 'This immediately hides the profile, rejects messages, and ends the match and conversation for both people. Unblocking will not restore the old match.'
-                    : 'This ends the match and hides the conversation for both people. This cannot be undone by a later like.'}</Text>
-                  <View style={styles.inlineActions}>
-                    <Button testID="safety-confirm-btn" label={pendingAction === 'block' ? 'Confirm block' : 'Confirm unmatch'} variant="danger" size="md" loading={submitting} onPress={() => void confirmAction()} />
-                    <Button label="Cancel" variant="secondary" size="md" disabled={submitting} onPress={() => setPendingAction(null)} />
-                  </View>
-                </View>
-              ) : null}
-            </>
-          )}
+    <SettingsLayout fadeEdge testID="scr-22-report-modal" title={targetId ? targetName : 'Safety'} fallbackHref={source === 'chat' ? '/(tabs)/(chats)' : '/(tabs)/discover'} activeNavId="settings-report">
+      {step === 'menu' ? (
+        <View testID="safety-menu" style={styles.list}>
+          <Row testID="safety-block-btn" icon="ban-outline" label="Block" palette={palette} onPress={() => setStep('block')} />
+          <Row testID="safety-report-btn" icon="flag-outline" label="Report" palette={palette} onPress={() => setStep('report')} />
+          {matched ? <Row testID="safety-unmatch-btn" icon="heart-dislike-outline" label="Unmatch" palette={palette} onPress={() => setStep('unmatch')} /> : null}
         </View>
-      </Card>
+      ) : null}
 
-      <Card testID="safety-report-card" variant="elevated">
-        <View style={styles.section}>
-          <Text accessibilityRole="header" style={[styles.heading, { color: palette.text }]}>Report a concern</Text>
-          <Text style={[styles.body, { color: palette.textSecondary }]}>Select the closest category. Keep notes brief and relevant; reports are private to Trust & Safety.</Text>
-          <View testID="safety-report-category-group" accessibilityRole="radiogroup" style={styles.radioList}>
-            {REPORT_CATEGORIES.map(category => {
-              const selected = selectedCategory === category.id;
-              return <Pressable key={category.id} testID={`safety-report-category-${category.id}`} onPress={() => setSelectedCategory(category.id)} accessibilityRole="radio" accessibilityLabel={category.label} accessibilityState={{ checked: selected }} style={[styles.radioOption, { backgroundColor: selected ? palette.primary : palette.surfaceMuted, borderColor: selected ? palette.primaryPressed : palette.border }]}>
-                <Text style={{ color: selected ? palette.onPrimary : palette.text, fontWeight: selected ? '700' : '500' }}>{selected ? '● ' : '○ '}{category.label}</Text>
-              </Pressable>;
-            })}
-          </View>
-          <TextField testID="safety-report-note" label={`Optional note (${MAX_REPORT_NOTE_LENGTH} characters max)`} placeholder="Brief context (do not include private documents or passwords)" value={details} maxLength={MAX_REPORT_NOTE_LENGTH} onChangeText={setDetails} />
-          <Button testID="safety-report-submit-btn" label={submitting ? 'Submitting…' : 'Submit report'} variant="primary" size="lg" disabled={!targetId || submitting} loading={submitting} onPress={() => void submitReport()} />
-          {statusMessage ? <Text accessibilityRole="alert" testID="safety-status-message" style={[styles.status, { color: palette.successText }]}>{statusMessage}</Text> : null}
-          {errorMessage ? <Text accessibilityRole="alert" testID="safety-error-message" style={[styles.status, { color: palette.errorText }]}>{errorMessage}</Text> : null}
-          {queuedReports > 0 ? <View style={styles.retryBox}>
-            <Text style={[styles.body, { color: palette.textSecondary }]}>{queuedReports} report{queuedReports === 1 ? '' : 's'} saved on this device and waiting for a connection.</Text>
-            <Button testID="safety-retry-reports-btn" label="Retry pending reports" variant="secondary" size="md" onPress={() => void retryQueued()} />
-          </View> : null}
-          <Button label="Done" variant="ghost" size="md" onPress={exit} />
+      {step === 'report' ? (
+        <View testID="safety-report-category-group" accessibilityRole="radiogroup" style={styles.list}>
+          {REPORT_CATEGORIES.map(item => (
+            <Row key={item.id} testID={`safety-report-category-${item.id}`} label={item.label} palette={palette} onPress={() => { setCategory(item.id); setStep('report-note'); }} />
+          ))}
         </View>
-      </Card>
-      <Text style={[styles.help, { color: palette.textSecondary }]}>Need help or want to appeal a moderation decision? Read the <Text onPress={() => router.push('/(public)/legal/complaints-handling' as any)} style={{ color: palette.link, textDecorationLine: 'underline' }}>Safety Help & Appeals (draft)</Text> or use the in-app Safety controls to report a concern.</Text>
+      ) : null}
+
+      {step === 'report-note' ? (
+        <View testID="safety-report-note-step" style={styles.step}>
+          <Text style={[styles.title, { color: palette.text }]}>{REPORT_CATEGORIES.find(item => item.id === category)?.label}</Text>
+          <TextInput testID="safety-report-note" placeholder="Add a note (optional)" placeholderTextColor={palette.textSecondary} value={note} maxLength={MAX_REPORT_NOTE_LENGTH} onChangeText={setNote} multiline style={[styles.input, { color: palette.text, borderColor: palette.border }]} />
+          {confirm('safety-report-submit-btn', 'Send report', () => void sendReport())}
+        </View>
+      ) : null}
+
+      {step === 'block' || step === 'unmatch' ? (
+        <View testID="safety-confirm-action" style={styles.step}>
+          <Text accessibilityRole="header" style={[styles.title, { color: palette.text }]}>{step === 'block' ? `Block ${targetName}?` : `Unmatch ${targetName}?`}</Text>
+          <Text style={[styles.detail, { color: palette.textSecondary }]}>{step === 'block' ? 'You won’t see each other again.' : 'Your chat will end.'}</Text>
+          {confirm('safety-confirm-btn', step === 'block' ? 'Block' : 'Unmatch', () => void (step === 'block' ? confirmBlock() : confirmUnmatch()))}
+        </View>
+      ) : null}
+
+      {step === 'done' ? (
+        <View style={styles.step}>
+          <Text accessibilityRole="alert" testID="safety-status-message" style={[styles.title, { color: palette.text }]}>{message}</Text>
+          <Pressable testID="safety-done-btn" accessibilityRole="button" onPress={done} style={styles.textButton}>
+            <Text style={[styles.textButtonLabel, { color: palette.text }]}>Done</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {error ? <Text accessibilityRole="alert" testID="safety-error-message" style={[styles.detail, { color: palette.errorText }]}>{error}</Text> : null}
+
+      {step === 'menu' ? (
+        <Pressable accessibilityRole="link" onPress={() => router.push('/(public)/legal/complaints-handling' as any)} style={styles.help}>
+          <Text style={[styles.detail, { color: palette.textSecondary }]}>Safety Help & Appeals (draft)</Text>
+        </Pressable>
+      ) : null}
     </SettingsLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  section: { gap: Spacing.md }, heading: { ...Typography.h3 }, body: { ...Typography.bodySmall, lineHeight: 20 }, actions: { gap: Spacing.sm },
-  confirm: { borderRadius: 14, padding: Spacing.md, gap: Spacing.sm }, confirmTitle: { ...Typography.bodySemiBold }, inlineActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  radioList: { gap: Spacing.xs }, radioOption: { minHeight: TouchTargets.comfortable, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: 12, borderWidth: 1, justifyContent: 'center' },
-  status: { ...Typography.bodySmall, lineHeight: 20 }, retryBox: { gap: Spacing.sm, paddingTop: Spacing.xs }, help: { ...Typography.bodySmall, lineHeight: 21 },
+  list: { gap: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, minHeight: TouchTargets.comfortable, paddingHorizontal: Spacing.sm, borderRadius: 12 },
+  rowLabel: { ...Typography.body, flex: 1 },
+  step: { gap: Spacing.md, paddingHorizontal: Spacing.sm },
+  title: { ...Typography.bodySemiBold },
+  detail: { ...Typography.bodySmall, lineHeight: 20 },
+  input: { minHeight: 88, borderWidth: 1, borderRadius: 12, padding: Spacing.md, textAlignVertical: 'top', ...Typography.body },
+  confirmRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.sm },
+  textButton: { minHeight: TouchTargets.minimum, paddingHorizontal: Spacing.lg, justifyContent: 'center', alignItems: 'center', borderRadius: 22 },
+  outline: { borderWidth: 1 },
+  textButtonLabel: { ...Typography.bodySemiBold },
+  help: { paddingHorizontal: Spacing.sm, paddingTop: Spacing.lg },
 });
