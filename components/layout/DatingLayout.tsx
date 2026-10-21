@@ -39,6 +39,8 @@ export interface DatingLayoutProps {
   testID?: string;
   /** Dating view content (e.g. Tabs or detail screen) */
   children: React.ReactNode;
+  /** Explicitly bypass the guard only for __DEV__ preview routes. */
+  skipAuthGuard?: boolean;
 }
 
 export function DatingLayout({
@@ -47,6 +49,7 @@ export function DatingLayout({
   reduceMotion: reduceMotionProp,
   testID = "dating-layout",
   children,
+  skipAuthGuard = false,
 }: DatingLayoutProps) {
   const router = useRouter();
   const scheme = useColorScheme() ?? "light";
@@ -60,9 +63,8 @@ export function DatingLayout({
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
   return (
-    <AuthGuard
-      mode="protected"
-      redirectTo="/auth/signin"
+    <MaybeGuard
+      skip={__DEV__ && skipAuthGuard}
       reduceMotion={reduceMotion}
       testID={`${testID}-guard`}
     >
@@ -162,7 +164,7 @@ export function DatingLayout({
           {children}
         </View>
       </SafeAreaView>
-    </AuthGuard>
+    </MaybeGuard>
   );
 }
 
@@ -217,3 +219,8 @@ const styles = StyleSheet.create({
 });
 
 export default DatingLayout;
+
+function MaybeGuard({ skip, reduceMotion, testID, children }: { skip: boolean; reduceMotion: boolean; testID: string; children: React.ReactNode }) {
+  if (skip) return <>{children}</>;
+  return <AuthGuard mode="protected" redirectTo="/auth/signin" reduceMotion={reduceMotion} testID={testID}>{children}</AuthGuard>;
+}

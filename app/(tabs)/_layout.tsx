@@ -3,7 +3,7 @@ import {
   Ionicons,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import { Tabs, useLocalSearchParams } from "expo-router";
 import React from "react";
 import { Platform } from "react-native";
 
@@ -14,12 +14,17 @@ import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
+const DISCOVERY_PREVIEWS = ["feed", "empty", "quota", "error", "match"];
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const scheme = colorScheme ?? "light";
+  const params = useLocalSearchParams<{ preview?: string }>();
+  // Dev previews are explicit query params only; production builds always keep the auth guard.
+  const previewAllowed = __DEV__ && DISCOVERY_PREVIEWS.includes(String(params.preview ?? ""));
 
   return (
-    <DatingLayout testID="tabs-dating-layout">
+    <DatingLayout testID="tabs-dating-layout" skipAuthGuard={previewAllowed}>
       <Tabs
         initialRouteName="people"
         screenOptions={{

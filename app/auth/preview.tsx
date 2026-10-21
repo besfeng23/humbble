@@ -14,12 +14,15 @@ const destinations = [
   ['Photos complete', '/(onboarding)/photos-prompts?preview=complete'], ['Photo save error', '/(onboarding)/photos-prompts?preview=save-error'],
   ['Verification unavailable', '/(onboarding)/verify?preview=verify'], ['Verification pending', '/(onboarding)/verify?preview=pending'],
   ['Verification failed', '/(onboarding)/verify?preview=failed'], ['Verification review', '/(onboarding)/verify?preview=review'],
+  ['Discovery feed', '/(tabs)/discover?preview=feed'], ['Discovery empty state', '/(tabs)/discover?preview=empty'],
+  ['Discovery quota reached', '/(tabs)/discover?preview=quota'], ['Discovery error', '/(tabs)/discover?preview=error'],
+  ['Discovery mutual match', '/(tabs)/discover?preview=match'],
 ] as const;
 export default function AuthPreviewScreen() {
   const router = useRouter();
   const palette = Colors[useColorScheme() ?? 'light'];
   if (!__DEV__) return <Redirect href="/auth/signin" />;
-  return <AuthScreen testID="auth-preview" title="Authentication preview" subtitle="Open each state without a live Supabase connection.">
+  return <AuthScreen testID="auth-preview" title="Authentication preview" subtitle="Open auth, onboarding, and discovery states without a live data connection.">
     <ScrollView contentContainerStyle={styles.links}>{destinations.map(([label, path]) => <Pressable key={label} accessibilityRole="link" onPress={() => router.push(path as any)} style={styles.link}><Text style={{ color: palette.link, textDecorationLine: 'underline' }}>{label}</Text></Pressable>)}</ScrollView>
   </AuthScreen>;
 }
