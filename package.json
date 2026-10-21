@@ -17,7 +17,8 @@
     "db:types": "bash scripts/db/gen-types.sh",
     "db:types:check": "bash scripts/db/check-types-drift.sh",
     "db:lint": "bash scripts/db/lint.sh",
-    "db:diff": "bash scripts/db/diff.sh"
+    "db:diff": "bash scripts/db/diff.sh",
+    "db:test-photo-upload-limits": "node scripts/db/test-photo-upload-limits.mjs"
   },
   "jest": {
     "preset": "jest-expo"
@@ -33,6 +34,7 @@
     "expo-constants": "~17.0.8",
     "expo-font": "~13.0.4",
     "expo-haptics": "~14.0.1",
+    "expo-image-picker": "~16.0.6",
     "expo-linear-gradient": "~14.0.2",
     "expo-linking": "~7.0.5",
     "expo-router": "~4.0.19",

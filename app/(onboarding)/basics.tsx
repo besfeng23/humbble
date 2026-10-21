@@ -9,12 +9,10 @@ import { useAuth } from '@/lib/AuthProvider';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export const UNDERAGE_MESSAGE = 'You must be at least 18 to continue.';
-function mappedAgeError(error: { code?: string; message?: string }): boolean {
-  return error.code === '23514' || error.code === 'P0001' || /birth.?date|18 years|under.?age|must be at least 18/i.test(error.message ?? '');
-}
+function mappedAgeError(error: { code?: string; message?: string }): boolean { return error.code === '23514' || error.code === 'P0001' || /birth.?date|18 years|under.?age|must be at least 18/i.test(error.message ?? ''); }
 function initialDisplayName(user: { user_metadata?: Record<string, unknown> } | null): string {
   const candidate = String(user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? '').trim();
-  return candidate.length >= 2 && candidate.length <= 40 && /^[A-Za-z][A-Za-z0-9 .'_\-]{1,39}$/.test(candidate) ? candidate : 'New Member';
+  return candidate.length >= 2 && candidate.length <= 40 && /^[A-Za-z][A-Za-z0-9 .'_-]{1,39}$/.test(candidate) ? candidate : 'New Member';
 }
 
 export default function OnboardingBasicsScreen() {
@@ -27,10 +25,7 @@ export default function OnboardingBasicsScreen() {
   const previewAllowed = __DEV__ && ['dob', 'underage'].includes(String(params.preview ?? ''));
   const [underageBlocked, setUnderageBlocked] = useState(__DEV__ && params.preview === 'underage');
   const unavailable = !isSupabaseConfigured;
-
-  const doSignOut = async () => {
-    try { await signOut(); } finally { router.replace('/auth/signin' as any); }
-  };
+  const doSignOut = async () => { try { await signOut(); } finally { router.replace('/auth/signin' as any); } };
   const submit = async () => {
     if (busy || unavailable || !user) return;
     setError(null);
@@ -42,7 +37,6 @@ export default function OnboardingBasicsScreen() {
       const { data: existing, error: readError } = await supabase.from('profiles').select('id,birth_date').eq('id', user.id).maybeSingle();
       if (readError) { setError('Could not save your details. Try again.'); return; }
       if (existing) {
-        // The database intentionally locks birth_date after profile creation. Do not attempt to bypass it.
         if (!isAdult(existing.birth_date)) { setUnderageBlocked(true); setError(null); return; }
         if (existing.birth_date !== birthDate) { setError('Date of birth can only be set when your profile is first created.'); return; }
       } else {
@@ -53,26 +47,15 @@ export default function OnboardingBasicsScreen() {
           return;
         }
       }
-      // verification_status and is_discoverable are intentionally omitted; database defaults/locks remain authoritative.
-      router.replace('/(onboarding)/verify' as any);
-    } catch {
-      setError('Could not save your details. Try again.');
-    } finally { setBusy(false); }
+      router.replace('/(onboarding)/intentions' as any);
+    } catch { setError('Could not save your details. Try again.'); }
+    finally { setBusy(false); }
   };
-
-  const renderGuarded = (screen: React.ReactNode) => previewAllowed ? screen : (
-    <AuthGuard mode="protected" redirectTo="/auth/signin" testID="onboarding-basics-guard">
-      {screen}
-    </AuthGuard>
-  );
-
-  if (underageBlocked) return renderGuarded(<AuthScreen testID="underage-block-screen" title="You can’t continue" subtitle={UNDERAGE_MESSAGE}>
-    <Button testID="underage-signout" label="Sign out" size="lg" variant="charcoal" onPress={() => void doSignOut()} />
-  </AuthScreen>);
-
+  const renderGuarded = (screen: React.ReactNode) => previewAllowed ? screen : <AuthGuard mode="protected" redirectTo="/auth/signin" testID="onboarding-basics-guard">{screen}</AuthGuard>;
+  if (underageBlocked) return renderGuarded(<AuthScreen testID="underage-block-screen" title="You can’t continue" subtitle={UNDERAGE_MESSAGE}><Button testID="underage-signout" label="Sign out" size="lg" variant="charcoal" onPress={() => void doSignOut()} /></AuthScreen>);
   return renderGuarded(<AuthScreen testID="onboarding-basics-screen" title="Date of birth" subtitle="Enter your date of birth to continue.">
     {unavailable ? <AuthNotice testID="auth-unavailable">Sign-in is unavailable in this build</AuthNotice> : null}
     <DatePickerField testID="birth-date-field" value={birthDate} onChange={setBirthDate} error={error} />
-    <AuthPrimaryButton testID="birth-date-continue" label={busy ? "Saving details..." : "Continue"} disabled={unavailable || busy || !user} loading={busy} onPress={submit} />
+    <AuthPrimaryButton testID="birth-date-continue" label={busy ? 'Saving details…' : 'Continue'} disabled={unavailable || busy || !user} loading={busy} onPress={submit} />
   </AuthScreen>);
 }

@@ -56,6 +56,7 @@ import {
   PendingState,
   SuccessState,
 } from "@/components/state";
+jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 
 // Mock expo-router deterministically without requiring a live navigation container
 const mockPush = jest.fn();

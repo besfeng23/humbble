@@ -36,7 +36,7 @@ jobs:
         run: npm run lint
 
       - name: Typecheck
-        run: npm run typecheck # npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Test
         run: npm test
@@ -74,6 +74,28 @@ jobs:
 
       - name: Run pgTAP database tests
         run: supabase test db
+
+      - name: Set up Node.js for Storage API integration test
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verify Storage API rejects invalid photo uploads
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(supabase status -o env)"
+          test_email="p302-storage-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}@example.test"
+          test_password="$(openssl rand -hex 24)"
+          create_payload="$(jq -n --arg email "$test_email" --arg password "$test_password" '{email:$email,password:$password,email_confirm:true}')"
+          created_user="$(curl --fail-with-body --silent --show-error -X POST "$API_URL/auth/v1/admin/users" -H "apikey: $SERVICE_ROLE_KEY" -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H 'Content-Type: application/json' --data "$create_payload")"
+          test_user_id="$(jq -r '.id // empty' <<<"$created_user")"
+          login_payload="$(jq -n --arg email "$test_email" --arg password "$test_password" '{email:$email,password:$password}')"
+          test_token_payload="$(curl --fail-with-body --silent --show-error -X POST "$API_URL/auth/v1/token?grant_type=password" -H "apikey: $ANON_KEY" -H 'Content-Type: application/json' --data "$login_payload")"
+          test_access_token="$(jq -r '.access_token // empty' <<<"$test_token_payload")"
+          test -n "$test_user_id"
+          test -n "$test_access_token"
+          SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" P302_TEST_ACCESS_TOKEN="$test_access_token" P302_TEST_USER_ID="$test_user_id" npm run db:test-photo-upload-limits
 
       - name: Run concurrent reciprocal-like integration test
         env:
