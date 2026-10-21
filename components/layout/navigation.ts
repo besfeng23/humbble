@@ -152,6 +152,12 @@ export const SETTINGS_NAV_ITEMS: readonly NavItem[] = [
     accessibilityLabel: "Privacy, notification and safety settings",
   },
   {
+    id: "settings-blocked-users",
+    label: "Blocked Users",
+    href: "/(tabs)/profile/blocked-users",
+    accessibilityLabel: "Review and unblock blocked accounts",
+  },
+  {
     id: "settings-privacy-delete",
     label: "Data & Delete",
     href: "/(tabs)/profile/privacy-delete",

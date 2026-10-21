@@ -104,11 +104,11 @@ SELECT ok(
 );
 SELECT ok(
   pg_catalog.has_table_privilege('authenticated', 'public.blocks', 'SELECT')
-  AND pg_catalog.has_table_privilege('authenticated', 'public.blocks', 'DELETE')
-  AND pg_catalog.has_column_privilege('authenticated', 'public.blocks', 'blocker_id', 'INSERT')
-  AND pg_catalog.has_column_privilege('authenticated', 'public.blocks', 'blocked_id', 'INSERT')
+  AND NOT pg_catalog.has_table_privilege('authenticated', 'public.blocks', 'DELETE')
+  AND NOT pg_catalog.has_column_privilege('authenticated', 'public.blocks', 'blocker_id', 'INSERT')
+  AND NOT pg_catalog.has_column_privilege('authenticated', 'public.blocks', 'blocked_id', 'INSERT')
   AND NOT pg_catalog.has_table_privilege('authenticated', 'public.blocks', 'UPDATE'),
-  'clients may create/remove only their own blocks and cannot update block rows'
+  'clients may read only; block writes go through block_user/unblock_user RPCs (P3-05)'
 );
 
 -- A pair creates at most one match/conversation/participant pair. Parallel race
@@ -226,7 +226,7 @@ SELECT ok((SELECT last_message_at IS NOT NULL FROM public.conversations c JOIN p
 SET ROLE authenticated;
 SET "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000014","role":"authenticated"}';
 SELECT lives_ok(
-  $$INSERT INTO public.blocks (blocker_id, blocked_id) VALUES ('00000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000013')$$,
+  $$SELECT public.block_user('00000000-0000-0000-0000-000000000013')$$,
   'user D can block user C'
 );
 SELECT is((SELECT count(*)::INTEGER FROM public.blocks WHERE blocker_id = '00000000-0000-0000-0000-000000000014'), 1, 'blocker can read their own block row');
@@ -235,12 +235,12 @@ SELECT throws_ok(
   '42501', NULL, 'user cannot create a block using another user as blocker'
 );
 SELECT throws_ok(
-  $$INSERT INTO public.blocks (blocker_id, blocked_id) VALUES ('00000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000014')$$,
-  '23514', 'Self-blocks are not allowed', 'self-block is rejected'
+  $$SELECT public.block_user('00000000-0000-0000-0000-000000000014')$$,
+  '23514', 'invalid_block_target', 'self-block is rejected'
 );
-SELECT throws_ok(
-  $$INSERT INTO public.blocks (blocker_id, blocked_id) VALUES ('00000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000013')$$,
-  '23505', NULL, 'duplicate block pair is rejected'
+SELECT lives_ok(
+  $$SELECT public.block_user('00000000-0000-0000-0000-000000000013')$$,
+  'repeated block of the same pair is idempotent (no duplicate row)'
 );
 RESET ROLE;
 RESET "request.jwt.claims";

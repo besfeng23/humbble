@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AuthGuard, ResponsiveNavHeader } from '@/components/layout';
 import { Button, Card, ProfileMedia } from '@/components/ui';
 import { Colors } from '@/constants/Colors';
@@ -49,7 +50,7 @@ export default function ProfileInspectorScreen() {
   };
   return <AuthGuard mode="protected" redirectTo="/auth/signin" testID="scr-12-guard">
     <View testID="scr-12-profile-inspector" style={[styles.root, { backgroundColor: palette.background }]}>
-      <ResponsiveNavHeader testID="scr-12-header" title="Profile" subtitle="Discovery profile" showBack fallbackHref="/(tabs)/discover" rightSlot={<Button testID="scr-12-shield-btn" label="Shield / Report" variant="danger" size="sm" shape="pill" onPress={() => router.push('/(safety)/report-modal' as any)} />} />
+      <ResponsiveNavHeader fadeEdge testID="scr-12-header" title="Profile" subtitle="Discovery profile" showBack fallbackHref="/(tabs)/discover" rightSlot={<Pressable testID="scr-12-shield-btn" accessibilityRole="button" accessibilityLabel="Safety: block or report" hitSlop={8} style={[styles.safety, { borderColor: palette.border }]} onPress={() => router.push({ pathname: '/(safety)/report-modal', params: { targetId: candidate?.profile_id ?? candidateId, targetName: candidate?.display_name ?? 'this person', source: 'profile' } } as any)}><Ionicons name="shield-outline" size={16} color={palette.text} /><Text style={[styles.safetyLabel, { color: palette.text }]}>Safety</Text></Pressable>} />
       {loading ? <View style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Loading profile…</Text></View> : candidate ? <ScrollView contentContainerStyle={styles.content}>
         <ProfileMedia testID="scr-12-media" name={candidate.display_name} age={candidate.age} imageUri={candidate.imageUrl ?? undefined} subtitle={candidate.city_region} verified size="large" />
         <Card testID="scr-12-prompts-card" variant="elevated"><View style={styles.prompts}>
@@ -64,4 +65,4 @@ export default function ProfileInspectorScreen() {
     </View>
   </AuthGuard>;
 }
-const styles = StyleSheet.create({ root: { flex: 1 }, content: { padding: Spacing.xl, gap: Spacing.lg }, center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }, prompts: { gap: Spacing.sm }, label: { ...Typography.label }, body: { ...Typography.body }, actions: { flexDirection: 'row', gap: Spacing.md }, actionButton: { flex: 1 }, error: { color: '#B42318' } });
+const styles = StyleSheet.create({ root: { flex: 1 }, content: { padding: Spacing.xl, gap: Spacing.lg }, center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }, prompts: { gap: Spacing.sm }, label: { ...Typography.label }, body: { ...Typography.body }, actions: { flexDirection: 'row', gap: Spacing.md }, actionButton: { flex: 1 }, error: { color: '#B42318' }, safety: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, paddingHorizontal: 12, borderRadius: 18, borderWidth: 1 }, safetyLabel: { ...Typography.bodySmall, fontWeight: '600' } });

@@ -630,6 +630,7 @@ export type Database = {
       reports: {
         Row: {
           category: Database["public"]["Enums"]["report_category"]
+          client_report_id: string | null
           context_summary: string | null
           created_at: string
           id: string
@@ -643,6 +644,7 @@ export type Database = {
         }
         Insert: {
           category: Database["public"]["Enums"]["report_category"]
+          client_report_id?: string | null
           context_summary?: string | null
           created_at?: string
           id?: string
@@ -656,6 +658,7 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["report_category"]
+          client_report_id?: string | null
           context_summary?: string | null
           created_at?: string
           id?: string
@@ -892,6 +895,14 @@ export type Database = {
         }[]
       }
       has_active_entitlement: { Args: { p_user_id: string }; Returns: boolean }
+      list_blocked_users: {
+        Args: never
+        Returns: {
+          blocked_id: string
+          created_at: string
+          display_name: string
+        }[]
+      }
       moderation_transition_case: {
         Args: {
           p_case_id: string
@@ -937,12 +948,14 @@ export type Database = {
       submit_report: {
         Args: {
           p_category: Database["public"]["Enums"]["report_category"]
+          p_client_report_id?: string
           p_context_summary: string
           p_reported_user_id: string
         }
         Returns: string
       }
       unblock_user: { Args: { p_target_id: string }; Returns: boolean }
+      unmatch: { Args: { p_target_id: string }; Returns: boolean }
     }
     Enums: {
       consent_choice: "granted" | "denied" | "withdrawn"
@@ -979,6 +992,8 @@ export type Database = {
         | "underage"
         | "impersonation"
         | "other"
+        | "explicit_content"
+        | "fake_profile"
       report_severity: "low" | "normal" | "high" | "urgent"
       report_status:
         | "submitted"
@@ -1167,6 +1182,8 @@ export const Constants = {
         "underage",
         "impersonation",
         "other",
+        "explicit_content",
+        "fake_profile",
       ],
       report_severity: ["low", "normal", "high", "urgent"],
       report_status: [

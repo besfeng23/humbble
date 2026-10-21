@@ -234,8 +234,8 @@ SELECT throws_ok(
  '42501', NULL, 'client cannot submit a report using another reporter id'
 );
 SELECT throws_ok(
- $$INSERT INTO public.reports (reporter_id, reported_user_id, category, context_summary) VALUES ('00000000-0000-0000-0000-000000000021', NULL, 'safety', 'missing target')$$,
- '23514', NULL, 'report submission requires a reported account'
+ $$SELECT public.submit_report(NULL, 'safety', 'missing target')$$,
+ '22023', 'reported_user_and_category_required', 'report submission requires a reported account'
 );
 SELECT throws_ok(
  $$INSERT INTO public.moderation_cases (status) VALUES ('open')$$,

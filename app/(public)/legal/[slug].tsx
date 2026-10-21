@@ -78,6 +78,23 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
       },
     ],
   },
+  "complaints-handling": {
+    slug: "complaints-handling",
+    title: "Safety Help & Appeals (Draft)",
+    effectiveDate: "20 October 2026 — DRAFT — COUNSEL REVIEW REQUIRED",
+    summary:
+      "Guidance for reporting safety concerns and understanding the moderation appeal path. This page is a draft; a separate support inbox is not configured in this build.",
+    sections: [
+      {
+        heading: "1. Report a safety concern",
+        body: "Open Safety controls from a person's profile, match, or conversation to block, unmatch, or submit a private report. If your connection is unavailable, reports are saved on this device and retried with the same report identifier.",
+      },
+      {
+        heading: "2. Appeal a moderation decision",
+        body: "If Humbble sends you a moderation or account-restriction notice, follow the instructions in that notice and keep its case reference. A dedicated in-app appeal form and support contact are not configured in this build; this draft must be reviewed and completed before launch.",
+      },
+    ],
+  },
   "refund-policy": {
     slug: "refund-policy",
     title: "Subscription, Renewal & Cancellation Disclosures (Draft)",

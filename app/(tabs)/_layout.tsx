@@ -112,6 +112,13 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="profile/blocked-users"
+          options={{
+            href: null,
+            title: "Blocked Users",
+          }}
+        />
+        <Tabs.Screen
           name="profile/privacy-delete"
           options={{
             href: null,

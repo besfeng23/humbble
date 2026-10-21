@@ -7,7 +7,7 @@ import { MessageBubble } from '@/components/messaging/MessageBubble';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/lib/AuthProvider';
-import { catchUpMessages, loadMessages, sendMessage, validateMessage, type ChatMessage, type MessageCursor } from '@/lib/messaging';
+import { catchUpMessages, loadConversationList, loadMessages, sendMessage, validateMessage, type ChatMessage, type ConversationSummary, type MessageCursor } from '@/lib/messaging';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 function makeClientMessageId(): string {
@@ -37,6 +37,7 @@ export default function ChatScreen() {
   const { user } = useAuth();
   const palette = Colors[useColorScheme() ?? 'light'];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversation, setConversation] = useState<ConversationSummary | null>(null);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -74,6 +75,9 @@ export default function ChatScreen() {
 
   useEffect(() => {
     let active = true;
+    if (conversationId && user?.id && isSupabaseConfigured) {
+      void loadConversationList().then(rows => { if (active) setConversation(rows.find(row => row.id === conversationId) ?? null); }).catch(() => undefined);
+    }
     if (!conversationId || !user?.id || !isSupabaseConfigured) {
       setLoading(false);
       setError('This conversation is unavailable.');
@@ -135,7 +139,7 @@ export default function ChatScreen() {
 
   return <AuthGuard mode="protected" redirectTo="/auth/signin" testID="chatscreen-guard">
     <KeyboardAvoidingView testID="scr-16-chatscreen" style={[styles.root, { backgroundColor: palette.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ResponsiveNavHeader fadeEdge testID="scr-16-header" title="Conversation" subtitle="Free messaging for mutual matches" showBack fallbackHref="/(tabs)/(chats)" rightSlot={<Pressable testID="scr-16-shield-btn" accessibilityRole="button" accessibilityLabel="Safety: report or block" hitSlop={8} onPress={() => router.push('/(safety)/report-modal' as any)}><Text style={styles.safetyLink}>Safety</Text></Pressable>} />
+      <ResponsiveNavHeader fadeEdge testID="scr-16-header" title={conversation?.counterpartName || 'Conversation'} subtitle="Free messaging for mutual matches" showBack fallbackHref="/(tabs)/(chats)" rightSlot={<Pressable testID="scr-16-shield-btn" accessibilityRole="button" accessibilityLabel="Safety: block, report, or unmatch" hitSlop={8} onPress={() => router.push({ pathname: '/(safety)/report-modal', params: { targetId: conversation?.counterpartId ?? '', targetName: conversation?.counterpartName ?? 'this person', source: 'chat', matched: '1' } } as any)}><Text style={styles.safetyLink}>Safety</Text></Pressable>} />
       {error ? <Pressable onPress={() => void catchUp()} style={styles.errorBanner}><Text style={styles.errorText}>{error}</Text><Text style={styles.retry}>Retry</Text></Pressable> : null}
       {loading ? <View style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Loading messages…</Text></View> :
         <ScrollView ref={scrollRef} testID="chat-messages" style={styles.messages} contentContainerStyle={styles.messagesContent}>

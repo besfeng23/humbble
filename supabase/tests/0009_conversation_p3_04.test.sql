@@ -83,8 +83,8 @@ SELECT is((
     AND (m.created_at,m.id)>(c.created_at,c.id)
 ), 1, 'tuple cursor catches up after a stable (created_at,id) cursor');
 
-INSERT INTO public.blocks (blocker_id,blocked_id)
-VALUES ('00000000-0000-0000-0000-000000000951','00000000-0000-0000-0000-000000000952');
+-- P3-05: direct block writes are revoked; blocks go through the block_user RPC.
+DO $$ BEGIN PERFORM public.block_user('00000000-0000-0000-0000-000000000952'::UUID); END $$;
 SELECT throws_ok(
   $$SELECT * FROM public.send_message('00000000-0000-0000-0000-000000000990'::UUID,'Blocked send','00000000-0000-0000-0000-000000000964'::UUID)$$,
   '42501', 'conversation_not_sendable', 'blocked participant cannot send');

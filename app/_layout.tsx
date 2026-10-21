@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import { SafetyReportRetry } from '@/components/safety/SafetyReportRetry';
 import { PendingState } from '@/components/state';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider, useAuth } from '@/lib/AuthProvider';
@@ -37,5 +38,5 @@ export default function RootLayout() {
   const [loaded] = useFonts({ SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf') });
   useEffect(() => { if (loaded) void SplashScreen.hideAsync(); }, [loaded]);
   if (!loaded) return null;
-  return <AuthProvider><ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}><RootNavigator /><StatusBar style="auto" /></ThemeProvider></AuthProvider>;
+  return <AuthProvider><ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}><RootNavigator /><SafetyReportRetry /><StatusBar style="auto" /></ThemeProvider></AuthProvider>;
 }
