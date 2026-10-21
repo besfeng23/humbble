@@ -1,324 +1,81 @@
-import { Redirect, useRouter } from "expo-router";
-import React, { useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
+import { PendingState } from '@/components/state';
+import { TextField } from '@/components/ui';
+import { Colors } from '@/constants/Colors';
+import { Spacing } from '@/constants/Spacing';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthProvider';
 
-import { AuthLayout } from "@/components/layout";
-import { FailureState, PendingState, SuccessState } from "@/components/state";
-import { useAuth } from "@/lib/AuthProvider";
-import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+export function getSignInError(error: { code?: string; status?: number; message?: string }): string {
+  if (error.code === 'email_not_confirmed') return 'Please confirm your email before signing in.';
+  if (error.status === 429 || (error.status ?? 0) >= 500 || /network|fetch|timeout|rate.?limit|too many requests/i.test(error.message ?? '')) return 'Sign-in is temporarily unavailable. Try again.';
+  return 'Email or password is incorrect';
+}
 
-const SigninScreen = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(
-    isSupabaseConfigured ? null : "Auth is not configured"
-  );
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+export default function SigninScreen() {
   const router = useRouter();
-  const { session } = useAuth();
+  const params = useLocalSearchParams<{ reason?: string; reset?: string }>();
+  const { authMessage, session } = useAuth();
+  const palette = Colors[useColorScheme() ?? 'light'];
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const unavailable = !isSupabaseConfigured;
 
-  if (session) {
-    return <Redirect href="/(tabs)/people" />;
-  }
+  if (session) return <Redirect href="/(tabs)/people" />;
 
-  const handleSignin = async () => {
-    setErrorMessage(null);
-    setInfoMessage(null);
-
-    if (!isSupabaseConfigured) {
-      setErrorMessage("Auth is not configured");
-      return;
-    }
-
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail || !password) {
-      setErrorMessage("Please enter both email and password.");
-      return;
-    }
-
-    setLoading(true);
+  const submit = async () => {
+    if (busy || unavailable) return;
+    setError(null);
+    if (!email.trim() || !password) { setError('Enter your email and password.'); return; }
+    setBusy(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: trimmedEmail,
-        password,
-      });
-
-      if (error) {
-        setErrorMessage(error.message || "Sign in failed.");
+      const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (authError) { setError(getSignInError(authError)); return; }
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !data.session) {
+        setError('Sign-in is temporarily unavailable. Try again.');
         return;
       }
-
-      if (data.session) {
-        setEmail("");
-        setPassword("");
-        router.replace("/(tabs)/people");
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id,is_discoverable,verification_status')
+        .eq('id', data.session.user.id)
+        .maybeSingle();
+      if (profileError) {
+        setError('Sign-in is temporarily unavailable. Try again.');
+        return;
       }
-    } catch (error: any) {
-      setErrorMessage(error?.message || "Unknown error");
-    } finally {
-      setLoading(false);
-    }
+      const next = !profile
+        ? '/(onboarding)/basics'
+        : profile.verification_status === 'verified' && profile.is_discoverable
+          ? '/(tabs)/people'
+          : '/(onboarding)/verify';
+      router.replace(next as any);
+    } catch {
+      setError('Sign-in is temporarily unavailable. Try again.');
+    } finally { setBusy(false); }
   };
 
-  return (
-    <AuthLayout
-      testID="scr-05-signin"
-      heroTitle="Welcome Back"
-      heroSubtitle="Sign in to continue your journey"
-      formTitle="LOGIN"
-      backgroundSource={require("../../assets/images/sign-in.jpg")}
-      fallbackHref="/(public)"
-    >
-      {errorMessage ? (
-        <FailureState
-          testID="signin-error-state"
-          title="Sign in notice"
-          message={errorMessage}
-          compact
-          style={styles.stateBanner}
-        />
-      ) : null}
-
-      {infoMessage ? (
-        <SuccessState
-          testID="signin-info-state"
-          title="Notice"
-          message={infoMessage}
-          compact
-          style={styles.stateBanner}
-        />
-      ) : null}
-
-      {loading ? (
-        <PendingState
-          testID="signin-pending-state"
-          title="Signing in..."
-          message="Verifying your credentials."
-          compact
-          style={styles.stateBanner}
-        />
-      ) : null}
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          testID="signin-email-input"
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#5C646A"
-          accessibilityLabel="Email address"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-      </View>
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          testID="signin-password-input"
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#5C646A"
-          accessibilityLabel="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          onSubmitEditing={handleSignin}
-        />
-      </View>
-
-      <TouchableOpacity
-        testID="signin-forgot-password-btn"
-        accessibilityRole="link"
-        accessibilityLabel="Forgot Password? Reset your password"
-        style={styles.forgotPassword}
-        onPress={() => {
-          setErrorMessage(null);
-          router.push("/auth/recovery" as any);
-        }}
-      >
-        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        testID="signin-submit-btn"
-        accessibilityRole="button"
-        accessibilityLabel={loading ? "Signing In" : "Login"}
-        accessibilityState={{ disabled: loading, busy: loading }}
-        style={[styles.loginButton, loading && styles.loginButtonDisabled]}
-        onPress={handleSignin}
-        disabled={loading}
-      >
-        <View style={styles.loginButtonSolid}>
-          <Text style={styles.loginButtonTextSolid}>
-            {loading ? "Signing In..." : "Login"}
-          </Text>
-        </View>
-      </TouchableOpacity>
-
-      <View style={styles.dividerContainer}>
-        <View style={styles.divider} />
-        <Text style={styles.dividerText}>
-          Social OAuth (disabled until provider setup)
-        </Text>
-        <View style={styles.divider} />
-      </View>
-
-      <View style={styles.socialContainer}>
-        <TouchableOpacity
-          testID="signin-google-disabled"
-          style={[styles.socialButton, styles.socialButtonDisabled]}
-          disabled
-          accessibilityRole="button"
-          accessibilityLabel="Google sign-in unavailable"
-          accessibilityState={{ disabled: true }}
-        >
-          <Text style={styles.socialButtonText}>G</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          testID="signin-facebook-disabled"
-          style={[styles.socialButton, styles.socialButtonDisabled]}
-          disabled
-          accessibilityRole="button"
-          accessibilityLabel="Facebook sign-in unavailable"
-          accessibilityState={{ disabled: true }}
-        >
-          <Text style={styles.socialButtonText}>f</Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity
-        testID="signin-to-signup-link"
-        accessibilityRole="link"
-        accessibilityLabel="Don't have an account? Sign Up"
-        onPress={() => router.replace("/auth/signup")}
-        style={styles.linkContainer}
-      >
-        <Text style={styles.linkText}>
-          Don't have an account?{" "}
-          <Text style={styles.linkHighlight}>Sign Up</Text>
-        </Text>
-      </TouchableOpacity>
-    </AuthLayout>
-  );
-};
-
-const styles = StyleSheet.create({
-  stateBanner: {
-    marginBottom: 16,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: "#11181C",
-    borderWidth: 1,
-    borderColor: "#e9ecef",
-  },
-  forgotPassword: {
-    alignSelf: "flex-end",
-    marginBottom: 24,
-    minHeight: 44,
-    justifyContent: "center",
-  },
-  forgotPasswordText: {
-    color: "#1A1A1A",
-    textDecorationLine: "underline",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  loginButton: {
-    borderRadius: 12,
-    overflow: "hidden",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  loginButtonDisabled: {
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  loginButtonSolid: {
-    paddingVertical: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFD600",
-    borderRadius: 12,
-  },
-  loginButtonTextSolid: {
-    color: "#1A1A1A",
-    fontSize: 18,
-    fontWeight: "bold",
-    letterSpacing: 0.5,
-  },
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 24,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#e9ecef",
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: "#525860",
-    fontSize: 12,
-  },
-  socialContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 20,
-    marginBottom: 24,
-  },
-  socialButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#FFD600",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#1a1a1a",
-  },
-  socialButtonDisabled: {
-    backgroundColor: "#E9ECEF",
-    borderColor: "#9BA1A6",
-    opacity: 0.65,
-  },
-  socialButtonText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#525860",
-  },
-  linkContainer: {
-    alignItems: "center",
-    minHeight: 44,
-    justifyContent: "center",
-  },
-  linkText: {
-    color: "#525860",
-    fontSize: 16,
-  },
-  linkHighlight: {
-    color: "#1A1A1A",
-    fontWeight: "700",
-    textDecorationLine: "underline",
-  },
-});
-
-export default SigninScreen;
+  return <AuthScreen testID="signin-screen" title="Sign in" subtitle="Sign in to continue.">
+    {unavailable ? <Text testID="auth-unavailable" numberOfLines={1} accessibilityRole="alert" style={[styles.notice, { color: palette.text, fontSize: 14 }]}>Sign-in is unavailable in this build</Text> : null}
+    {params.reason === 'reauth' || authMessage === 'Please sign in again.' ? <Text accessibilityRole="alert" style={{ color: palette.textSecondary }}>Please sign in again.</Text> : null}
+    {params.reset === 'complete' ? <Text style={{ color: palette.textSecondary }}>Password updated. Sign in with your new password.</Text> : null}
+    <TextField testID="signin-email" label="Email address" value={email} onChangeText={setEmail} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" returnKeyType="next" required />
+    <TextField testID="signin-password" label="Password" value={password} onChangeText={setPassword} secureTextEntry textContentType="password" returnKeyType="go" onSubmitEditing={submit} required />
+    {error ? <Text testID="signin-error" accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.error, { color: palette.errorText }]}>{error}</Text> : null}
+    {busy ? <PendingState compact title="Signing in..." /> : null}
+    <AuthPrimaryButton testID="signin-submit" label={busy ? "Signing in..." : "Sign in"} disabled={unavailable || busy} loading={busy} onPress={submit} />
+    <View testID="signin-links" style={styles.linkRow}>
+      <Pressable testID="signin-forgot-password" accessibilityRole="link" onPress={() => router.push('/auth/recovery' as any)} style={styles.link}><Text style={[styles.quietLinkText, { color: palette.textSecondary }]}>Forgot password?</Text></Pressable>
+      <Pressable testID="signin-create-account" accessibilityRole="link" onPress={() => router.push('/auth/signup' as any)} style={styles.link}><Text style={[styles.quietLinkText, { color: palette.textSecondary }]}>Create account</Text></Pressable>
+    </View>
+    {/* Google and Facebook remain absent until provider configuration is approved. */}
+  </AuthScreen>;
+}
+const styles = StyleSheet.create({ notice: { marginBottom: Spacing.xs }, error: { marginBottom: Spacing.xs }, linkRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.lg }, link: { minHeight: 44, justifyContent: 'center' }, quietLinkText: { fontSize: 14, textDecorationLine: 'underline' } });
