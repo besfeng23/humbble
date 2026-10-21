@@ -211,7 +211,7 @@ SELECT throws_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-00
 SELECT ok(NOT EXISTS (SELECT 1 FROM public.daily_swipe_quotas WHERE user_id = '00000000-0000-0000-0000-000000000051' AND quota_date = (pg_catalog.now() AT TIME ZONE 'UTC')::DATE), 'failed swipes do not create a quota row');
 SELECT lives_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-000000000052', 'pass')$$, 'pass succeeds without consuming a like');
 SELECT is((SELECT COALESCE((SELECT q.likes_used FROM public.daily_swipe_quotas q WHERE q.user_id = '00000000-0000-0000-0000-000000000051' AND q.quota_date = (pg_catalog.now() AT TIME ZONE 'UTC')::DATE), 0)), 0, 'pass does not increment daily likes');
-SELECT throws_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-000000000052', 'like')$$, '23505', 'duplicate_swipe', 'duplicate actor-target swipe is rejected cleanly');
+SELECT throws_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-000000000052', 'like')$$, '23505', 'duplicate_swipe_direction_mismatch', 'conflicting duplicate swipe is rejected cleanly (same-direction retries are idempotent, see 0008)');
 RESET ROLE;
 RESET "request.jwt.claims";
 

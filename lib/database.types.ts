@@ -869,6 +869,7 @@ export type Database = {
         Returns: {
           age: number
           city_region: string
+          cursor_created_at: string
           display_name: string
           primary_photo_path: string
           profile_id: string
