@@ -1,7 +1,7 @@
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
+import { AuthNotice, AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
 import { PendingState } from '@/components/state';
 import { TextField } from '@/components/ui';
 import { Colors } from '@/constants/Colors';
@@ -63,7 +63,7 @@ export default function SigninScreen() {
   };
 
   return <AuthScreen testID="signin-screen" title="Sign in" subtitle="Sign in to continue.">
-    {unavailable ? <Text testID="auth-unavailable" numberOfLines={1} accessibilityRole="alert" style={[styles.notice, { color: palette.text, fontSize: 14 }]}>Sign-in is unavailable in this build</Text> : null}
+    {unavailable ? <AuthNotice testID="auth-unavailable">Sign-in is unavailable in this build</AuthNotice> : null}
     {params.reason === 'reauth' || authMessage === 'Please sign in again.' ? <Text accessibilityRole="alert" style={{ color: palette.textSecondary }}>Please sign in again.</Text> : null}
     {params.reset === 'complete' ? <Text style={{ color: palette.textSecondary }}>Password updated. Sign in with your new password.</Text> : null}
     <TextField testID="signin-email" label="Email address" value={email} onChangeText={setEmail} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" returnKeyType="next" required />
@@ -72,10 +72,10 @@ export default function SigninScreen() {
     {busy ? <PendingState compact title="Signing in..." /> : null}
     <AuthPrimaryButton testID="signin-submit" label={busy ? "Signing in..." : "Sign in"} disabled={unavailable || busy} loading={busy} onPress={submit} />
     <View testID="signin-links" style={styles.linkRow}>
-      <Pressable testID="signin-forgot-password" accessibilityRole="link" onPress={() => router.push('/auth/recovery' as any)} style={styles.link}><Text style={[styles.quietLinkText, { color: palette.textSecondary }]}>Forgot password?</Text></Pressable>
-      <Pressable testID="signin-create-account" accessibilityRole="link" onPress={() => router.push('/auth/signup' as any)} style={styles.link}><Text style={[styles.quietLinkText, { color: palette.textSecondary }]}>Create account</Text></Pressable>
+      <Pressable testID="signin-forgot-password" accessibilityRole="link" onPress={() => router.push('/auth/recovery' as any)} style={styles.link}><Text style={[styles.quietLinkText, { color: palette.link }]}>Forgot password?</Text></Pressable>
+      <Pressable testID="signin-create-account" accessibilityRole="link" onPress={() => router.push('/auth/signup' as any)} style={styles.link}><Text style={[styles.quietLinkText, { color: palette.link }]}>Create account</Text></Pressable>
     </View>
     {/* Google and Facebook remain absent until provider configuration is approved. */}
   </AuthScreen>;
 }
-const styles = StyleSheet.create({ notice: { marginBottom: Spacing.xs }, error: { marginBottom: Spacing.xs }, linkRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.lg }, link: { minHeight: 44, justifyContent: 'center' }, quietLinkText: { fontSize: 14, textDecorationLine: 'underline' } });
+const styles = StyleSheet.create({ error: { marginBottom: Spacing.xs }, linkRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.lg }, link: { minHeight: 44, justifyContent: 'center' }, quietLinkText: { fontSize: 14, textDecorationLine: 'underline' } });

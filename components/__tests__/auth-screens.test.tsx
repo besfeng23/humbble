@@ -33,9 +33,14 @@ describe('enumeration-safe, unconfigured auth UI', () => {
   test('sign-in shows one neutral unavailable notice and disables submit', () => {
     const tree = mount(<SigninScreen />);
     expect(textContent(tree.root.findByProps({ testID: 'auth-unavailable' }).children)).toBe('Sign-in is unavailable in this build');
+    const noticeBox = StyleSheet.flatten(tree.root.findByProps({ testID: 'auth-unavailable-notice' }).props.style);
+    expect(noticeBox.borderWidth).toBe(1);
+    expect(noticeBox.borderColor).toBeTruthy();
+    const noticeText = tree.root.findAllByType(Text).find((node) => node.props.testID === 'auth-unavailable');
+    expect(StyleSheet.flatten(noticeText?.props.style)?.fontSize).toBe(16);
     expect(tree.root.findByProps({ testID: 'signin-submit' }).props.disabled).toBe(true);
     expect(tree.root.findByProps({ testID: 'signin-create-account' })).toBeTruthy();
-    // Pressable renders composite + host nodes; inspect the one carrying the style callback/object.
+    expect(tree.root.findAll((node) => Array.isArray(node.props.edges) && node.props.edges.includes('top') && node.props.edges.includes('bottom'))).toHaveLength(1);
     const submitButton = tree.root.findAll((node) => node.props.testID === 'signin-submit' && node.props.style != null)[0];
     const rawStyle = submitButton.props.style;
     const disabledStyle = StyleSheet.flatten(typeof rawStyle === 'function' ? rawStyle({ pressed: false }) : rawStyle);
@@ -58,10 +63,14 @@ describe('enumeration-safe, unconfigured auth UI', () => {
     const tree = mount(<RecoveryScreen />);
     expect(tree.root.findByProps({ testID: 'recovery-submit' }).props.disabled).toBe(true);
   });
-  test('check-email always uses the same neutral response', () => {
+  test('check-email keeps its single primary action in the shared colour family', () => {
     const tree = mount(<CheckEmailScreen />);
     expect(tree.root.findAllByType(Text).some((node) => textContent(node.children).includes("If this address can be used, we've sent a link."))).toBe(true);
     expect(tree.root.findAllByType(Pressable)).toHaveLength(1);
+    const action = tree.root.findAll((node) => node.props.testID === 'check-email-signin' && node.props.style != null)[0];
+    const rawStyle = action.props.style;
+    const buttonStyle = StyleSheet.flatten(typeof rawStyle === 'function' ? rawStyle({ pressed: false }) : rawStyle);
+    expect(buttonStyle.backgroundColor).toBe('#FFD600');
   });
   test('verification screen states provider unavailability without a success outcome', () => {
     const tree = mount(<OnboardingVerifyScreen />);

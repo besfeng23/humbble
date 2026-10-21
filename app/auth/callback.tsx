@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useURL } from 'expo-linking';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -90,5 +91,5 @@ export default function AuthCallbackScreen() {
   };
 
   if (failure) return <AuthScreen testID="callback-failure" title="This link can’t be used" subtitle="It may have expired. Request a new link to continue."><AuthPrimaryButton testID="callback-resend" label={busy ? 'Sending link...' : 'Send a new link'} loading={busy} onPress={() => void sendNewLink()} /><Pressable accessibilityRole="link" onPress={() => router.replace('/auth/signin' as any)} style={{ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }}><Text style={{ color: palette.link, textDecorationLine: 'underline' }}>Return to sign in</Text></Pressable></AuthScreen>;
-  return <PendingState fullScreen title="Checking your link" message="Please wait while we verify it." testID="callback-pending" />;
+  return <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: palette.background }}><PendingState fullScreen title="Checking your link" message="Please wait while we verify it." testID="callback-pending" /></SafeAreaView>;
 }

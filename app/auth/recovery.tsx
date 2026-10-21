@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, Text } from 'react-native';
-import { AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
+import { AuthNotice, AuthPrimaryButton, AuthScreen } from '@/components/layout/AuthScreen';
 import { TextField } from '@/components/ui';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -27,7 +27,7 @@ export default function RecoveryScreen() {
     finally { setBusy(false); router.replace({ pathname: '/auth/check-email', params: { flow: 'recovery' } } as any); }
   };
   return <AuthScreen testID="recovery-screen" title="Reset password" subtitle="Request a password recovery link.">
-    {unavailable ? <Text numberOfLines={1} accessibilityRole="alert" style={{ color: palette.text, fontSize: 14 }}>Sign-in is unavailable in this build</Text> : null}
+    {unavailable ? <AuthNotice testID="auth-unavailable">Sign-in is unavailable in this build</AuthNotice> : null}
     <TextField testID="recovery-email" label="Email address" value={email} onChangeText={setEmail} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" onSubmitEditing={submit} required />
     {error ? <Text accessibilityRole="alert" style={{ color: palette.errorText }}>{error}</Text> : null}
     <AuthPrimaryButton testID="recovery-submit" label={busy ? "Sending recovery link..." : "Send recovery link"} loading={busy} disabled={unavailable || busy} onPress={submit} />

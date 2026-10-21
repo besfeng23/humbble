@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
 import AuthCallbackScreen from '@/app/auth/callback';
 import { textContent } from '../test-utils/textContent';
@@ -29,6 +29,10 @@ describe('auth callback', () => {
     await act(async () => { tree = renderer.create(<AuthCallbackScreen />); await Promise.resolve(); });
     expect(tree.root.findAllByType(Text).some((node) => textContent(node.children).includes('This link can’t be used'))).toBe(true);
     expect(tree.root.findByProps({ testID: 'callback-resend' })).toBeTruthy();
+    const action = tree.root.findAll((node) => node.props.testID === 'callback-resend' && node.props.style != null)[0];
+    const rawStyle = action.props.style;
+    const actionStyle = StyleSheet.flatten(typeof rawStyle === 'function' ? rawStyle({ pressed: false }) : rawStyle);
+    expect(actionStyle.backgroundColor).toBe('#FFD600');
     expect(tree.root.findAllByType(Text).some((node) => /token_hash|access_token|code=/.test(textContent(node.children)))).toBe(false);
   });
   test('verifies a recovery token hash then routes only to password reset', async () => {
