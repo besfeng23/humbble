@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AuthGuard, ResponsiveNavHeader } from '@/components/layout';
+import { FadeEdge } from '@/components/layout/FadeEdge';
 import { MessageBubble } from '@/components/messaging/MessageBubble';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -134,7 +135,7 @@ export default function ChatScreen() {
 
   return <AuthGuard mode="protected" redirectTo="/auth/signin" testID="chatscreen-guard">
     <KeyboardAvoidingView testID="scr-16-chatscreen" style={[styles.root, { backgroundColor: palette.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ResponsiveNavHeader testID="scr-16-header" title="Conversation" subtitle="Free messaging for mutual matches" showBack fallbackHref="/(tabs)/(chats)" rightSlot={<Pressable testID="scr-16-shield-btn" accessibilityRole="button" accessibilityLabel="Safety: report or block" hitSlop={8} onPress={() => router.push('/(safety)/report-modal' as any)}><Text style={styles.safetyLink}>Safety</Text></Pressable>} />
+      <ResponsiveNavHeader fadeEdge testID="scr-16-header" title="Conversation" subtitle="Free messaging for mutual matches" showBack fallbackHref="/(tabs)/(chats)" rightSlot={<Pressable testID="scr-16-shield-btn" accessibilityRole="button" accessibilityLabel="Safety: report or block" hitSlop={8} onPress={() => router.push('/(safety)/report-modal' as any)}><Text style={styles.safetyLink}>Safety</Text></Pressable>} />
       {error ? <Pressable onPress={() => void catchUp()} style={styles.errorBanner}><Text style={styles.errorText}>{error}</Text><Text style={styles.retry}>Retry</Text></Pressable> : null}
       {loading ? <View style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Loading messages…</Text></View> :
         <ScrollView ref={scrollRef} testID="chat-messages" style={styles.messages} contentContainerStyle={styles.messagesContent}>
@@ -142,7 +143,8 @@ export default function ChatScreen() {
           {messages.length === 0 ? <Text style={[styles.empty, { color: palette.textSecondary }]}>Say hello. Messaging is free when you both like each other.</Text> :
             messages.map(message => <MessageBubble key={message.id} message={message} own={message.sender_id === user?.id} />)}
         </ScrollView>}
-      <View style={[styles.composer, { borderTopColor: palette.border }]}>
+      <View style={[styles.composer, { backgroundColor: palette.background }]}>
+        <FadeEdge edge="bottom" color={palette.background} testID="scr-16-composer-fade" />
         <TextInput testID="scr-16-composer-input" accessibilityLabel="Write a message" value={draft} onChangeText={value => { setDraft(value); if (draftError) setDraftError(''); }} placeholder="Write a message…" placeholderTextColor={palette.textSecondary} multiline maxLength={2000} editable={!sending} style={[styles.input, { color: palette.text, backgroundColor: palette.surface, borderColor: palette.border }]} />
         <Pressable testID="scr-16-send-btn" accessibilityRole="button" accessibilityLabel="Send message" disabled={sending || !draft.trim()} onPress={() => void onSend()} style={[styles.send, (sending || !draft.trim()) && styles.sendDisabled]}><Text style={styles.sendText}>{sending ? 'Sending' : 'Send'}</Text></Pressable>
         {draftError ? <Text accessibilityRole="alert" testID="chat-send-error" style={styles.draftError}>{draftError}</Text> : null}
@@ -153,7 +155,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 }, messages: { flex: 1 }, messagesContent: { paddingHorizontal: 16, paddingVertical: 14, flexGrow: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 }, empty: { textAlign: 'center', marginTop: 30, lineHeight: 21, paddingHorizontal: 24 },
-  composer: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: 8, padding: 12, borderTopWidth: StyleSheet.hairlineWidth },
+  composer: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: 8, padding: 12 },
   input: { flex: 1, minHeight: 44, maxHeight: 110, borderWidth: 1, borderRadius: 22, paddingHorizontal: 15, paddingVertical: 10, fontSize: 15 },
   send: { minHeight: 44, paddingHorizontal: 17, justifyContent: 'center', alignItems: 'center', borderRadius: 22, backgroundColor: '#191919' },
   sendDisabled: { opacity: 0.45 }, sendText: { color: '#FFFFFF', fontWeight: '700' }, safetyLink: { color: '#9A702C', fontWeight: '700', padding: 10 },

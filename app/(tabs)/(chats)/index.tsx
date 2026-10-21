@@ -26,7 +26,7 @@ export default function Chats() {
   useEffect(() => { void load(); }, [load]);
   return <AuthGuard mode="protected" redirectTo="/auth/signin" testID="chats-list-guard">
     <View style={[styles.root, { backgroundColor: palette.background }]} testID="scr-15-chats-inbox">
-      <ResponsiveNavHeader title="Messages" subtitle="Conversations with your mutual matches" />
+      <ResponsiveNavHeader fadeEdge title="Messages" subtitle="Conversations with your mutual matches" />
       {loading ? <View style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Loading conversations…</Text></View> :
         error ? <View style={styles.center}><Text style={[styles.message, { color: palette.text }]}>{error}</Text><Pressable onPress={() => void load()}><Text style={styles.link}>Try again</Text></Pressable></View> :
         items.length === 0 ? <View style={styles.center}><Text style={[styles.heading, { color: palette.text }]}>No conversations yet</Text><Text style={[styles.message, { color: palette.textSecondary }]}>When you and someone like each other, you can message each other for free.</Text><Pressable onPress={() => router.push('/(tabs)/discover' as any)}><Text style={styles.link}>Explore Discover</Text></Pressable></View> :

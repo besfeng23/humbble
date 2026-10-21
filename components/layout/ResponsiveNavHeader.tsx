@@ -21,6 +21,7 @@ import { HitSlop, Spacing, TouchTargets } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
+import { FadeEdge } from "./FadeEdge";
 import { navigateBackOrFallback, type NavItem } from "./navigation";
 
 export interface ResponsiveNavHeaderProps {
@@ -46,6 +47,8 @@ export interface ResponsiveNavHeaderProps {
   reduceMotion?: boolean;
   /** Optional container style override */
   style?: StyleProp<ViewStyle>;
+  /** Replace the bottom divider line with a soft surface-to-transparent fade */
+  fadeEdge?: boolean;
   /** Test identifier prefix */
   testID?: string;
 }
@@ -62,6 +65,7 @@ export function ResponsiveNavHeader({
   rightSlot,
   reduceMotion: reduceMotionProp,
   style,
+  fadeEdge = false,
   testID = "nav-header",
 }: ResponsiveNavHeaderProps) {
   const router = useRouter();
@@ -90,9 +94,11 @@ export function ResponsiveNavHeader({
           backgroundColor: palette.surface,
           borderBottomColor: palette.border,
         },
+        fadeEdge && styles.faded,
         style,
       ]}
     >
+      {fadeEdge ? <FadeEdge edge="top" color={palette.surface} testID={`${testID}-fade`} /> : null}
       <View style={styles.topRow}>
         <View style={styles.leftRow}>
           {showBack ? (
@@ -221,6 +227,7 @@ export function ResponsiveNavHeader({
 }
 
 const styles = StyleSheet.create({
+  faded: { borderBottomWidth: 0, zIndex: 2 },
   wrapper: {
     width: "100%",
     paddingHorizontal: Spacing.xl,

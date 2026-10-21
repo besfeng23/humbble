@@ -37,8 +37,22 @@ export function validateMessage(body: string): string {
   return trimmed;
 }
 
+const SAFETY_WARNING_PATTERNS: readonly RegExp[] = [
+  /\b(?:send\s+me\s+(?:money|cash|funds|load)|(?:money|cash)\s+transfer|wire\s+transfer|gift\s*cards?|crypto(?:currency)?|bitcoin|usdt|investment\s+opportunit(?:y|ies))\b/i,
+  // Payment apps and wallets commonly used in money requests.
+  /\b(?:g\s*-?cash|venmo|paypal|pay\s*maya|maya\s+wallet|cash\s*app|zelle|western\s+union|remittance|padala)\b/i,
+  // Off-platform messaging apps.
+  /\b(?:whats\s*app|telegram|signal|viber|wechat|kik|snap\s*chat|line\s+app)\b/i,
+  /\b(?:move\s+(?:this\s+)?(?:chat|conversation)\s+off(?:line|\s+platform)|contact\s+me\s+off(?:line|\s+platform)|(?:text|call|message)\s+me\s+(?:at|on)\b)/i,
+  /\b(?:my|send\s+your)\s+(?:bank|paypal|gcash)\s+(?:account|details|number)|send\s+your\s+(?:bank|paypal|gcash)\b/i,
+  // Phone numbers: PH mobile (09xx / +639xx) or any run of 10+ digits with common separators.
+  /(?:\+?63|\b0)\s*9\d{2}[\s.-]?\d{3}[\s.-]?\d{4}\b/,
+  /\+?\(?\d(?:[\s.()-]*\d){9,}/,
+];
+
+/** Client-side only heuristic. Never logs or transmits the message text. */
 export function hasSafetyWarning(body: string): boolean {
-  return /\b(?:send\s+me\s+(?:money|cash|funds)|(?:money|cash)\s+transfer|wire\s+transfer|gift\s*cards?|crypto(?:currency)?|bitcoin|investment\s+opportunit(?:y|ies)|whats\s*app|telegram|signal|move\s+(?:this\s+)?(?:chat|conversation)\s+off(?:line|\s+platform)|contact\s+me\s+off(?:line|\s+platform)|(?:my|send\s+your)\s+(?:bank|paypal|gcash)\s+(?:account|details|number)|send\s+your\s+(?:bank|paypal|gcash))/i.test(body);
+  return SAFETY_WARNING_PATTERNS.some(pattern => pattern.test(body));
 }
 
 export async function loadConversationList(): Promise<ConversationSummary[]> {

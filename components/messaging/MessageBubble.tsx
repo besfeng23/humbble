@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Colors } from '@/constants/Colors';
 import { hasSafetyWarning, type ChatMessage } from '@/lib/messaging';
 
 export function SafetyWarningBanner() {
@@ -31,7 +32,8 @@ const styles = StyleSheet.create({
   time: { fontSize: 10, alignSelf: 'flex-end' },
   ownTime: { color: '#D5D0C6' },
   theirTime: { color: '#676767' },
-  warning: { width: '100%', borderRadius: 12, backgroundColor: '#FFF2D9', padding: 12, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: '#B97919' },
-  warningTitle: { fontSize: 13, fontWeight: '700', color: '#5D3B0A', marginBottom: 3 },
-  warningText: { fontSize: 12, lineHeight: 17, color: '#5D3B0A' },
+  // Crimson safety treatment per spec, from the shared danger/error tokens.
+  warning: { width: '100%', borderRadius: 12, backgroundColor: Colors.light.errorSurface, padding: 12, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: Colors.light.dangerSolid },
+  warningTitle: { fontSize: 13, fontWeight: '700', color: Colors.light.errorText, marginBottom: 3 },
+  warningText: { fontSize: 12, lineHeight: 17, color: Colors.light.errorText },
 });
