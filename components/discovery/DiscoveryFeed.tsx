@@ -48,7 +48,17 @@ export function DiscoveryFeed({ previewState }: { previewState?: PreviewState })
       setCursor(page.nextCursor);
       setHasMore(Boolean(page.nextCursor) && fresh.length > 0);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'We could not load discovery. Try again.');
+      const message = cause instanceof Error ? cause.message : 'We could not load discovery. Try again.';
+      if (append && /invalid_discovery_cursor/i.test(message)) {
+        // Opaque discovery cursors expire after 30 minutes. Restart cleanly.
+        seenIds.current.clear();
+        setItems([]);
+        setCursor(null);
+        setHasMore(true);
+        await load(false);
+        return;
+      }
+      setError(message);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -79,7 +89,7 @@ export function DiscoveryFeed({ previewState }: { previewState?: PreviewState })
 
   const renderItem = ({ item }: { item: DiscoveryCard }) => (
     <View testID={`discovery-card-${item.profile_id}`} style={[styles.card, { backgroundColor: palette.surface, borderColor: palette.border }]}>
-      {item.imageUrl ? <Image accessibilityLabel={`${item.display_name}'s profile photo`} source={{ uri: item.imageUrl }} style={styles.photo} /> : <View style={[styles.photo, styles.photoFallback, { backgroundColor: palette.surfaceMuted }]}><Text style={{ color: palette.textSecondary }}>Photo unavailable</Text></View>}
+      {item.imageUrl ? <Image accessibilityLabel={`${item.display_name}'s profile photo`} source={{ uri: item.imageUrl }} style={styles.photo} /> : isPreview ? <Image accessibilityLabel={`${item.display_name}'s preview photo`} source={item.profile_id === 'preview-1' ? require('../../assets/images/sign-up.jpg') : require('../../assets/images/sign-in.jpg')} style={styles.photo} /> : <View style={[styles.photo, styles.photoFallback, { backgroundColor: palette.surfaceMuted }]}><Text style={{ color: palette.textSecondary }}>Photo unavailable</Text></View>}
       <View style={styles.profileBody}>
         <Text style={[styles.name, { color: palette.text }]}>{item.display_name}, {item.age}</Text>
         <Text style={[styles.secondary, { color: palette.textSecondary }]}>{item.city_region || 'Location not shared'}</Text>

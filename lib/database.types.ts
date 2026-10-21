@@ -321,6 +321,7 @@ export type Database = {
       messages: {
         Row: {
           body: string
+          client_message_id: string | null
           conversation_id: string
           created_at: string
           id: string
@@ -328,6 +329,7 @@ export type Database = {
         }
         Insert: {
           body: string
+          client_message_id?: string | null
           conversation_id: string
           created_at?: string
           id?: string
@@ -335,6 +337,7 @@ export type Database = {
         }
         Update: {
           body?: string
+          client_message_id?: string | null
           conversation_id?: string
           created_at?: string
           id?: string
@@ -864,6 +867,17 @@ export type Database = {
     }
     Functions: {
       block_user: { Args: { p_target_id: string }; Returns: string }
+      get_conversation_list: {
+        Args: never
+        Returns: {
+          conversation_id: string
+          counterpart_id: string
+          counterpart_name: string
+          last_message: string
+          last_message_at: string
+          match_id: string
+        }[]
+      }
       get_discovery_feed: {
         Args: { p_cursor?: string; p_limit?: number }
         Returns: {
@@ -904,6 +918,21 @@ export type Database = {
           p_request_type: Database["public"]["Enums"]["privacy_request_type"]
         }
         Returns: string
+      }
+      send_message: {
+        Args: {
+          p_body: string
+          p_client_message_id: string
+          p_conversation_id: string
+        }
+        Returns: {
+          body: string
+          client_message_id: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+        }[]
       }
       submit_report: {
         Args: {

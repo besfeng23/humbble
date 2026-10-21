@@ -152,7 +152,8 @@ SELECT is_empty($$SELECT name FROM storage.objects WHERE bucket_id::TEXT COLLATE
 SELECT throws_ok($$INSERT INTO storage.objects (bucket_id, name, owner_id, metadata) VALUES ('verification_artifacts', '00000000-0000-0000-0000-000000000041/forbidden.jpg', '00000000-0000-0000-0000-000000000041', '{"mimetype":"image/jpeg","size":128}'::JSONB)$$, '42501', NULL, 'user A cannot upload verification artifacts');
 SELECT is((SELECT count(*)::INTEGER FROM public.conversations), 1, 'user A can read conversation as a participant');
 SELECT is((SELECT count(*)::INTEGER FROM public.messages), 0, 'user A sees no messages before sending one');
-SELECT lives_ok($$INSERT INTO public.messages (conversation_id, sender_id, body) SELECT c.id, auth.uid(), 'p204 message' FROM public.conversations c$$, 'participant can send in own active conversation');
+-- P3-04: direct INSERT is revoked from authenticated; send_message is the client write path.
+SELECT lives_ok($$SELECT * FROM public.send_message((SELECT c.id FROM public.conversations c), 'p204 message', '00000000-0000-0000-0000-0000000000a4'::UUID)$$, 'participant can send in own active conversation');
 SELECT is((SELECT count(*)::INTEGER FROM public.reports WHERE context_summary::TEXT COLLATE "C" = 'p204-report-a'::TEXT COLLATE "C"), 1, 'user A reads own report');
 SELECT is_empty($$SELECT id FROM public.reports WHERE context_summary::TEXT COLLATE "C" = 'p204-report-b'::TEXT COLLATE "C"$$, 'user A cannot read user B report without moderator claim');
 SELECT is_empty($$SELECT id FROM public.moderation_cases$$, 'normal authenticated user cannot read moderation cases');

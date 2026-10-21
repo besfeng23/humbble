@@ -94,3 +94,8 @@ export type UnblockUserArgs = Database['public']['Functions']['unblock_user']['A
 export type SubmitReportArgs = Database['public']['Functions']['submit_report']['Args'];
 export type RequestPrivacyActionArgs = Database['public']['Functions']['request_privacy_action']['Args'];
 export type ModerationTransitionCaseArgs = Database['public']['Functions']['moderation_transition_case']['Args'];
+
+// P3-04 messaging RPC contracts derive directly from the generated schema.
+export type GetConversationListRow = Database['public']['Functions']['get_conversation_list']['Returns'][number];
+export type SendMessageArgs = Database['public']['Functions']['send_message']['Args'];
+export type SendMessageResult = Database['public']['Functions']['send_message']['Returns'][number];

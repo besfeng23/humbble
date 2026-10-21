@@ -20,7 +20,7 @@ export default function OnboardingVerifyScreen() {
   const previewAllowed = ['verify', 'pending', 'failed', 'review'].includes(preview);
   const requestedResult: VerificationState = preview === 'failed' ? 'failed' : preview === 'review' || preview === 'verify' ? 'requires_review' : 'pending';
   const adapter = useMemo(() => selectVerificationAdapter(!__DEV__, requestedResult), [requestedResult]);
-  const [state, setState] = useState<VerificationState>(preview === 'failed' ? 'failed' : preview === 'review' || preview === 'verify' ? 'requires_review' : 'not_started');
+  const [state, setState] = useState<VerificationState>(preview === 'pending' ? 'pending' : preview === 'failed' ? 'failed' : preview === 'review' || preview === 'verify' ? 'requires_review' : 'not_started');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(() => previewAllowed ? statusCopy[state] : 'Verification not available yet.');
 
@@ -35,7 +35,7 @@ export default function OnboardingVerifyScreen() {
   const doSignOut = async () => { try { await signOut(); } finally { router.replace('/auth/signin' as any); } };
 
   return <AuthScreen testID="verification-unavailable-screen" title="Verification" subtitle="A later step, when an approved provider is available.">
-    <AuthNotice testID="verification-unavailable">Verification not available yet.</AuthNotice>
+    {!previewAllowed ? <AuthNotice testID="verification-unavailable">Verification not available yet.</AuthNotice> : null}
     <View accessibilityLiveRegion="polite" style={{ gap: 8 }}>
       <Text testID="verification-state" accessibilityRole="text">Status: {state.replace('_', ' ')}</Text>
       {notice !== 'Verification not available yet.' ? <Text testID="verification-state-detail">{notice}</Text> : null}
