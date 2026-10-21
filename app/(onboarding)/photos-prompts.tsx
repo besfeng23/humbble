@@ -193,6 +193,7 @@ export default function OnboardingPhotosPromptsScreen() {
 
   return <OnboardingLayout testID="scr-09-onboarding-photos" step={3} totalSteps={4} title="Onboarding: Photos & Prompts" subtitle="Add a few details and photos that reflect you." fallbackHref="/(onboarding)/intentions" skipAuthGuard={previewAllowed}>
     <View style={styles.section}>
+      {notice ? <AuthNotice testID="profile-save-notice">{notice}</AuthNotice> : null}
       <Text style={[styles.heading, { color: palette.text }]}>Profile photos ({photos.length} of {MAX_PHOTOS})</Text>
       <Text testID="photos-eligibility-note" style={[styles.body, { color: palette.textSecondary }]}>Two uploaded photos and three answered prompts are required before discovery. Photos are private until shared through the approved discovery experience.</Text>
       <View style={styles.photoGrid}>
@@ -214,7 +215,6 @@ export default function OnboardingPhotosPromptsScreen() {
       <Text testID="profile-checklist-photos" style={[styles.check, { color: palette.textSecondary }]}> {countedPhotos >= MIN_PHOTOS ? '✓' : '○'} {countedPhotos}/{MIN_PHOTOS} required photos uploaded</Text>
       <Text testID="profile-checklist-ready" accessibilityRole="text" style={[styles.check, { color: complete ? palette.successText : palette.textSecondary }]}>{complete ? 'Profile details complete' : 'Profile not ready for discovery'}</Text>
       {draftSaved ? <Text testID="profile-draft-saved" style={[styles.body, { color: palette.textSecondary }]}>Draft saved on this device.</Text> : null}
-      {notice ? <AuthNotice testID="profile-save-notice">{notice}</AuthNotice> : null}
       <AuthPrimaryButton testID="profile-save-continue" label={saving ? 'Saving…' : 'Save and continue'} loading={saving} disabled={saving || uploading || !loaded} onPress={() => void save()} />
       <Button testID="profile-back" label="Back" variant="secondary" onPress={() => router.replace('/(onboarding)/intentions' as any)} />
     </View>

@@ -11,10 +11,10 @@ export default function ChatsStackLayout() {
           name="index"
           options={{ title: "chats", headerShown: false }}
         />
-        <Stack.Screen name="chatScreen" options={{ headerShown: false }} />
+        <Stack.Screen name="chatScreen" options={{ headerShown: false, title: "Conversation", gestureEnabled: true, animation: "slide_from_right" }} />
         <Stack.Screen
           name="[conversationId]"
-          options={{ headerShown: false }}
+          options={{ headerShown: false, title: "Conversation", gestureEnabled: true, animation: "slide_from_right" }}
         />
       </Stack>
     </AuthGuard>

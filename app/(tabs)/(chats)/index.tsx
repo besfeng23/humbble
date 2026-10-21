@@ -1,183 +1,50 @@
-import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AuthGuard, ResponsiveNavHeader } from '@/components/layout';
+import { useAuth } from '@/lib/AuthProvider';
+import { loadConversationList, type ConversationSummary } from '@/lib/messaging';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { Colors } from '@/constants/Colors';
+import { Spacing } from '@/constants/Spacing';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
-import Avatar from "@/components/Avatar";
-import Header from "@/components/Header";
-import { Card } from "@/components/ui";
-import { HitSlop, Spacing, TouchTargets } from "@/constants/Spacing";
-
-const SAMPLE_THREADS = [
-  {
-    id: "conv-1",
-    name: "Suhani, 25",
-    preview: "Would love to check out that Makati coffee roaster this weekend!",
-    unread: true,
-  },
-  {
-    id: "conv-2",
-    name: "Rahi, 26",
-    preview: "Mutual match created • Say hello for free!",
-    unread: false,
-  },
-] as const;
-
-const Chats = () => {
+export default function Chats() {
   const router = useRouter();
-  const [sortOrder, setSortOrder] = useState<"recent" | "unread">("recent");
-
-  const button = () => (
-    <Pressable
-      testID="chats-search-btn"
-      hitSlop={HitSlop.default}
-      onPress={() => router.push("/(tabs)/discover" as any)}
-      accessibilityRole="button"
-      accessibilityLabel="Browse matches and discovery"
-      style={styles.iconButton}
-    >
-      <AntDesign name="search1" size={24} color="black" />
-    </Pressable>
-  );
-
-  const orderedThreads =
-    sortOrder === "unread"
-      ? [...SAMPLE_THREADS].sort((a, b) => Number(b.unread) - Number(a.unread))
-      : SAMPLE_THREADS;
-
-  return (
-    <ScrollView testID="scr-15-chats-inbox" style={{ paddingHorizontal: 8 }}>
-      <View style={{ gap: 10, paddingBottom: 24 }}>
-        <Header headerTitle={"Chats"} button={button} />
-        <Pressable
-          testID="chats-your-matches-btn"
-          accessibilityRole="button"
-          accessibilityLabel="Your matches"
-          onPress={() => {
-            router.push("/(tabs)/(chats)/chatScreen" as any);
-          }}
-          style={{ minHeight: TouchTargets.minimum, justifyContent: "center" }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: "700" }}>Your matches</Text>
-        </Pressable>
-        <Pressable
-          testID="chats-spotlight-promo-btn"
-          accessibilityRole="button"
-          accessibilityLabel="Spotlight promo"
-          onPress={() => router.push("/(paywall)/upgrade" as any)}
-          style={{ flexDirection: "row", gap: 10, alignItems: "center" }}
-        >
-          <Avatar
-            size={80}
-            image="https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
-          />
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: "300",
-              }}
-            >
-              Spotlight is the easiest way to up your odds of a match!
-            </Text>
-          </View>
-        </Pressable>
-        <View style={styles.headerSection}>
-          <Text style={styles.logo}>
-            Chats ({sortOrder === "recent" ? "Recent" : "Unread first"})
-          </Text>
-          <Pressable
-            testID="chats-sort-btn"
-            hitSlop={HitSlop.default}
-            accessibilityRole="button"
-            accessibilityLabel="Toggle conversation sort order"
-            onPress={() =>
-              setSortOrder((prev) => (prev === "recent" ? "unread" : "recent"))
-            }
-            style={styles.iconButton}
-          >
-            <MaterialCommunityIcons
-              name="sort-variant"
-              size={24}
-              color="black"
-            />
-          </Pressable>
-        </View>
-
-        <View style={styles.threadsList}>
-          {orderedThreads.map((thread) => (
-            <Card
-              key={thread.id}
-              testID={`chats-thread-${thread.id}`}
-              variant="outlined"
-              onPress={() =>
-                router.push(`/(tabs)/(chats)/${thread.id}` as any)
-              }
-              accessibilityLabel={`${thread.name}, ${thread.preview}`}
-            >
-              <View style={styles.threadRow}>
-                <View style={styles.threadText}>
-                  <Text style={styles.threadName}>{thread.name}</Text>
-                  <Text style={styles.threadPreview}>{thread.preview}</Text>
-                </View>
-                {thread.unread ? <View style={styles.unreadDot} /> : null}
-              </View>
-            </Card>
-          ))}
-        </View>
-      </View>
-    </ScrollView>
-  );
-};
-
-export default Chats;
-
+  const { user } = useAuth();
+  const palette = Colors[useColorScheme() ?? 'light'];
+  const [items, setItems] = useState<ConversationSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const load = useCallback(async () => {
+    if (!user?.id || !isSupabaseConfigured) { setItems([]); setLoading(false); return; }
+    setLoading(true); setError('');
+    try { setItems(await loadConversationList()); }
+    catch { setError('Your conversations could not be loaded. Check your connection and try again.'); }
+    finally { setLoading(false); }
+  }, [user?.id]);
+  useEffect(() => { void load(); }, [load]);
+  return <AuthGuard mode="protected" redirectTo="/auth/signin" testID="chats-list-guard">
+    <View style={[styles.root, { backgroundColor: palette.background }]} testID="scr-15-chats-inbox">
+      <ResponsiveNavHeader fadeEdge title="Messages" subtitle="Conversations with your mutual matches" />
+      {loading ? <View style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Loading conversations…</Text></View> :
+        error ? <View style={styles.center}><Text style={[styles.message, { color: palette.text }]}>{error}</Text><Pressable onPress={() => void load()}><Text style={styles.link}>Try again</Text></Pressable></View> :
+        items.length === 0 ? <View style={styles.center}><Text style={[styles.heading, { color: palette.text }]}>No conversations yet</Text><Text style={[styles.message, { color: palette.textSecondary }]}>When you and someone like each other, you can message each other for free.</Text><Pressable onPress={() => router.push('/(tabs)/discover' as any)}><Text style={styles.link}>Explore Discover</Text></Pressable></View> :
+        <ScrollView contentContainerStyle={styles.list}>{items.map(item => <Pressable key={item.id} testID={`conversation-${item.id}`} onPress={() => router.push(`/(tabs)/(chats)/${item.id}` as any)} style={styles.row}>
+          <View style={styles.avatar}><Text style={styles.avatarText}>{item.counterpartName.slice(0,1).toUpperCase()}</Text></View>
+          <View style={styles.copy}><Text style={[styles.name, { color: palette.text }]}>{item.counterpartName}</Text><Text numberOfLines={1} style={[styles.preview, { color: palette.textSecondary }]}>{item.lastMessage}</Text></View>
+          <Text style={[styles.time, { color: palette.textSecondary }]}>{item.lastMessageAt ? new Date(item.lastMessageAt).toLocaleDateString() : ''}</Text>
+        </Pressable>)}</ScrollView>}
+    </View>
+  </AuthGuard>;
+}
 const styles = StyleSheet.create({
-  iconButton: {
-    minWidth: TouchTargets.minimum,
-    minHeight: TouchTargets.minimum,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerSection: {
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexDirection: "row",
-    paddingVertical: 8,
-    marginBottom: 6,
-  },
-  logo: {
-    fontSize: 18,
-    fontWeight: "bold",
-    letterSpacing: 1,
-    color: "#1a1a1a",
-  },
-  threadsList: {
-    gap: Spacing.md,
-  },
-  threadRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: Spacing.md,
-  },
-  threadText: {
-    flex: 1,
-    gap: 4,
-  },
-  threadName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#11181C",
-  },
-  threadPreview: {
-    fontSize: 14,
-    color: "#525860",
-  },
-  unreadDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#FFA600",
-  },
+  root: { flex: 1, paddingHorizontal: 20 }, list: { paddingBottom: 30 },
+  row: { minHeight: 84, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#EAE5DA', alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 20, fontWeight: '600', color: '#24221D' },
+  copy: { flex: 1, gap: 5 }, name: { fontSize: 16, fontWeight: '700' }, preview: { fontSize: 13 },
+  time: { fontSize: 11 }, center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, gap: 12 },
+  heading: { fontSize: 21, fontWeight: '700', textAlign: 'center' }, message: { fontSize: 14, lineHeight: 21, textAlign: 'center' },
+  link: { color: '#9A702C', fontWeight: '700', padding: 8 },
 });

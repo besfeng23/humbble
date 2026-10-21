@@ -197,8 +197,9 @@ SELECT throws_ok(
   $$INSERT INTO public.messages (conversation_id, sender_id, body) SELECT conversation_id, '00000000-0000-0000-0000-000000000011', 'not a participant' FROM pg_temp.p2_02_test_conversations WHERE pair_name::TEXT COLLATE "C" = 'charlie-delta'::TEXT COLLATE "C"$$,
   '42501', NULL, 'unrelated user cannot message another match conversation'
 );
+-- P3-04: direct INSERT is revoked from authenticated; send_message is the client write path.
 SELECT lives_ok(
-  $$INSERT INTO public.messages (conversation_id, sender_id, body) SELECT c.id, '00000000-0000-0000-0000-000000000011', 'Hello from alpha' FROM public.conversations c JOIN public.matches m ON m.id = c.match_id WHERE m.user_a_id = '00000000-0000-0000-0000-000000000011' AND m.user_b_id = '00000000-0000-0000-0000-000000000012'$$,
+  $$SELECT * FROM public.send_message((SELECT c.id FROM public.conversations c JOIN public.matches m ON m.id = c.match_id WHERE m.user_a_id = '00000000-0000-0000-0000-000000000011' AND m.user_b_id = '00000000-0000-0000-0000-000000000012'), 'Hello from alpha', '00000000-0000-0000-0000-0000000000a1'::UUID)$$,
   'active, unblocked match participant can send a message'
 );
 SELECT throws_ok(
