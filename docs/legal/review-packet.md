@@ -38,7 +38,8 @@ This packet consolidates the product architecture, statutory risk posture, draft
    - Billing runs in **PayPal Sandbox only**. Live payment processing and production PayPal credentials are disabled until separate written Owner authorization after all gates pass.
    - Pricing is restricted to **two separate, server-managed monthly plans** (never FX-converted and never supplied by the client):
      - **Philippines (`PH`):** `PHP 599.00 / month` (`₱599.00/month`)
-     - **United States (`US`):** `USD 29.99 / month` (`US$29.99/month`) — *disabled during PH-only initial launch*
+     - **United States (`US`):** `USD 29.99 / month` (`US$29.99/month`)
+     - **Local monthly prices (Owner decision OWN-PRICE-01, Oct 23 2026, PayPal Sandbox only):** EUR 27.99 (FI, IT, DE, NL, BE, LU, IE), GBP 23.99, SEK 299, NOK 329, CAD 39.99, AUD 44.99, NZD 49.99. *Counsel to confirm the jurisdiction-deferral statements above before any live payments in these markets.*
    - **No multi-month plans:** `reserve_3m`, `reserve_6m`, and all other multi-month bundles are removed (`Amendment A5`).
    - **Settlement-Gated Entitlement:** Entitlements activate only after cryptographically verified `PAYMENT.SALE.COMPLETED` (or verified PayPal REST settlement) where **plan ID, currency, and amount exactly match** the server catalogue. Mismatches are quarantined and alerted without granting access.
 

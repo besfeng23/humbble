@@ -1,10 +1,21 @@
-import { FREE_STATUS, PRICE_LABEL, toPremiumStatus } from '@/lib/billing';
+import { countryHintFromLocale, formatPrice, FREE_STATUS, toPremiumStatus } from '@/lib/billing';
 
 jest.mock('@/lib/supabase', () => ({ isSupabaseConfigured: false, supabase: {} }));
 
 describe('billing client boundary', () => {
-  it('prices are the two approved monthly plans', () => {
-    expect(PRICE_LABEL).toEqual({ PH: '₱599 / month', US: 'US$29.99 / month' });
+  it('formats local currencies cleanly', () => {
+    const n = (v: string) => v.replace(/\s/g, ' ');
+    expect(n(formatPrice(299, 'SEK', 'sv-SE'))).toBe('299 kr');
+    expect(formatPrice(23.99, 'GBP', 'en-GB')).toBe('£23.99');
+    expect(n(formatPrice(27.99, 'EUR', 'it-IT'))).toBe('27,99 €');
+    expect(formatPrice(29.99, 'USD', 'en-US')).toBe('$29.99');
+    expect(formatPrice(599, 'PHP', 'en-PH')).toBe('₱599');
+  });
+  it('derives an advisory country hint from the locale', () => {
+    expect(countryHintFromLocale('sv-SE')).toBe('SE');
+    expect(countryHintFromLocale('en-GB')).toBe('GB');
+    expect(countryHintFromLocale('zh-Hant-TW')).toBe('TW');
+    expect(countryHintFromLocale('en')).toBeNull();
   });
   it('missing status fails closed to free', () => {
     expect(toPremiumStatus(undefined)).toEqual(FREE_STATUS);

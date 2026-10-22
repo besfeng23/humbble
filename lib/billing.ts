@@ -4,8 +4,35 @@
  */
 import { isSupabaseConfigured, supabase } from './supabase';
 
-export type Market = 'PH' | 'US';
-export const PRICE_LABEL: Record<Market, string> = { PH: '₱599 / month', US: 'US$29.99 / month' };
+export type BillingPlan = { countryCode: string; planKey: string; currency: string; amount: number };
+
+/** Device locale, e.g. "sv-SE". Used only for formatting and as an advisory country hint. */
+export function deviceLocale(): string {
+  try { return Intl.DateTimeFormat().resolvedOptions().locale || 'en-PH'; } catch { return 'en-PH'; }
+}
+/** Region part of a locale ("sv-SE" -> "SE"); the server validates it against its allowlist. */
+export function countryHintFromLocale(locale: string): string | null {
+  const m = /[-_]([A-Za-z]{2})(?:$|[-_])/.exec(locale);
+  return m ? m[1].toUpperCase() : null;
+}
+
+/** Local currency formatting; whole amounts drop the decimals (299 kr, ₱599, £23.99). */
+export function formatPrice(amount: number, currency: string, locale: string = deviceLocale()): string {
+  const whole = Number.isInteger(amount);
+  const opts: Intl.NumberFormatOptions = { style: 'currency', currency, minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2 };
+  try { return new Intl.NumberFormat(locale, opts).format(amount); }
+  catch { return `${currency} ${whole ? amount.toFixed(0) : amount.toFixed(2)}`; }
+}
+
+
+/** Server-resolved plan for this device's country hint. Price never comes from the client. */
+export async function getBillingPlan(countryHint: string | null): Promise<BillingPlan | null> {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase.rpc('get_billing_plan', { p_country_hint: countryHint ?? undefined });
+  const row = (data as { country_code: string; plan_key: string; currency: string; amount: number }[] | null)?.[0];
+  if (error || !row) return null;
+  return { countryCode: row.country_code, planKey: row.plan_key, currency: row.currency, amount: Number(row.amount) };
+}
 
 export type PremiumStatus = {
   isPremium: boolean;
@@ -41,9 +68,9 @@ export async function getLikedYou(isPremium: boolean): Promise<{ count: number; 
   return { count: people.length, people };
 }
 
-export async function startCheckout(market: Market): Promise<{ approvalUrl: string } | { error: string }> {
+export async function startCheckout(countryHint: string | null): Promise<{ approvalUrl: string } | { error: string }> {
   if (!isSupabaseConfigured) return { error: 'not_configured' };
-  const { data, error } = await supabase.functions.invoke('paypal-create-subscription', { body: { market } });
+  const { data, error } = await supabase.functions.invoke('paypal-create-subscription', { body: { country: countryHint } });
   if (error || typeof data?.approvalUrl !== 'string') return { error: 'checkout_unavailable' };
   return { approvalUrl: data.approvalUrl };
 }

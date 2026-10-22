@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertThrows } from 'https://deno.land/std@0.224.0/assert/mod.ts';
 import type { BillingStore, ReadbackInput } from './billingStore.ts';
-import { loadPayPalConfig, mapPayPalStatus, PayPalClient, type PayPalSubscription, SANDBOX_BASE_URL } from './paypal.ts';
+import { loadPayPalConfig, loadPlanIds, mapPayPalStatus, parseCountryHint, PayPalClient, type PayPalSubscription, SANDBOX_BASE_URL } from './paypal.ts';
 import { handleWebhook } from '../paypal-webhook/handler.ts';
 import { handleCancel } from '../paypal-cancel-subscription/handler.ts';
 import { handleCreate } from '../paypal-create-subscription/handler.ts';
@@ -56,6 +56,7 @@ function memoryStore() {
     },
     registerPending: async () => {},
     latestSubscription: async () => ({ provider_subscription_id: 'I-1', status: 'active' }),
+    resolvePlan: async () => null,
   };
   return { store, events, applied, grants: () => grants };
 }
@@ -112,14 +113,31 @@ Deno.test('cancel of ACTIVE subscription cancels renewal and reconciles', async 
   assertEquals((await res.json()).outcome, 'cancel_at_period_end');
 });
 
-Deno.test('checkout resolves price server-side and requires auth', async () => {
+Deno.test('plan ids load per currency from PAYPAL_PLAN_ID_<CUR>', () => {
+  const ids = loadPlanIds(env({ PAYPAL_PLAN_ID_SEK: 'P-SEK', PAYPAL_PLAN_ID_EUR: ' P-EUR ', PAYPAL_PLAN_ID_XYZ: 'nope' }));
+  assertEquals(ids, { SEK: 'P-SEK', EUR: 'P-EUR' });
+});
+
+Deno.test('country hint is sanitised before reaching the server allowlist', () => {
+  assertEquals(parseCountryHint('se'), 'SE');
+  assertEquals(parseCountryHint('SWE'), null);
+  assertEquals(parseCountryHint("S'"), null);
+  assertEquals(parseCountryHint(42), null);
+});
+
+Deno.test('checkout uses the DB-resolved plan; client amounts are ignored', async () => {
   const m = memoryStore(); m.store.latestSubscription = async () => null;
+  const hints: (string | null)[] = [];
+  m.store.resolvePlan = async (hint) => { hints.push(hint); return hint === 'SE' ? { countryCode: 'SE', planKey: 'premium_monthly_sek', currency: 'SEK', amount: '299.00' } : { countryCode: 'PH', planKey: 'premium_monthly_ph', currency: 'PHP', amount: '599.00' }; };
+  const registered: string[] = []; m.store.registerPending = async (_u, key, _s, plan) => { registered.push(`${key}:${plan}`); };
   let planUsed = '';
-  const deps = { store: m.store, config: { planIds: { PH: 'P-PH' } }, returnUrl: 'r', cancelUrl: 'c', authenticate: authed,
+  const deps = { store: m.store, config: { planIds: { SEK: 'P-SEK', PHP: 'P-PH' } }, returnUrl: 'r', cancelUrl: 'c', authenticate: authed,
     paypal: { createSubscription: async (plan: string) => { planUsed = plan; return { id: 'I-2', approvalUrl: 'https://www.sandbox.paypal.com/approve' }; } } };
-  const ok = await handleCreate(req(JSON.stringify({ market: 'PH', amount: '0.01' })), deps);
-  assertEquals((await ok.json()).approvalUrl, 'https://www.sandbox.paypal.com/approve'); assertEquals(planUsed, 'P-PH');
-  assertEquals((await handleCreate(req('{"market":"US"}'), deps)).status, 403);
-  assertEquals((await handleCreate(req('{"market":"US"}'), { ...deps, enableUs: true })).status, 503);
+  const ok = await (await handleCreate(req(JSON.stringify({ country: 'se', amount: '0.01', currency: 'USD' })), deps)).json();
+  assertEquals([ok.currency, ok.amount, planUsed], ['SEK', '299.00', 'P-SEK']);
+  assertEquals(registered, ['premium_monthly_sek:P-SEK']);
+  await handleCreate(req(JSON.stringify({ country: 'ZZZ' })), deps);
+  assertEquals(hints[1], null);
+  assertEquals((await handleCreate(req('{}'), { ...deps, config: { planIds: {} } })).status, 503);
   assertEquals((await handleCreate(req('{}'), { ...deps, authenticate: async () => null })).status, 401);
 });
