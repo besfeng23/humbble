@@ -21,6 +21,7 @@ import {
 import { Radii, type RadiusToken } from "@/constants/Radii";
 import { Spacing } from "@/constants/Spacing";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { shadow } from "@/constants/Shadows";
 
 export type CardVariant = "elevated" | "outlined" | "muted" | "accent";
 
@@ -185,11 +186,7 @@ export function Card({
 
 const styles = StyleSheet.create({
   elevatedShadow: {
-    elevation: 2,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...shadow({ y: 2, opacity: 0.1, radius: 4, elevation: 2 }),
   },
 });
 

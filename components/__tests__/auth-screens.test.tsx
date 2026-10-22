@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
 import SigninScreen, { getSignInError } from '@/app/auth/signin';
 import SignupScreen from '@/app/auth/signup';
@@ -66,8 +66,9 @@ describe('enumeration-safe, unconfigured auth UI', () => {
   test('check-email keeps its single primary action in the shared colour family', () => {
     const tree = mount(<CheckEmailScreen />);
     expect(tree.root.findAllByType(Text).some((node) => textContent(node.children).includes("If this address can be used, we've sent a link."))).toBe(true);
-    expect(tree.root.findAllByType(Pressable)).toHaveLength(1);
-    const action = tree.root.findAll((node) => node.props.testID === 'check-email-signin' && node.props.style != null)[0];
+    // Primary: open mail app. Secondary text link: return to sign in.
+    expect(tree.root.findAllByProps({ testID: 'check-email-signin' }).length).toBeGreaterThan(0);
+    const action = tree.root.findAll((node) => node.props.testID === 'check-email-open-mail' && node.props.style != null)[0];
     const rawStyle = action.props.style;
     const buttonStyle = StyleSheet.flatten(typeof rawStyle === 'function' ? rawStyle({ pressed: false }) : rawStyle);
     expect(buttonStyle.backgroundColor).toBe('#FFD600');
@@ -75,8 +76,15 @@ describe('enumeration-safe, unconfigured auth UI', () => {
   test('verification screen states provider unavailability without a success outcome', () => {
     const tree = mount(<OnboardingVerifyScreen />);
     const visible = tree.root.findAllByType(Text).map((node) => textContent(node.children)).join(' ');
-    expect(visible).toContain('Verification not available yet.');
+    expect(visible).toContain('Verification coming soon');
     expect(visible).not.toMatch(/verified successfully|verification complete|success/i);
+  });
+  test('without a provider, verification never fakes a pending state and offers no Check status', () => {
+    const tree = mount(<OnboardingVerifyScreen />);
+    const visible = tree.root.findAllByType(Text).map((node) => textContent(node.children)).join(' ');
+    expect(visible).not.toMatch(/pending/i);
+    expect(tree.root.findAll((node) => node.props.testID === 'verification-check-status')).toHaveLength(0);
+    expect(tree.root.findAll((node) => node.props.testID === 'verification-coming-soon').length).toBeGreaterThan(0);
   });
   test('wrong credentials and unknown accounts map to the same message; unconfirmed email is distinct', () => {
     expect(getSignInError({ message: 'Invalid login credentials' })).toBe('Email or password is incorrect');

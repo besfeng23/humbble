@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { toFriendlyMessage } from '@/lib/friendlyErrors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -50,7 +51,7 @@ export default function SafetyScreen() {
     if (!targetId || busy) return;
     setBusy(true); setError('');
     try { setMessage(await task()); setStep('done'); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'That did not work. Try again.'); }
+    catch (cause) { setError(toFriendlyMessage(cause, 'That did not work. Try again.')); }
     finally { setBusy(false); }
   };
 
@@ -126,7 +127,7 @@ export default function SafetyScreen() {
 
       {step === 'menu' ? (
         <Pressable accessibilityRole="link" onPress={() => router.push('/(public)/legal/complaints-handling' as any)} style={styles.help}>
-          <Text style={[styles.detail, { color: palette.textSecondary }]}>Safety Help & Appeals (draft)</Text>
+          <Text style={[styles.detail, { color: palette.textSecondary }]}>Safety Help & Appeals</Text>
         </Pressable>
       ) : null}
     </SettingsLayout>

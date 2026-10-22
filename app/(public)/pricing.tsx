@@ -1,15 +1,15 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { PublicLayout } from "@/components/layout";
-import { FormStateView, type FormStatus } from "@/components/state";
 import { Button, Card } from "@/components/ui";
 import { Colors } from "@/constants/Colors";
 import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/lib/AuthProvider";
+import { type BillingPlan, countryHintFromLocale, deviceLocale, formatPrice, getBillingPlan } from "@/lib/billing";
 
 const TIER_ROWS = [
   {
@@ -33,9 +33,9 @@ const TIER_ROWS = [
     reserve: "Unlimited likes",
   },
   {
-    feature: "Incoming Likes Hub (SCR-14)",
+    feature: "See who liked you",
     free: "Exact verified count",
-    reserve: "Full unblurred likes grid",
+    reserve: "Full likes grid",
   },
   {
     feature: "Incognito mode & advanced filters",
@@ -49,13 +49,18 @@ export default function PricingScreen() {
   const { session } = useAuth();
   const scheme = useColorScheme() ?? "light";
   const palette = Colors[scheme];
-  const [market, setMarket] = useState<"PH" | "US">("PH");
-  const [status, setStatus] = useState<FormStatus>("idle");
+  const [plan, setPlan] = useState<BillingPlan | null>(null);
 
-  const priceDisplay =
-    market === "PH"
-      ? "₱599.00 PHP / month (Philippines Launch Market)"
-      : "$29.99 USD / month (US Market — Deferred at PH Launch)";
+  // Signed-in members see their server-resolved local price (profile country >
+  // locale hint > PH). Guests see generic copy; prices are never hardcoded here.
+  useEffect(() => {
+    if (!session) { setPlan(null); return; }
+    let live = true;
+    void getBillingPlan(countryHintFromLocale(deviceLocale())).then((p) => { if (live) setPlan(p); });
+    return () => { live = false; };
+  }, [session]);
+
+  const priceDisplay = plan ? `${formatPrice(plan.amount, plan.currency)} / month` : "Monthly, in your local currency";
 
   const handleSelectReserve = () => {
     if (!session) {
@@ -68,64 +73,13 @@ export default function PricingScreen() {
   return (
     <PublicLayout
       testID="scr-02-pricing"
-      title="Pricing & Plans"
-      subtitle="SCR-02 • Transparent Monthly Pricing (PayPal Sandbox Mode)"
+      title="Pricing"
+      subtitle="One monthly plan. Cancel anytime."
       showBack
       fallbackHref="/(public)"
       activeNavId="public-pricing"
     >
-      <FormStateView
-        testID="scr-02-form-state"
-        status={status}
-        pendingTitle="Refreshing market catalogue..."
-        successTitle="Market catalogue updated"
-        successMessage={`Showing server-configured ${market} monthly pricing.`}
-        failureTitle="Could not refresh live catalogue"
-        failureMessage="Displaying fallback server-approved monthly plan table."
-        onRetry={() => setStatus("success")}
-      >
-        <Card testID="scr-02-market-selector" variant="muted">
-          <View style={styles.selectorRow}>
-            <View style={styles.selectorInfo}>
-              <Text
-                accessibilityRole="header"
-                style={[styles.sectionTitle, { color: palette.text }]}
-              >
-                Server-Priced Monthly Plans (v1.2 A5)
-              </Text>
-              <Text
-                style={[styles.sectionBody, { color: palette.textSecondary }]}
-              >
-                Single monthly plan per market; no multi-month lock-in plans. Prices are resolved server-side only.
-              </Text>
-            </View>
-            <View style={styles.marketButtons}>
-              <Button
-                testID="scr-02-market-ph"
-                label="PH (₱599/mo)"
-                variant={market === "PH" ? "primary" : "secondary"}
-                size="sm"
-                shape="pill"
-                onPress={() => {
-                  setMarket("PH");
-                  setStatus("success");
-                }}
-              />
-              <Button
-                testID="scr-02-market-us"
-                label="US ($29.99/mo)"
-                variant={market === "US" ? "primary" : "secondary"}
-                size="sm"
-                shape="pill"
-                onPress={() => {
-                  setMarket("US");
-                  setStatus("success");
-                }}
-              />
-            </View>
-          </View>
-        </Card>
-
+      <View style={styles.stack}>
         <View style={styles.cardsGrid}>
           <Card
             testID="scr-02-free-card"
@@ -139,7 +93,7 @@ export default function PricingScreen() {
               Humbble Free
             </Text>
             <Text style={[styles.planPrice, { color: palette.text }]}>
-              ₱0 / month
+              Free
             </Text>
             <Text
               style={[styles.planSummary, { color: palette.textSecondary }]}
@@ -168,7 +122,7 @@ export default function PricingScreen() {
               accessibilityRole="header"
               style={[styles.planName, { color: palette.text }]}
             >
-              Humbble Reserve (Monthly)
+              Humbble Premium
             </Text>
             <Text
               testID="scr-02-reserve-price"
@@ -179,13 +133,13 @@ export default function PricingScreen() {
             <Text
               style={[styles.planSummary, { color: palette.textSecondary }]}
             >
-              Auto-renews monthly until cancelled. Cancel anytime in 2 clicks from Billing settings. PayPal Sandbox only during pilot.
+              Renews monthly until cancelled. Cancel anytime from Billing.
             </Text>
             <Button
               testID="scr-02-reserve-cta"
               label={
                 session
-                  ? "Proceed to Reserve Upgrade"
+                  ? "Continue"
                   : "Sign In to Subscribe"
               }
               variant="primary"
@@ -219,32 +173,19 @@ export default function PricingScreen() {
                 Free: ✓ {row.free}
               </Text>
               <Text style={[styles.tierCell, { color: palette.text }]}>
-                Reserve: ★ {row.reserve}
+                Premium: ★ {row.reserve}
               </Text>
             </View>
           ))}
         </Card>
-      </FormStateView>
+      </View>
     </PublicLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  selectorRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: Spacing.md,
-  },
-  selectorInfo: {
-    flex: 1,
-    minWidth: 220,
-    gap: Spacing.xs,
-  },
-  marketButtons: {
-    flexDirection: "row",
-    gap: Spacing.sm,
+  stack: {
+    gap: Spacing.lg,
   },
   sectionTitle: {
     ...Typography.h3,

@@ -7,6 +7,8 @@ export {
 
 export { TextField, type TextFieldProps } from "./TextField";
 
+export { CountryPicker } from "./CountryPicker";
+
 export { Card, type CardProps, type CardVariant } from "./Card";
 
 export {

@@ -2,19 +2,12 @@
  * P4 client billing boundary. The client never decides price or entitlement:
  * it asks the server for premium state and hands checkout to PayPal Sandbox.
  */
+import { deviceLocale } from '@/lib/locale';
 import { isSupabaseConfigured, supabase } from './supabase';
 
-export type BillingPlan = { countryCode: string; planKey: string; currency: string; amount: number };
+export { countryHintFromLocale, deviceLocale } from '@/lib/locale';
 
-/** Device locale, e.g. "sv-SE". Used only for formatting and as an advisory country hint. */
-export function deviceLocale(): string {
-  try { return Intl.DateTimeFormat().resolvedOptions().locale || 'en-PH'; } catch { return 'en-PH'; }
-}
-/** Region part of a locale ("sv-SE" -> "SE"); the server validates it against its allowlist. */
-export function countryHintFromLocale(locale: string): string | null {
-  const m = /[-_]([A-Za-z]{2})(?:$|[-_])/.exec(locale);
-  return m ? m[1].toUpperCase() : null;
-}
+export type BillingPlan = { countryCode: string; planKey: string; currency: string; amount: number };
 
 /** Local currency formatting; whole amounts drop the decimals (299 kr, ₱599, £23.99). */
 export function formatPrice(amount: number, currency: string, locale: string = deviceLocale()): string {

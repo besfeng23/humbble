@@ -132,6 +132,7 @@ jest.mock("expo-router", () => {
     }),
     useSegments: () => [],
     useLocalSearchParams: () => mockLocalSearchParams,
+    useGlobalSearchParams: () => mockLocalSearchParams,
   };
 });
 

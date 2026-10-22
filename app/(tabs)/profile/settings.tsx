@@ -1,14 +1,17 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Switch, Text, View } from "react-native";
 
 import { SettingsLayout } from "@/components/layout";
 import { FormStateView, type FormStatus } from "@/components/state";
-import { Button, Card } from "@/components/ui";
+import { Button, Card, CountryPicker } from "@/components/ui";
 import { Colors } from "@/constants/Colors";
 import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useAuth } from "@/lib/AuthProvider";
+import { normalizeCountryCode } from "@/lib/countries";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 export default function PrivacyAndSafetySettingsScreen() {
   const router = useRouter();
@@ -17,6 +20,26 @@ export default function PrivacyAndSafetySettingsScreen() {
   const [analyticsConsent, setAnalyticsConsent] = useState(false);
   const [incognitoEnabled, setIncognitoEnabled] = useState(false);
   const [status, setStatus] = useState<FormStatus>("idle");
+  const { user } = useAuth();
+  const [country, setCountry] = useState<string | null>(null);
+  const [countryNote, setCountryNote] = useState("");
+
+  useEffect(() => {
+    if (!user?.id || !isSupabaseConfigured) return;
+    let active = true;
+    void supabase.from("profiles").select("country_code").eq("id", user.id).maybeSingle()
+      .then(({ data }) => { if (active) setCountry(normalizeCountryCode(data?.country_code)); });
+    return () => { active = false; };
+  }, [user?.id]);
+
+  const changeCountry = async (code: string) => {
+    if (!user?.id || !isSupabaseConfigured) return;
+    const previous = country;
+    setCountry(code); setCountryNote("");
+    const { error } = await supabase.from("profiles").update({ country_code: code }).eq("id", user.id);
+    if (error) { setCountry(previous); setCountryNote("Could not update your country. Please retry."); }
+    else setCountryNote("Country updated.");
+  };
 
   const handleSaveSettings = () => {
     setStatus("success");
@@ -26,7 +49,7 @@ export default function PrivacyAndSafetySettingsScreen() {
     <SettingsLayout
       testID="scr-18-settings"
       title="Privacy, Notification & Safety Settings"
-      subtitle="SCR-18 • Consent Controls & Block Manager"
+      subtitle="Privacy, consent & blocked people"
       fallbackHref="/(tabs)/profile"
       activeNavId="settings-main"
       fadeEdge
@@ -107,6 +130,13 @@ export default function PrivacyAndSafetySettingsScreen() {
           </View>
         </Card>
 
+        <Card testID="scr-18-country-card" variant="outlined">
+          <View style={styles.section}>
+            <CountryPicker testID="scr-18-country" value={country} onChange={(code) => void changeCountry(code)} />
+            {countryNote ? <Text testID="scr-18-country-note" style={[styles.sublabel, { color: palette.textSecondary }]}>{countryNote}</Text> : null}
+          </View>
+        </Card>
+
         <Card testID="scr-18-blocked-users-card" variant="outlined">
           <View style={styles.section}>
             <Text style={[styles.label, { color: palette.text }]}>Blocked users</Text>
@@ -119,7 +149,7 @@ export default function PrivacyAndSafetySettingsScreen() {
           <View style={styles.linksRow}>
             <Button
               testID="scr-18-to-privacy-delete"
-              label="Data Export & Account Deletion (SCR-19)"
+              label="Data Export & Account Deletion"
               variant="danger"
               size="sm"
               onPress={() =>
@@ -128,7 +158,7 @@ export default function PrivacyAndSafetySettingsScreen() {
             />
             <Button
               testID="scr-18-to-legal"
-              label="Read Privacy Notice (SCR-03)"
+              label="Read Privacy Notice"
               variant="secondary"
               size="sm"
               onPress={() =>

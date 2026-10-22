@@ -73,6 +73,22 @@ export function createUnavailableVerificationAdapter(): VerificationAdapter {
   return { async request() { return { state: 'pending', reason: 'Verification is not available yet.' }; } };
 }
 
+/**
+ * True only when a real ID-verification provider adapter has been wired in.
+ * No provider exists yet, so the client must not simulate a pending review.
+ */
+export function isVerificationProviderConfigured(env: Record<string, string | undefined> = process.env): boolean {
+  const provider = (env.EXPO_PUBLIC_VERIFICATION_PROVIDER ?? '').trim();
+  return provider.length > 0 && KNOWN_VERIFICATION_PROVIDERS.includes(provider);
+}
+/** Provider ids with a shipped client adapter. Empty until a vendor is approved. */
+export const KNOWN_VERIFICATION_PROVIDERS: readonly string[] = [];
+
+export const VERIFICATION_COMING_SOON = {
+  title: 'Verification coming soon',
+  message: 'ID verification is not open yet. We will let you know as soon as it is available. You can keep your profile ready in the meantime.',
+} as const;
+
 export function selectVerificationAdapter(isProduction: boolean, devResult: VerificationState = 'pending'): VerificationAdapter {
   return isProduction ? createUnavailableVerificationAdapter() : createDevVerificationAdapter(false, devResult);
 }

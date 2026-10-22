@@ -1,3 +1,4 @@
+import { toFriendlyMessage } from './friendlyErrors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ReportCategory } from '@/lib/database.contracts';
 import { blockUser, listBlockedUsers, submitReport, unblockUser, unmatchUser } from '@/lib/rpc';
@@ -104,7 +105,7 @@ async function writeQueue(items: PendingSafetyReport[]): Promise<void> {
 }
 
 function rpcErrorMessage(error: { message?: string } | null): string {
-  return error?.message || 'Safety request could not be completed.';
+  return toFriendlyMessage(error, 'Safety request could not be completed.');
 }
 
 export async function blockPerson(targetId: string): Promise<void> {

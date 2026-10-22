@@ -18,6 +18,7 @@ import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
 import { Button, type ButtonVariant } from "./Button";
+import { shadow } from "@/constants/Shadows";
 
 export interface DialogAction {
   label: string;
@@ -187,11 +188,7 @@ const styles = StyleSheet.create({
     borderRadius: Radii.xl,
     padding: Spacing["3xl"],
     borderWidth: 1,
-    elevation: 6,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    ...shadow({ y: 4, opacity: 0.25, radius: 8, elevation: 6 }),
   },
   title: {
     ...Typography.h3,

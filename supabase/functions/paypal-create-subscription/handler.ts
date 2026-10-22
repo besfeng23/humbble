@@ -8,7 +8,7 @@ export type CreateDeps = {
 
 /**
  * Starts PayPal Sandbox checkout. The client may send only a country hint; the
- * database resolves market, plan and price (allowlist + per-market DB flags).
+ * database resolves (profile country > validated hint > PH) market, plan and price (allowlist + per-market DB flags).
  */
 export async function handleCreate(req: Request, deps: CreateDeps): Promise<Response> {
   if (req.method !== 'POST') return json(405, { error: 'method_not_allowed' });
@@ -16,7 +16,7 @@ export async function handleCreate(req: Request, deps: CreateDeps): Promise<Resp
   if (!userId) return json(401, { error: 'authentication_required' });
   let body: { country?: unknown } = {};
   try { body = await req.json(); } catch { /* empty body -> server default market */ }
-  const plan = await deps.store.resolvePlan(parseCountryHint(body.country));
+  const plan = await deps.store.resolvePlan(userId, parseCountryHint(body.country));
   if (!plan) return json(503, { error: 'no_enabled_plan' });
   const planId = deps.config.planIds[plan.currency as Currency];
   if (!planId) return json(503, { error: 'plan_not_configured' });
