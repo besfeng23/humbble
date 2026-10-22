@@ -883,6 +883,7 @@ export type Database = {
           id: string
           is_discoverable: boolean
           is_incognito: boolean
+          is_paused: boolean
           is_suspended: boolean
           languages_spoken: string[]
           occupation: string | null
@@ -902,6 +903,7 @@ export type Database = {
           id: string
           is_discoverable?: boolean
           is_incognito?: boolean
+          is_paused?: boolean
           is_suspended?: boolean
           languages_spoken?: string[]
           occupation?: string | null
@@ -921,6 +923,7 @@ export type Database = {
           id?: string
           is_discoverable?: boolean
           is_incognito?: boolean
+          is_paused?: boolean
           is_suspended?: boolean
           languages_spoken?: string[]
           occupation?: string | null
@@ -1282,6 +1285,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_sync_discoverability: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       billing_apply_readback: {
         Args: {
           p_event_id?: string
@@ -1430,6 +1437,7 @@ export type Database = {
           swipe_id: string
         }[]
       }
+      refresh_my_discoverability: { Args: never; Returns: boolean }
       register_push_token: {
         Args: { p_platform: string; p_token: string }
         Returns: string

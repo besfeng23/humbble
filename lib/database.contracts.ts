@@ -48,6 +48,7 @@ export type ProfileClientInsert = Pick<
   | 'relationship_intention'
   | 'prompts'
   | 'is_incognito'
+  | 'is_paused'
 >;
 export type ProfileClientUpdate = Pick<
   Database['public']['Tables']['profiles']['Update'],
@@ -61,6 +62,7 @@ export type ProfileClientUpdate = Pick<
   | 'relationship_intention'
   | 'prompts'
   | 'is_incognito'
+  | 'is_paused'
 >;
 export type EditableProfileUpdate = ProfileClientUpdate;
 

@@ -23,6 +23,12 @@ describe('discovery eligibility precheck', () => {
     expect(mockRpc).not.toHaveBeenCalled();
     expect(toFriendlyDiscoveryError(err).action).toBe('complete_profile');
   });
+  test('paused member gets the resume state without calling the RPC', async () => {
+    mockProfile = { is_discoverable: false, is_suspended: false, is_paused: true };
+    const err = await getDiscoveryPage(null).catch((e) => e);
+    expect(mockRpc).not.toHaveBeenCalled();
+    expect(toFriendlyDiscoveryError(err).action).toBe('resume_profile');
+  });
   test('complete member without ID verification still loads from the server', async () => {
     mockProfile = { is_discoverable: true, is_suspended: false };
     mockRpc.mockResolvedValue({ data: [], error: null });

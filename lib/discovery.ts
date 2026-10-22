@@ -38,7 +38,9 @@ function asError(error: { message?: string; code?: string } | null | undefined):
  * state without the network round trip. Returns null when eligibility cannot
  * be determined locally; the server remains the source of truth.
  */
-export async function checkOwnDiscoveryEligibility(): Promise<boolean | null> {
+export type OwnDiscoveryState = 'ok' | 'incomplete' | 'paused';
+
+export async function checkOwnDiscoveryState(): Promise<OwnDiscoveryState | null> {
   try {
     const client = supabase as unknown as { auth?: { getSession?: () => Promise<{ data: { session: { user?: { id?: string } } | null } }> }; from?: typeof supabase.from };
     if (typeof client.auth?.getSession !== 'function' || typeof client.from !== 'function') return null;
@@ -46,24 +48,35 @@ export async function checkOwnDiscoveryEligibility(): Promise<boolean | null> {
     const userId = session?.user?.id;
     if (!userId) return null;
     const { data, error } = await supabase.from('profiles')
-      .select('is_discoverable, is_suspended')
+      .select('is_discoverable, is_suspended, is_paused')
       .eq('id', userId)
       .maybeSingle();
     if (error) return null;
     // No profile row yet means onboarding is unfinished, so the member cannot be eligible.
-    if (!data) return false;
-    // ID verification is not required (it only earns the badge); the server also checks age and completeness.
-    const row = data as { is_discoverable?: boolean | null; is_suspended?: boolean | null };
-    return row.is_discoverable === true && row.is_suspended !== true;
+    if (!data) return 'incomplete';
+    // ID verification is not required (it only earns the badge); the server derives is_discoverable
+    // from completeness (18+, photos, prompts) and also enforces everything again in the RPC.
+    const row = data as { is_discoverable?: boolean | null; is_suspended?: boolean | null; is_paused?: boolean | null };
+    if (row.is_paused === true && row.is_suspended !== true) return 'paused';
+    return row.is_discoverable === true && row.is_suspended !== true ? 'ok' : 'incomplete';
   } catch {
     return null;
   }
 }
 
+export async function checkOwnDiscoveryEligibility(): Promise<boolean | null> {
+  const state = await checkOwnDiscoveryState();
+  return state === null ? null : state === 'ok';
+}
+
 /** Production data path. Mock data is intentionally not accepted as a fallback. */
 export async function getDiscoveryPage(cursor: string | null, limit = DISCOVERY_PAGE_SIZE): Promise<DiscoveryPage> {
   if (!isSupabaseConfigured) throw new DiscoveryError('Discovery is unavailable in this build.');
-  if (!cursor && (await checkOwnDiscoveryEligibility()) === false) throw new DiscoveryError('actor_not_eligible', '42501');
+  if (!cursor) {
+    const state = await checkOwnDiscoveryState();
+    if (state === 'paused') throw new DiscoveryError('profile_paused', '42501');
+    if (state === 'incomplete') throw new DiscoveryError('actor_not_eligible', '42501');
+  }
   const args: GetDiscoveryFeedArgs = { p_limit: Math.max(1, Math.min(50, limit)), ...(cursor ? { p_cursor: cursor } : {}) };
   const { data, error } = await supabase.rpc('get_discovery_feed', args);
   if (error) throw asError(error);

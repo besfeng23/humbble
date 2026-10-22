@@ -44,7 +44,7 @@ export default function SigninScreen() {
       }
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id,is_discoverable,verification_status')
+        .select('id,is_discoverable,is_paused')
         .eq('id', data.session.user.id)
         .maybeSingle();
       if (profileError) {
@@ -53,9 +53,11 @@ export default function SigninScreen() {
       }
       const next = !profile
         ? '/(onboarding)/basics'
-        : profile.verification_status === 'verified' && profile.is_discoverable
+        // ID verification is optional and never gates routing. Complete (or paused) members go to
+        // discovery; anyone else finishes their profile.
+        : profile.is_discoverable || profile.is_paused
           ? '/(tabs)/people'
-          : '/(onboarding)/verify';
+          : '/(onboarding)/photos-prompts';
       router.replace(next as any);
     } catch {
       setError('Sign-in is temporarily unavailable. Try again.');

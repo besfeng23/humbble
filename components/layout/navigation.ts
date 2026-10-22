@@ -138,9 +138,9 @@ export const ONBOARDING_STEP_ITEMS: readonly (NavItem & { step: number })[] = [
   {
     id: "onboarding-verify",
     step: 4,
-    label: "4. Verification",
+    label: "4. Verified badge (optional)",
     href: "/(onboarding)/verify",
-    accessibilityLabel: "Onboarding Step 4: Selfie Liveness Verification",
+    accessibilityLabel: "Onboarding Step 4 (optional): Get a Verified badge",
   },
 ] as const;
 
