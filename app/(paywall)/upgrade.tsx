@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AuthGuard } from "@/components/layout";
@@ -9,7 +9,7 @@ import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { usePremium } from "@/hooks/usePremium";
-import { type Market, PRICE_LABEL, startCheckout } from "@/lib/billing";
+import { type BillingPlan, countryHintFromLocale, deviceLocale, formatPrice, getBillingPlan, startCheckout } from "@/lib/billing";
 
 const BENEFITS = ["See who liked you", "Unlimited likes"];
 
@@ -25,7 +25,13 @@ function UpgradeContent() {
   const router = useRouter();
   const palette = Colors[useColorScheme() ?? "light"];
   const premium = usePremium();
-  const market: Market = "PH"; // PH-only launch; US (US$29.99) disabled server-side
+  const [hint] = useState(() => countryHintFromLocale(deviceLocale()));
+  const [plan, setPlan] = useState<BillingPlan | null>(null);
+  useEffect(() => {
+    let live = true;
+    void getBillingPlan(hint).then((p) => { if (live) setPlan(p); });
+    return () => { live = false; };
+  }, [hint]);
   const [consent, setConsent] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -33,7 +39,7 @@ function UpgradeContent() {
   const checkout = async () => {
     if (!consent) { setMessage("Please confirm monthly renewal first."); return; }
     setBusy(true); setMessage(null);
-    const result = await startCheckout(market);
+    const result = await startCheckout(hint);
     setBusy(false);
     if ("error" in result) { setMessage("Checkout is unavailable right now. Please try again."); return; }
     await Linking.openURL(result.approvalUrl);
@@ -52,7 +58,7 @@ function UpgradeContent() {
         </>
       ) : (
         <>
-          <Text testID="scr-20-price" style={[styles.price, { color: palette.text }]}>{PRICE_LABEL[market]}</Text>
+          <Text testID="scr-20-price" style={[styles.price, { color: palette.text }]}>{plan ? `${formatPrice(plan.amount, plan.currency)} / month` : " "}</Text>
           <View style={styles.benefits}>
             {BENEFITS.map((b) => (
               <Text key={b} style={[styles.benefit, { color: palette.textSecondary }]}>{b}</Text>
@@ -67,11 +73,11 @@ function UpgradeContent() {
           >
             <Text style={[styles.small, { color: palette.text }]}>{consent ? "☑" : "☐"}  Renews monthly until cancelled</Text>
           </Pressable>
-          <Button testID="scr-20-checkout-btn" label={busy ? "Opening PayPal…" : "Continue with PayPal"} variant="primary" size="lg" disabled={busy} onPress={checkout} />
+          <Button testID="scr-20-checkout-btn" label={busy ? "Opening PayPal…" : "Continue with PayPal"} variant="primary" size="lg" disabled={busy || !plan} onPress={checkout} />
         </>
       )}
       {message ? <Text testID="scr-20-message" style={[styles.small, { color: palette.textSecondary }]}>{message}</Text> : null}
-      <Text style={[styles.note, { color: palette.textSecondary }]}>PayPal Sandbox · test payments only</Text>
+      {__DEV__ ? <Text style={[styles.note, { color: palette.textSecondary }]}>Dev build · PayPal Sandbox</Text> : null}
     </View>
   );
 }

@@ -23,7 +23,6 @@ Deno.serve(async (req) => {
     return await handleCreate(req, {
       paypal: new PayPalClient(config), store: supabaseBillingStore(db), config, authenticate,
       returnUrl: Deno.env.get('BILLING_RETURN_URL') ?? 'humbble://billing', cancelUrl: Deno.env.get('BILLING_CANCEL_URL') ?? 'humbble://upgrade',
-      enableUs: Deno.env.get('BILLING_ENABLE_US') === 'true',
     });
   } catch { return json(502, { error: 'billing_unavailable' }); }
 });

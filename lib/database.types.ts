@@ -78,6 +78,35 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_markets: {
+        Row: {
+          country_code: string
+          created_at: string
+          is_enabled: boolean
+          plan_key: string
+        }
+        Insert: {
+          country_code: string
+          created_at?: string
+          is_enabled?: boolean
+          plan_key: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          is_enabled?: boolean
+          plan_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_markets_plan_key_fkey"
+            columns: ["plan_key"]
+            isOneToOne: false
+            referencedRelation: "billing_plans"
+            referencedColumns: ["plan_key"]
+          },
+        ]
+      }
       billing_plans: {
         Row: {
           amount: number
@@ -1306,6 +1335,15 @@ export type Database = {
           notification_type: string
           recipient_id: string
           retry_count: number
+        }[]
+      }
+      get_billing_plan: {
+        Args: { p_country_hint?: string }
+        Returns: {
+          amount: number
+          country_code: string
+          currency: string
+          plan_key: string
         }[]
       }
       get_conversation_list: {

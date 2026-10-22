@@ -10,6 +10,7 @@ export type BillingStore = {
   finishEvent(eventId: string, status: 'processed' | 'quarantined' | 'failed'): Promise<void>;
   applyReadback(input: ReadbackInput): Promise<{ outcome: string; granted: boolean }>;
   registerPending(userId: string, planKey: string, providerSubscriptionId: string, providerPlanId: string): Promise<void>;
+  resolvePlan(countryHint: string | null): Promise<{ countryCode: string; planKey: string; currency: string; amount: string } | null>;
   latestSubscription(userId: string): Promise<{ provider_subscription_id: string; status: DbStatus } | null>;
 };
 
@@ -39,6 +40,11 @@ export function supabaseBillingStore(db: Rpc): BillingStore {
     },
     async registerPending(userId, planKey, subId, planId) {
       await call('billing_register_pending_subscription', { p_user_id: userId, p_plan_key: planKey, p_provider_subscription_id: subId, p_provider_plan_id: planId });
+    },
+    async resolvePlan(countryHint) {
+      const rows = await call('get_billing_plan', { p_country_hint: countryHint });
+      const r = rows?.[0];
+      return r ? { countryCode: r.country_code, planKey: r.plan_key, currency: r.currency, amount: String(r.amount) } : null;
     },
     async latestSubscription(userId) {
       const { data, error } = await db.from('subscriptions').select('provider_subscription_id,status').eq('user_id', userId).eq('provider', 'paypal').order('created_at', { ascending: false }).limit(1).maybeSingle();

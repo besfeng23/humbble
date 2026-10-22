@@ -12,7 +12,8 @@ export type PayPalConfig = {
   clientId: string;
   clientSecret: string;
   webhookId: string;
-  planIds: { PH?: string; US?: string };
+  /** One PayPal plan id per currency, from PAYPAL_PLAN_ID_<CUR>. */
+  planIds: Partial<Record<Currency, string>>;
 };
 
 export const SANDBOX_BASE_URL = 'https://api-m.sandbox.paypal.com';
@@ -32,18 +33,21 @@ export function loadPayPalConfig(env: Env): PayPalConfig {
     baseUrl: mode === 'live' ? LIVE_BASE_URL : SANDBOX_BASE_URL,
     environment: mode,
     clientId, clientSecret, webhookId,
-    planIds: { PH: env('PAYPAL_PLAN_ID_PH') || undefined, US: env('PAYPAL_PLAN_ID_US') || undefined },
+    planIds: loadPlanIds(env),
   };
 }
 
-// Server-side catalogue mirror of public.billing_plans. Never taken from clients.
-export const PLANS = {
-  PH: { planKey: 'premium_monthly_ph', currency: 'PHP', amount: '599.00' },
-  US: { planKey: 'premium_monthly_us', currency: 'USD', amount: '29.99' },
-} as const;
-export type Market = keyof typeof PLANS;
-export function parseMarket(value: unknown): Market | null {
-  return value === 'PH' || value === 'US' ? value : null;
+// Currencies that may carry a PayPal plan. Prices live only in public.billing_plans.
+export const CURRENCIES = ['PHP', 'USD', 'EUR', 'GBP', 'SEK', 'NOK', 'CAD', 'AUD', 'NZD'] as const;
+export type Currency = typeof CURRENCIES[number];
+export function loadPlanIds(env: Env): Partial<Record<Currency, string>> {
+  const ids: Partial<Record<Currency, string>> = {};
+  for (const c of CURRENCIES) { const v = env(`PAYPAL_PLAN_ID_${c}`)?.trim(); if (v) ids[c] = v; }
+  return ids;
+}
+/** Client country hints are advisory; only a 2-letter code is forwarded, and the DB allowlist decides. */
+export function parseCountryHint(value: unknown): string | null {
+  return typeof value === 'string' && /^[A-Za-z]{2}$/.test(value.trim()) ? value.trim().toUpperCase() : null;
 }
 
 export class PayPalClient {
