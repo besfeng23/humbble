@@ -12,7 +12,7 @@ export default function PeopleScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ preview?: string }>();
   const palette = Colors[useColorScheme() ?? 'light'];
-  const preview = __DEV__ && ['feed', 'empty', 'quota', 'error', 'match'].includes(String(params.preview ?? '')) ? String(params.preview) as 'feed' | 'empty' | 'quota' | 'error' | 'match' : undefined;
+  const preview = __DEV__ && ['feed', 'empty', 'quota', 'error', 'match', 'ineligible'].includes(String(params.preview ?? '')) ? String(params.preview) as 'feed' | 'empty' | 'quota' | 'error' | 'match' | 'ineligible' : undefined;
   const button = () => <Pressable testID="people-filter-btn" hitSlop={HitSlop.default} onPress={() => router.push('/(tabs)/discover/filters' as any)} accessibilityRole="button" accessibilityLabel="Open discovery filters" style={styles.filterButton}><Octicons name="filter" size={22} color={palette.text} /></Pressable>;
   return <View testID="scr-11-people" style={[styles.container, { backgroundColor: palette.background }]}><Header headerTitle="People" button={button} /><Text style={[styles.subtitle, { color: palette.textSecondary }]}>Your next conversation could start here.</Text><DiscoveryFeed previewState={preview} /></View>;
 }
