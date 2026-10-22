@@ -48,7 +48,7 @@ jobs:
 
       - name: Edge function tests (Deno)
         working-directory: supabase/functions
-        run: deno test --node-modules-dir=none --allow-env --allow-net send-push/
+        run: deno test --node-modules-dir=none --allow-env --allow-net send-push/ _shared/
 
   database:
     name: Database (Supabase + pgTAP)

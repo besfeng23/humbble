@@ -48,6 +48,39 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_plans: {
+        Row: {
+          amount: number
+          billing_interval: string
+          created_at: string
+          currency: string
+          entitlement_key: string
+          is_enabled: boolean
+          market: string
+          plan_key: string
+        }
+        Insert: {
+          amount: number
+          billing_interval?: string
+          created_at?: string
+          currency: string
+          entitlement_key?: string
+          is_enabled?: boolean
+          market: string
+          plan_key: string
+        }
+        Update: {
+          amount?: number
+          billing_interval?: string
+          created_at?: string
+          currency?: string
+          entitlement_key?: string
+          is_enabled?: boolean
+          market?: string
+          plan_key?: string
+        }
+        Relationships: []
+      }
       blocks: {
         Row: {
           blocked_id: string
@@ -873,8 +906,11 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
+          environment: string
           id: string
+          last_verified_at: string | null
           legal_hold: boolean | null
+          plan_key: string | null
           provider: string
           provider_plan_id: string
           provider_subscription_id: string
@@ -889,8 +925,11 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          environment?: string
           id?: string
+          last_verified_at?: string | null
           legal_hold?: boolean | null
+          plan_key?: string | null
           provider: string
           provider_plan_id: string
           provider_subscription_id: string
@@ -905,8 +944,11 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          environment?: string
           id?: string
+          last_verified_at?: string | null
           legal_hold?: boolean | null
+          plan_key?: string | null
           provider?: string
           provider_plan_id?: string
           provider_subscription_id?: string
@@ -916,6 +958,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_key_fkey"
+            columns: ["plan_key"]
+            isOneToOne: false
+            referencedRelation: "billing_plans"
+            referencedColumns: ["plan_key"]
+          },
           {
             foreignKeyName: "subscriptions_user_id_fkey"
             columns: ["user_id"]
@@ -1048,6 +1097,52 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      billing_apply_readback: {
+        Args: {
+          p_event_id?: string
+          p_last_payment_amount: number
+          p_last_payment_currency: string
+          p_period_end: string
+          p_provider_plan_id: string
+          p_provider_subscription_id: string
+          p_status: Database["public"]["Enums"]["subscription_status"]
+        }
+        Returns: {
+          granted: boolean
+          outcome: string
+          subscription_id: string
+        }[]
+      }
+      billing_finish_event: {
+        Args: {
+          p_event_id: string
+          p_status: Database["public"]["Enums"]["payment_event_status"]
+        }
+        Returns: undefined
+      }
+      billing_record_event: {
+        Args: {
+          p_event_type: string
+          p_occurred_at: string
+          p_payload_sha256: string
+          p_provider_event_id: string
+          p_resource_id: string
+        }
+        Returns: {
+          event_id: string
+          event_status: Database["public"]["Enums"]["payment_event_status"]
+          is_new: boolean
+        }[]
+      }
+      billing_register_pending_subscription: {
+        Args: {
+          p_plan_key: string
+          p_provider_plan_id: string
+          p_provider_subscription_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       block_user: { Args: { p_target_id: string }; Returns: string }
       claim_notification_jobs: {
         Args: { p_limit?: number }
@@ -1082,6 +1177,24 @@ export type Database = {
           profile_id: string
           relationship_intention: Database["public"]["Enums"]["relationship_intention"]
           shared_interests: string[]
+        }[]
+      }
+      get_liked_you: {
+        Args: never
+        Returns: {
+          display_name: string
+          liked_at: string
+          profile_id: string
+        }[]
+      }
+      get_liked_you_count: { Args: never; Returns: number }
+      get_my_premium_status: {
+        Args: never
+        Returns: {
+          cancel_at_period_end: boolean
+          is_premium: boolean
+          subscription_status: Database["public"]["Enums"]["subscription_status"]
+          valid_until: string
         }[]
       }
       has_active_entitlement: { Args: { p_user_id: string }; Returns: boolean }
