@@ -23,6 +23,7 @@ import { Radii } from "@/constants/Radii";
 import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { shadow } from "@/constants/Shadows";
 
 export type ProfileMediaSize = "small" | "large" | "deck";
 
@@ -289,11 +290,7 @@ const styles = StyleSheet.create({
   cardContainer: {
     borderRadius: Radii.lg,
     overflow: "hidden",
-    elevation: 3,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    ...shadow({ y: 2, opacity: 0.15, radius: 4, elevation: 3 }),
   },
   mediaFrame: {
     borderRadius: Radii.md,

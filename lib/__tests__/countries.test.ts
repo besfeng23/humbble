@@ -5,7 +5,7 @@ import { countryOptions, defaultCountryFromLocale, FEATURED_COUNTRIES, ISO_COUNT
 describe('countries', () => {
   it('has all 249 ISO 3166-1 alpha-2 codes, matching the DB CHECK', () => {
     expect(ISO_COUNTRY_CODES).toHaveLength(249);
-    const sql = readFileSync(join(__dirname, '../../supabase/migrations/20261023000022_profile_country.sql'), 'utf8');
+    const sql = readFileSync(join(__dirname, '../../supabase/migrations/20261023000031_profile_country.sql'), 'utf8');
     const dbCodes = (sql.match(/'[A-Z]{2}'/g) ?? []).map((c) => c.slice(1, 3));
     expect([...dbCodes].sort()).toEqual([...ISO_COUNTRY_CODES].sort());
   });

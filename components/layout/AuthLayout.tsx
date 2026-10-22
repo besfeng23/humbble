@@ -27,6 +27,7 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 
 import { AuthGuard } from "./AuthGuard";
 import { navigateBackOrFallback } from "./navigation";
+import { textShadow } from "@/constants/Shadows";
 
 export interface AuthLayoutProps {
   /** Hero heading over the warm gold gradient */
@@ -271,17 +272,13 @@ const styles = StyleSheet.create({
     color: BrandPalette.white,
     textAlign: "center",
     marginBottom: Spacing.md,
-    textShadowColor: "rgba(0,0,0,0.35)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    ...textShadow("rgba(0,0,0,0.35)", 1, 1, 3),
   },
   subtitle: {
     ...Typography.body,
     color: "rgba(255,255,255,0.92)",
     textAlign: "center",
-    textShadowColor: "rgba(0,0,0,0.35)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    ...textShadow("rgba(0,0,0,0.35)", 1, 1, 3),
   },
   formContainer: {
     backgroundColor: "rgba(255,255,255,0.96)",

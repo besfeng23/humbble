@@ -186,7 +186,7 @@ export const SETTINGS_NAV_ITEMS: readonly NavItem[] = [
 export const MODERATION_NAV_ITEMS: readonly NavItem[] = [
   {
     id: "moderation-queue",
-    label: "T&S Queue",
+    label: "Moderation queue",
     href: "/(admin)/moderation",
     accessibilityLabel: "Trust and Safety moderation queue",
   },

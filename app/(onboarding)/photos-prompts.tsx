@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { toFriendlyMessage } from '@/lib/friendlyErrors';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
@@ -152,7 +153,7 @@ export default function OnboardingPhotosPromptsScreen() {
       await uploadProfilePhoto(user.id, { uri: asset.uri, type: mime, size: asset.fileSize, name: asset.fileName });
       await refreshPhotos(user.id);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'The photo could not be uploaded. Please retry.');
+      setNotice(toFriendlyMessage(error, 'The photo could not be uploaded. Please retry.'));
     } finally { setUploading(false); }
   };
 
@@ -166,7 +167,7 @@ export default function OnboardingPhotosPromptsScreen() {
     try {
       await reorderProfilePhotos(user.id, next.map((photo) => photo.id));
       await refreshPhotos(user.id);
-    } catch (error) { setNotice(error instanceof Error ? error.message : 'Photo order could not be saved.'); }
+    } catch (error) { setNotice(toFriendlyMessage(error, 'Photo order could not be saved.')); }
   };
 
   const removePhoto = async (photo: Photo) => {
@@ -176,7 +177,7 @@ export default function OnboardingPhotosPromptsScreen() {
       await deleteProfilePhoto(user.id, photo.id);
       await refreshPhotos(user.id);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Photo could not be removed.');
+      setNotice(toFriendlyMessage(error, 'Photo could not be removed.'));
       await refreshPhotos(user.id).catch(() => undefined);
     }
   };
@@ -212,7 +213,7 @@ export default function OnboardingPhotosPromptsScreen() {
       </View>
       <Button testID="photo-add" label={uploading ? 'Uploading photo…' : 'Add photo'} variant="secondary" size="lg" disabled={uploading || saving || previewAllowed || photos.length >= MAX_PHOTOS} onPress={() => void handleAddPhoto()} />
 
-      <TextField testID="profile-city-region" label="City or region" value={cityRegion} onChangeText={changeCityRegion} placeholder="e.g. Stockholm" required />
+      <TextField testID="profile-city-region" label="City or region" value={cityRegion} onChangeText={changeCityRegion} placeholder="e.g. Stockholm, Toronto or London" required />
       <CountryPicker testID="profile-country" value={country} onChange={setCountry} disabled={saving} />
       {PROFILE_PROMPTS.map((prompt) => <TextField key={prompt.key} testID={`profile-prompt-${prompt.key}`} label={prompt.question} value={answers[prompt.key]} onChangeText={(value) => changeAnswers({ ...answers, [prompt.key]: value })} required />)}
       <Text testID="profile-checklist-city" style={[styles.check, { color: palette.textSecondary }]}> {cityRegion.trim() ? '✓' : '○'} City or region added</Text>
