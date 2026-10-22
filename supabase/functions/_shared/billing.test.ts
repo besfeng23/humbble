@@ -128,7 +128,7 @@ Deno.test('country hint is sanitised before reaching the server allowlist', () =
 Deno.test('checkout uses the DB-resolved plan; client amounts are ignored', async () => {
   const m = memoryStore(); m.store.latestSubscription = async () => null;
   const hints: (string | null)[] = [];
-  m.store.resolvePlan = async (hint) => { hints.push(hint); return hint === 'SE' ? { countryCode: 'SE', planKey: 'premium_monthly_sek', currency: 'SEK', amount: '299.00' } : { countryCode: 'PH', planKey: 'premium_monthly_ph', currency: 'PHP', amount: '599.00' }; };
+  m.store.resolvePlan = async (_uid, hint) => { hints.push(hint); return hint === 'SE' ? { countryCode: 'SE', planKey: 'premium_monthly_sek', currency: 'SEK', amount: '299.00' } : { countryCode: 'PH', planKey: 'premium_monthly_ph', currency: 'PHP', amount: '599.00' }; };
   const registered: string[] = []; m.store.registerPending = async (_u, key, _s, plan) => { registered.push(`${key}:${plan}`); };
   let planUsed = '';
   const deps = { store: m.store, config: { planIds: { SEK: 'P-SEK', PHP: 'P-PH' } }, returnUrl: 'r', cancelUrl: 'c', authenticate: authed,
@@ -140,4 +140,15 @@ Deno.test('checkout uses the DB-resolved plan; client amounts are ignored', asyn
   assertEquals(hints[1], null);
   assertEquals((await handleCreate(req('{}'), { ...deps, config: { planIds: {} } })).status, 503);
   assertEquals((await handleCreate(req('{}'), { ...deps, authenticate: async () => null })).status, 401);
+});
+
+Deno.test('checkout resolves the plan for the authenticated user (profile country first, in DB)', async () => {
+  const m = memoryStore(); m.store.latestSubscription = async () => null;
+  const seen: [string, string | null][] = [];
+  m.store.resolvePlan = async (uid, hint) => { seen.push([uid, hint]); return { countryCode: 'NO', planKey: 'premium_monthly_nok', currency: 'NOK', amount: '329.00' }; };
+  const deps = { store: m.store, config: { planIds: { NOK: 'P-NOK' } }, returnUrl: 'r', cancelUrl: 'c', authenticate: async () => 'user-77',
+    paypal: { createSubscription: async () => ({ id: 'I-9', approvalUrl: 'https://www.sandbox.paypal.com/approve' }) } };
+  const body = await (await handleCreate(req(JSON.stringify({ country: 'GB' })), deps)).json();
+  assertEquals(seen, [['user-77', 'GB']]);
+  assertEquals([body.currency, body.amount], ['NOK', '329.00']);
 });

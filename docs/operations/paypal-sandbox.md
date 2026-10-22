@@ -35,8 +35,9 @@ Markets are controlled only by DB flags (no env gate; `BILLING_ENABLE_US` is gon
 
 - `public.billing_plans` — one row per currency (`currency`, `amount`, `is_enabled`). Prices: PHP 599, USD 29.99, EUR 27.99, GBP 23.99, SEK 299, NOK 329, CAD 39.99, AUD 44.99, NZD 49.99.
 - `public.billing_markets` — country code → plan (`is_enabled`). Service-role only; clients can't read it.
-- The client sends only an advisory 2-letter country hint (device locale region). `get_billing_plan` accepts it only if it is an enabled
-  allowlisted country, otherwise falls back to PH. Amount/currency always come from the DB and are re-checked on every webhook readback.
+- Market precedence: `profiles.country_code` (ISO 3166-1 alpha-2, set in onboarding/settings) if it is an enabled market, then the
+  client's advisory locale hint if it is an enabled market, then PH. Checkout resolves this server-side for the authenticated user
+  (`billing_resolve_plan_for_user`, service_role only). Amount/currency always come from the DB and are re-checked on every webhook readback.
 
 To change a price: add a new migration that `UPDATE`s `billing_plans.amount` **and** create a new PayPal plan at that price, then update
 `PAYPAL_PLAN_ID_<CUR>`. Existing subscribers stay on their PayPal plan; readbacks for the old amount will no longer match, so migrate them deliberately.

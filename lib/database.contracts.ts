@@ -40,6 +40,7 @@ export type ProfileClientInsert = Pick<
   | 'display_name'
   | 'birth_date'
   | 'city_region'
+  | 'country_code'
   | 'occupation'
   | 'education_level'
   | 'languages_spoken'
@@ -52,6 +53,7 @@ export type ProfileClientUpdate = Pick<
   Database['public']['Tables']['profiles']['Update'],
   | 'display_name'
   | 'city_region'
+  | 'country_code'
   | 'occupation'
   | 'education_level'
   | 'languages_spoken'

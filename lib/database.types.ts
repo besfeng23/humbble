@@ -876,6 +876,7 @@ export type Database = {
         Row: {
           birth_date: string
           city_region: string | null
+          country_code: string | null
           created_at: string
           display_name: string
           education_level: string | null
@@ -894,6 +895,7 @@ export type Database = {
         Insert: {
           birth_date: string
           city_region?: string | null
+          country_code?: string | null
           created_at?: string
           display_name: string
           education_level?: string | null
@@ -912,6 +914,7 @@ export type Database = {
         Update: {
           birth_date?: string
           city_region?: string | null
+          country_code?: string | null
           created_at?: string
           display_name?: string
           education_level?: string | null
@@ -1324,6 +1327,15 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      billing_resolve_plan_for_user: {
+        Args: { p_country_hint?: string; p_user_id: string }
+        Returns: {
+          amount: number
+          country_code: string
+          currency: string
+          plan_key: string
+        }[]
       }
       block_user: { Args: { p_target_id: string }; Returns: string }
       claim_notification_jobs: {
