@@ -208,7 +208,7 @@ export default function OnboardingPhotosPromptsScreen() {
       </View>
       <Button testID="photo-add" label={uploading ? 'Uploading photo…' : 'Add photo'} variant="secondary" size="lg" disabled={uploading || saving || previewAllowed || photos.length >= MAX_PHOTOS} onPress={() => void handleAddPhoto()} />
 
-      <TextField testID="profile-city-region" label="City or region" value={cityRegion} onChangeText={changeCityRegion} placeholder="e.g. Manila" required />
+      <TextField testID="profile-city-region" label="City or region" value={cityRegion} onChangeText={changeCityRegion} placeholder="e.g. Stockholm, Toronto or London" required />
       {PROFILE_PROMPTS.map((prompt) => <TextField key={prompt.key} testID={`profile-prompt-${prompt.key}`} label={prompt.question} value={answers[prompt.key]} onChangeText={(value) => changeAnswers({ ...answers, [prompt.key]: value })} required />)}
       <Text testID="profile-checklist-city" style={[styles.check, { color: palette.textSecondary }]}> {cityRegion.trim() ? '✓' : '○'} City or region added</Text>
       <Text testID="profile-checklist-prompts" style={[styles.check, { color: palette.textSecondary }]}> {answeredCount === 3 ? '✓' : '○'} {answeredCount}/3 prompts answered</Text>

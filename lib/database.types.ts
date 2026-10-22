@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      attribution_networks: {
+        Row: {
+          click_id_params: string[]
+          created_at: string
+          display_name: string
+          postback_enabled: boolean
+          postback_url_template: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          click_id_params?: string[]
+          created_at?: string
+          display_name: string
+          postback_enabled?: boolean
+          postback_url_template?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          click_id_params?: string[]
+          created_at?: string
+          display_name?: string
+          postback_enabled?: boolean
+          postback_url_template?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_events: {
         Row: {
           action: string
@@ -302,6 +332,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      funnel_events: {
+        Row: {
+          event: string
+          id: number
+          occurred_at: string
+          user_id: string
+        }
+        Insert: {
+          event: string
+          id?: never
+          occurred_at?: string
+          user_id: string
+        }
+        Update: {
+          event?: string
+          id?: never
+          occurred_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       matches: {
         Row: {
@@ -659,6 +710,51 @@ export type Database = {
           },
         ]
       }
+      postback_outbox: {
+        Row: {
+          attempts: number
+          click_id: string
+          created_at: string
+          event: string
+          id: number
+          network: string
+          payout: number | null
+          sent_at: string | null
+          status: string
+          transaction_id: string | null
+          url_template: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          click_id: string
+          created_at?: string
+          event: string
+          id?: never
+          network: string
+          payout?: number | null
+          sent_at?: string | null
+          status?: string
+          transaction_id?: string | null
+          url_template?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          click_id?: string
+          created_at?: string
+          event?: string
+          id?: never
+          network?: string
+          payout?: number | null
+          sent_at?: string | null
+          status?: string
+          transaction_id?: string | null
+          url_template?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       privacy_requests: {
         Row: {
           completed_at: string | null
@@ -899,6 +995,36 @@ export type Database = {
           },
         ]
       }
+      signup_attributions: {
+        Row: {
+          click_id: string | null
+          created_at: string
+          first_seen_at: string | null
+          landing_path: string | null
+          network: string
+          params: Json
+          user_id: string
+        }
+        Insert: {
+          click_id?: string | null
+          created_at?: string
+          first_seen_at?: string | null
+          landing_path?: string | null
+          network?: string
+          params?: Json
+          user_id: string
+        }
+        Update: {
+          click_id?: string | null
+          created_at?: string
+          first_seen_at?: string | null
+          landing_path?: string | null
+          network?: string
+          params?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           cancel_at_period_end: boolean
@@ -1012,6 +1138,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_consents: {
+        Row: {
+          created_at: string
+          marketing_opt_in: boolean
+          marketing_opt_in_at: string | null
+          terms_privacy_accepted_at: string
+          terms_version: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          marketing_opt_in?: boolean
+          marketing_opt_in_at?: string | null
+          terms_privacy_accepted_at?: string
+          terms_version?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          marketing_opt_in?: boolean
+          marketing_opt_in_at?: string | null
+          terms_privacy_accepted_at?: string
+          terms_version?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_preferences: {
         Row: {
