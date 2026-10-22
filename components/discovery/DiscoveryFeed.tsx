@@ -6,8 +6,9 @@ import { Spacing } from '@/constants/Spacing';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { appendUniqueProfiles, DiscoveryCard, getDiscoveryPage, isQuotaError, recordSwipe } from '@/lib/discovery';
 import type { SwipeDirection } from '@/lib/database.contracts';
+import { FriendlyDiscoveryError, toFriendlyDiscoveryError } from '@/lib/discoveryErrors';
 
-type PreviewState = 'feed' | 'empty' | 'quota' | 'error' | 'match';
+type PreviewState = 'feed' | 'empty' | 'quota' | 'error' | 'match' | 'ineligible';
 const PREVIEW_ITEMS: DiscoveryCard[] = [
   { profile_id: 'preview-1', display_name: 'Mia', age: 27, city_region: 'Makati, Metro Manila', relationship_intention: 'serious_relationship', shared_interests: ['Coffee', 'Live music'], primary_photo_path: '', imageUrl: null, cursor_created_at: '2026-10-20T12:00:00Z', cursorCreatedAt: '2026-10-20T12:00:00Z' } as unknown as DiscoveryCard,
   { profile_id: 'preview-2', display_name: 'Alex', age: 29, city_region: 'Quezon City', relationship_intention: 'long_term_dating', shared_interests: ['Travel', 'Food'], primary_photo_path: '', imageUrl: null, cursor_created_at: '2026-10-19T12:00:00Z', cursorCreatedAt: '2026-10-19T12:00:00Z' } as unknown as DiscoveryCard,
@@ -22,7 +23,8 @@ export function DiscoveryFeed({ previewState }: { previewState?: PreviewState })
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [acting, setActing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setErrorState] = useState<FriendlyDiscoveryError | null>(null);
+  const setError = useCallback((value: unknown) => setErrorState(value == null ? null : toFriendlyDiscoveryError(value)), []);
   const [quotaReached, setQuotaReached] = useState(false);
   const [match, setMatch] = useState<DiscoveryCard | null>(null);
   const seenIds = useRef(new Set<string>());
@@ -30,11 +32,11 @@ export function DiscoveryFeed({ previewState }: { previewState?: PreviewState })
 
   const load = useCallback(async (append: boolean) => {
     if (isPreview) {
-      const previewItems = previewState === 'empty' || previewState === 'error' ? [] : PREVIEW_ITEMS;
+      const previewItems = previewState === 'empty' || previewState === 'error' || previewState === 'ineligible' ? [] : PREVIEW_ITEMS;
       setItems(previewItems);
       setQuotaReached(previewState === 'quota');
       setMatch(previewState === 'match' ? PREVIEW_ITEMS[0] : null);
-      setError(previewState === 'error' ? 'We could not load discovery. Try again.' : null);
+      setError(previewState === 'error' ? 'We could not load discovery. Try again.' : previewState === 'ineligible' ? 'actor_not_eligible' : null);
       setHasMore(false);
       setCursor(null);
       setLoading(false);
@@ -50,7 +52,7 @@ export function DiscoveryFeed({ previewState }: { previewState?: PreviewState })
       setCursor(page.nextCursor);
       setHasMore(Boolean(page.nextCursor) && fresh.length > 0);
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'We could not load discovery. Try again.';
+      const message = cause instanceof Error ? cause.message : '';
       if (append && /invalid_discovery_cursor/i.test(message)) {
         // Opaque discovery cursors expire after 30 minutes. Restart cleanly.
         seenIds.current.clear();
@@ -60,12 +62,12 @@ export function DiscoveryFeed({ previewState }: { previewState?: PreviewState })
         await load(false);
         return;
       }
-      setError(message);
+      setError(cause);
     } finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [cursor, isPreview, previewState]);
+  }, [cursor, isPreview, previewState, setError]);
 
   const didInitialLoad = useRef(false);
   useEffect(() => {
@@ -85,7 +87,7 @@ export function DiscoveryFeed({ previewState }: { previewState?: PreviewState })
       if (direction === 'like' && result.likes_remaining === 0) setQuotaReached(true);
     } catch (cause) {
       if (isQuotaError(cause)) setQuotaReached(true);
-      else setError(cause instanceof Error ? cause.message : 'Your decision could not be saved.');
+      else setError(cause);
     } finally { setActing(false); }
   };
 
@@ -106,12 +108,12 @@ export function DiscoveryFeed({ previewState }: { previewState?: PreviewState })
   );
 
   if (loading) return <View testID="discovery-loading" style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Finding people for you…</Text></View>;
-  if (error && items.length === 0) return <View testID="discovery-error" style={styles.center}><Text style={[styles.stateTitle, { color: palette.text }]}>Discovery could not load</Text><Text style={{ color: palette.textSecondary, textAlign: 'center' }}>{error}</Text><Pressable accessibilityRole="button" onPress={() => { seenIds.current.clear(); void load(false); }} style={[styles.stateButton, { backgroundColor: palette.primary }]}><Text style={{ color: palette.onPrimary, fontWeight: '700' }}>Try again</Text></Pressable></View>;
+  if (error && items.length === 0) return <View testID="discovery-error" style={styles.center}><Text style={[styles.stateTitle, { color: palette.text }]}>{error.title}</Text><Text testID="discovery-error-message" style={{ color: palette.textSecondary, textAlign: 'center' }}>{error.message}</Text>{error.action === 'verify' ? <Pressable testID="discovery-verify-btn" accessibilityRole="button" accessibilityLabel="Finish verification" onPress={() => router.push('/(onboarding)/verify' as any)} style={[styles.stateButton, { backgroundColor: palette.primary }]}><Text style={{ color: palette.onPrimary, fontWeight: '700' }}>Finish verification</Text></Pressable> : null}<Pressable testID="discovery-retry-btn" accessibilityRole="button" onPress={() => { seenIds.current.clear(); void load(false); }} style={[styles.stateButton, error.action === 'verify' ? { borderWidth: 1, borderColor: palette.border } : { backgroundColor: palette.primary }]}><Text style={error.action === 'verify' ? { color: palette.text, fontWeight: '600' } : { color: palette.onPrimary, fontWeight: '700' }}>Try again</Text></Pressable></View>;
   if (match) return <View testID="discovery-match" style={styles.center}><Text style={[styles.stateTitle, { color: palette.text }]}>It’s a match</Text><Text style={{ color: palette.textSecondary, textAlign: 'center' }}>You and {match.display_name} liked each other.</Text>{match.imageUrl ? <Image source={{ uri: match.imageUrl }} style={styles.matchPhoto} /> : null}<Pressable testID="discovery-match-safety" accessibilityRole="button" onPress={() => router.push({ pathname: '/(safety)/report-modal', params: { targetId: match.profile_id, targetName: match.display_name, source: 'match', matched: '1' } } as any)} style={[styles.stateButton, { borderWidth: 1, borderColor: palette.border }]}><Text style={{ color: palette.text, fontWeight: '600' }}>Block, report or unmatch</Text></Pressable><Pressable accessibilityRole="button" onPress={() => setMatch(null)} style={[styles.stateButton, { backgroundColor: palette.primary }]}><Text style={{ color: palette.onPrimary, fontWeight: '700' }}>Continue discovering</Text></Pressable></View>;
   if (quotaReached) return <View testID="discovery-quota" style={styles.center}><Text style={[styles.stateTitle, { color: palette.text }]}>You’re out of likes for today</Text><Text style={{ color: palette.textSecondary, textAlign: 'center' }}>Your daily free like limit has been reached. You can keep browsing and come back when your allowance refreshes.</Text><Pressable accessibilityRole="button" onPress={() => setQuotaReached(false)} style={[styles.stateButton, { backgroundColor: palette.primary }]}><Text style={{ color: palette.onPrimary, fontWeight: '700' }}>Keep browsing</Text></Pressable></View>;
   if (items.length === 0) return <View testID="discovery-empty" style={styles.center}><Text style={[styles.stateTitle, { color: palette.text }]}>You’re all caught up</Text><Text style={{ color: palette.textSecondary, textAlign: 'center' }}>There are no more eligible profiles right now. Check back later or adjust your age preferences.</Text><Pressable accessibilityRole="button" onPress={() => { seenIds.current.clear(); void load(false); }} style={[styles.stateButton, { backgroundColor: palette.primary }]}><Text style={{ color: palette.onPrimary, fontWeight: '700' }}>Refresh discovery</Text></Pressable></View>;
 
-  return <FlatList testID="discovery-feed" data={items} renderItem={renderItem} keyExtractor={(item) => item.profile_id} contentContainerStyle={styles.list} onEndReachedThreshold={0.4} onEndReached={() => { if (hasMore && !loadingMore && !isPreview) void load(true); }} ListFooterComponent={loadingMore ? <ActivityIndicator /> : error ? <Pressable accessibilityRole="button" onPress={() => void load(true)}><Text style={{ color: palette.textSecondary }}>{error} Tap to retry.</Text></Pressable> : null} />;
+  return <FlatList testID="discovery-feed" data={items} renderItem={renderItem} keyExtractor={(item) => item.profile_id} contentContainerStyle={styles.list} onEndReachedThreshold={0.4} onEndReached={() => { if (hasMore && !loadingMore && !isPreview) void load(true); }} ListFooterComponent={loadingMore ? <ActivityIndicator /> : error ? <Pressable accessibilityRole="button" onPress={() => void load(true)}><Text style={{ color: palette.textSecondary }}>{error.message} Tap to retry.</Text></Pressable> : null} />;
 }
 
 const styles = StyleSheet.create({ list: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xl, gap: Spacing.lg }, card: { borderRadius: 20, overflow: 'hidden', borderWidth: 1, marginBottom: Spacing.lg }, photo: { width: '100%', height: 390, resizeMode: 'cover' }, photoFallback: { justifyContent: 'center', alignItems: 'center' }, profileBody: { padding: Spacing.lg, gap: Spacing.xs }, name: { fontSize: 24, fontWeight: '700' }, secondary: { fontSize: 14 }, intent: { fontSize: 15, textTransform: 'capitalize', marginTop: 4 }, actions: { flexDirection: 'row', gap: Spacing.md, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg }, action: { flex: 1, minHeight: 48, borderRadius: 24, borderWidth: 1, justifyContent: 'center', alignItems: 'center' }, like: { borderWidth: 0 }, center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl, gap: Spacing.md }, stateTitle: { fontSize: 24, fontWeight: '700', textAlign: 'center' }, stateButton: { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md, borderRadius: 24, marginTop: Spacing.sm }, matchPhoto: { width: 180, height: 180, borderRadius: 90 } });

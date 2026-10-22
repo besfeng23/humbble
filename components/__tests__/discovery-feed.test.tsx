@@ -8,7 +8,7 @@ function hasTestId(root: ReactTestInstance, testID: string): boolean {
 }
 
 describe('development discovery previews', () => {
-  const renderPreview = async (state: 'feed' | 'empty' | 'quota' | 'error' | 'match') => {
+  const renderPreview = async (state: 'feed' | 'empty' | 'quota' | 'error' | 'match' | 'ineligible') => {
     let renderer!: ReactTestRenderer;
     await act(async () => { renderer = create(<DiscoveryFeed previewState={state} />); });
     return renderer;
@@ -27,5 +27,13 @@ describe('development discovery previews', () => {
       expect(hasTestId(renderer.root, expected)).toBe(true);
       renderer.unmount();
     }
+  });
+  test('ineligible actor sees friendly verification copy and a verify button, never the raw RPC code', async () => {
+    const renderer = await renderPreview('ineligible');
+    expect(hasTestId(renderer.root, 'discovery-verify-btn')).toBe(true);
+    const text = renderer.root.findAll((node) => typeof node.props.children === 'string').map((node) => node.props.children).join(' ');
+    expect(text).not.toContain('actor_not_eligible');
+    expect(text).toMatch(/Finish verification/);
+    renderer.unmount();
   });
 });

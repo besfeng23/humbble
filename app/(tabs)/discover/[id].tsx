@@ -9,6 +9,7 @@ import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getDiscoveryPage, recordSwipe, type DiscoveryCard } from '@/lib/discovery';
+import { toFriendlyDiscoveryError } from '@/lib/discoveryErrors';
 
 export default function ProfileInspectorScreen() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function ProfileInspectorScreen() {
           setCandidate(found ?? null);
           if (!found) setError('This profile is no longer available in discovery.');
         }
-      } catch { if (active) setError('This profile could not be loaded. Try again from Discover.'); }
+      } catch (cause) { if (active) { const friendly = toFriendlyDiscoveryError(cause); setError(friendly.key === 'unknown' ? 'This profile could not be loaded. Try again from Discover.' : friendly.message); } }
       finally { if (active) setLoading(false); }
     })();
     return () => { active = false; };
@@ -45,7 +46,7 @@ export default function ProfileInspectorScreen() {
     if (!candidate || busy) return;
     setBusy(true); setError('');
     try { await recordSwipe(candidate.profile_id, direction); router.replace('/(tabs)/discover' as any); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Your decision could not be saved.'); }
+    catch (cause) { setError(toFriendlyDiscoveryError(cause).message); }
     finally { setBusy(false); }
   };
   return <AuthGuard mode="protected" redirectTo="/auth/signin" testID="scr-12-guard">
