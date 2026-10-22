@@ -1,155 +1,88 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { SettingsLayout } from "@/components/layout";
-import { FormStateView, type FormStatus } from "@/components/state";
-import { Button, Card } from "@/components/ui";
+import { AuthGuard } from "@/components/layout";
+import { Button } from "@/components/ui";
 import { Colors } from "@/constants/Colors";
-import { Radii } from "@/constants/Radii";
-import { Spacing, TouchTargets } from "@/constants/Spacing";
+import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { usePremium } from "@/hooks/usePremium";
+import { type Market, PRICE_LABEL, startCheckout } from "@/lib/billing";
+
+const BENEFITS = ["See who liked you", "Unlimited likes"];
 
 export default function ReserveUpgradePaywallScreen() {
-  const router = useRouter();
-  const scheme = useColorScheme() ?? "light";
-  const palette = Colors[scheme];
-  const [autoRenewalConsent, setAutoRenewalConsent] = useState(false);
-  const [status, setStatus] = useState<FormStatus>("idle");
+  return (
+    <AuthGuard mode="protected" redirectTo="/auth/signin" testID="scr-20-guard">
+      <UpgradeContent />
+    </AuthGuard>
+  );
+}
 
-  const handleStartSandboxCheckout = () => {
-    if (!autoRenewalConsent) {
-      setStatus("failure");
-      return;
-    }
-    setStatus("success");
+function UpgradeContent() {
+  const router = useRouter();
+  const palette = Colors[useColorScheme() ?? "light"];
+  const premium = usePremium();
+  const market: Market = "PH"; // PH-only launch; US (US$29.99) disabled server-side
+  const [consent, setConsent] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const checkout = async () => {
+    if (!consent) { setMessage("Please confirm monthly renewal first."); return; }
+    setBusy(true); setMessage(null);
+    const result = await startCheckout(market);
+    setBusy(false);
+    if ("error" in result) { setMessage("Checkout is unavailable right now. Please try again."); return; }
+    await Linking.openURL(result.approvalUrl);
+    // Returning from PayPal never grants access by itself; Premium appears once the server confirms payment.
+    setMessage("Finish in PayPal. Premium turns on once payment is confirmed.");
   };
 
   return (
-    <SettingsLayout
-      testID="scr-20-upgrade"
-      title="Humbble Reserve Upgrade"
-      subtitle="SCR-20 • Monthly Subscription (PayPal Sandbox Only — v1.2 A5)"
-      fallbackHref="/(tabs)/profile"
-      activeNavId="settings-upgrade"
-    >
-      <FormStateView
-        testID="scr-20-form-state"
-        status={status}
-        pendingTitle="Initiating PayPal Sandbox checkout..."
-        successTitle="Approval pending (PayPal Sandbox)"
-        successMessage="Browser return alone never grants entitlement. Entitlement activates only after server-verified PAYMENT.SALE.COMPLETED."
-        successActionLabel="Inspect Billing Status (SCR-21)"
-        onSuccessAction={() => router.push("/(paywall)/billing" as any)}
-        failureTitle="Auto-renewal consent required"
-        failureMessage="Please check the affirmative recurring billing disclosure box before starting checkout."
-        onRetry={() => setStatus("idle")}
-      >
-        <Card testID="scr-20-plan-card" variant="elevated">
-          <View style={styles.section}>
-            <Text
-              accessibilityRole="header"
-              style={[styles.heading, { color: palette.text }]}
-            >
-              Humbble Reserve — Monthly Plan
-            </Text>
-            <Text style={[styles.price, { color: palette.text }]}>
-              Philippines: ₱599.00 PHP / month (US: $29.99 USD / month)
-            </Text>
-            <Text style={[styles.body, { color: palette.textSecondary }]}>
-              Server-resolved monthly pricing only (no 3-month or 6-month plans per Plan v1.2 Amendment A5). Includes unlimited daily likes, full incoming likes grid, Incognito mode, and advanced filters. Mutual messaging and safety tools remain free for everyone.
-            </Text>
+    <View testID="scr-20-upgrade" style={[styles.screen, { backgroundColor: palette.background }]}>
+      <Text accessibilityRole="header" style={[styles.title, { color: palette.text }]}>Humbble Premium</Text>
 
-            <Pressable
-              testID="scr-20-consent-checkbox"
-              onPress={() => setAutoRenewalConsent((prev) => !prev)}
-              accessibilityRole="checkbox"
-              accessibilityLabel="I agree to recurring monthly billing at ₱599.00/month until I cancel"
-              accessibilityState={{ checked: autoRenewalConsent }}
-              style={[
-                styles.consentBox,
-                {
-                  backgroundColor: palette.surfaceMuted,
-                  borderColor: autoRenewalConsent
-                    ? palette.primaryPressed
-                    : palette.borderStrong,
-                },
-              ]}
-            >
-              <Text style={[styles.checkboxMark, { color: palette.text }]}>
-                {autoRenewalConsent ? "[✓]" : "[ ]"}
-              </Text>
-              <Text style={[styles.consentText, { color: palette.text }]}>
-                I understand Humbble Reserve renews monthly at ₱599.00 PHP/month until cancelled, and I can cancel anytime in 2 clicks from Billing settings.
-              </Text>
-            </Pressable>
-
-            <Button
-              testID="scr-20-checkout-btn"
-              label="Continue with PayPal Sandbox"
-              variant="primary"
-              size="lg"
-              onPress={handleStartSandboxCheckout}
-            />
-
-            <View style={styles.secondaryRow}>
-              <Button
-                testID="scr-20-to-billing-btn"
-                label="Manage Billing & Cancellation"
-                variant="secondary"
-                size="sm"
-                onPress={() => router.push("/(paywall)/billing" as any)}
-              />
-              <Button
-                testID="scr-20-to-refund-policy-btn"
-                label="Renewal & Refund Disclosures"
-                variant="ghost"
-                size="sm"
-                onPress={() =>
-                  router.push("/(public)/legal/refund-policy" as any)
-                }
-              />
-            </View>
+      {premium.isPremium ? (
+        <>
+          <Text testID="scr-20-premium-active" style={[styles.price, { color: palette.text }]}>You’re Premium</Text>
+          <Button testID="scr-20-to-billing-btn" label="Manage subscription" variant="secondary" size="lg" onPress={() => router.push("/(paywall)/billing" as any)} />
+        </>
+      ) : (
+        <>
+          <Text testID="scr-20-price" style={[styles.price, { color: palette.text }]}>{PRICE_LABEL[market]}</Text>
+          <View style={styles.benefits}>
+            {BENEFITS.map((b) => (
+              <Text key={b} style={[styles.benefit, { color: palette.textSecondary }]}>{b}</Text>
+            ))}
           </View>
-        </Card>
-      </FormStateView>
-    </SettingsLayout>
+          <Pressable
+            testID="scr-20-consent-checkbox"
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: consent }}
+            onPress={() => setConsent((c) => !c)}
+            style={styles.consent}
+          >
+            <Text style={[styles.small, { color: palette.text }]}>{consent ? "☑" : "☐"}  Renews monthly until cancelled</Text>
+          </Pressable>
+          <Button testID="scr-20-checkout-btn" label={busy ? "Opening PayPal…" : "Continue with PayPal"} variant="primary" size="lg" disabled={busy} onPress={checkout} />
+        </>
+      )}
+      {message ? <Text testID="scr-20-message" style={[styles.small, { color: palette.textSecondary }]}>{message}</Text> : null}
+      <Text style={[styles.note, { color: palette.textSecondary }]}>PayPal Sandbox · test payments only</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  section: {
-    gap: Spacing.lg,
-  },
-  heading: {
-    ...Typography.h2,
-  },
-  price: {
-    ...Typography.subtitle,
-  },
-  body: {
-    ...Typography.bodySmall,
-  },
-  consentBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-    padding: Spacing.lg,
-    borderRadius: Radii.lg,
-    borderWidth: 1.5,
-    minHeight: TouchTargets.comfortable,
-  },
-  checkboxMark: {
-    ...Typography.bodySemiBold,
-  },
-  consentText: {
-    ...Typography.bodySmall,
-    flex: 1,
-  },
-  secondaryRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.sm,
-  },
+  screen: { flex: 1, justifyContent: "center", alignItems: "center", padding: Spacing.xl, gap: Spacing.lg },
+  title: { ...Typography.h2, textAlign: "center" },
+  price: { ...Typography.subtitle, textAlign: "center" },
+  benefits: { gap: Spacing.xs, alignItems: "center" },
+  benefit: { ...Typography.body },
+  consent: { paddingVertical: Spacing.sm },
+  small: { ...Typography.bodySmall, textAlign: "center" },
+  note: { ...Typography.bodySmall, opacity: 0.7, marginTop: Spacing.lg },
 });

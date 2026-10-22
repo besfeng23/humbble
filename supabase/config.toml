@@ -37,3 +37,14 @@ file_size_limit = "50MiB"
 [auth]
 site_url = "http://localhost:8081"
 additional_redirect_urls = ["humbble://", "http://localhost:8081"]
+
+# P4 PayPal Sandbox functions. The webhook is called by PayPal (no Supabase JWT);
+# it authenticates via PayPal verify-webhook-signature instead.
+[functions.paypal-webhook]
+verify_jwt = false
+
+[functions.paypal-create-subscription]
+verify_jwt = true
+
+[functions.paypal-cancel-subscription]
+verify_jwt = true

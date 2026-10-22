@@ -9,21 +9,26 @@ import { Colors } from "@/constants/Colors";
 import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { usePremium } from "@/hooks/usePremium";
+import { cancelSubscription } from "@/lib/billing";
 
 export default function SubscriptionBillingScreen() {
   const router = useRouter();
   const scheme = useColorScheme() ?? "light";
   const palette = Colors[scheme];
-  const [subscriptionStatus, setSubscriptionStatus] = useState<
-    "free" | "active" | "cancelled"
-  >("active");
+  const premium = usePremium();
+  const subscriptionStatus: "free" | "active" | "cancelled" = !premium.isPremium
+    ? "free"
+    : premium.cancelAtPeriodEnd ? "cancelled" : "active";
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [status, setStatus] = useState<FormStatus>("idle");
 
-  const handleConfirmCancel = () => {
-    setSubscriptionStatus("cancelled");
+  const handleConfirmCancel = async () => {
     setConfirmingCancel(false);
-    setStatus("success");
+    setStatus("pending");
+    const result = await cancelSubscription();
+    await premium.refresh();
+    setStatus(result.ok ? "success" : "failure");
   };
 
   return (
@@ -53,7 +58,7 @@ export default function SubscriptionBillingScreen() {
               Current Plan:{" "}
               {subscriptionStatus === "free"
                 ? "Humbble Free"
-                : "Humbble Reserve (Monthly — ₱599.00 PHP/mo)"}
+                : "Humbble Premium (monthly)"}
             </Text>
             <Text
               testID="scr-21-subscription-state"
