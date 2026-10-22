@@ -17,14 +17,14 @@ import { toFriendlyDiscoveryError } from '@/lib/discoveryErrors';
 
 describe('discovery eligibility precheck', () => {
   beforeEach(() => mockRpc.mockReset());
-  test('unverified member gets the friendly ineligible state without calling the RPC', async () => {
-    mockProfile = { verification_status: 'not_started', is_discoverable: false, is_suspended: false };
+  test('non-discoverable member gets the friendly ineligible state without calling the RPC', async () => {
+    mockProfile = { is_discoverable: false, is_suspended: false };
     const err = await getDiscoveryPage(null).catch((e) => e);
     expect(mockRpc).not.toHaveBeenCalled();
-    expect(toFriendlyDiscoveryError(err).action).toBe('verify');
+    expect(toFriendlyDiscoveryError(err).action).toBe('complete_profile');
   });
-  test('verified member still loads from the server', async () => {
-    mockProfile = { verification_status: 'verified', is_discoverable: true, is_suspended: false };
+  test('complete member without ID verification still loads from the server', async () => {
+    mockProfile = { is_discoverable: true, is_suspended: false };
     mockRpc.mockResolvedValue({ data: [], error: null });
     await expect(getDiscoveryPage(null)).resolves.toEqual({ items: [], nextCursor: null });
     expect(mockRpc).toHaveBeenCalledWith('get_discovery_feed', expect.anything());

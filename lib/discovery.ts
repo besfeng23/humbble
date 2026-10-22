@@ -46,14 +46,15 @@ export async function checkOwnDiscoveryEligibility(): Promise<boolean | null> {
     const userId = session?.user?.id;
     if (!userId) return null;
     const { data, error } = await supabase.from('profiles')
-      .select('verification_status, is_discoverable, is_suspended')
+      .select('is_discoverable, is_suspended')
       .eq('id', userId)
       .maybeSingle();
     if (error) return null;
     // No profile row yet means onboarding is unfinished, so the member cannot be eligible.
     if (!data) return false;
-    const row = data as { verification_status?: string | null; is_discoverable?: boolean | null; is_suspended?: boolean | null };
-    return row.verification_status === 'verified' && row.is_discoverable === true && row.is_suspended !== true;
+    // ID verification is not required (it only earns the badge); the server also checks age and completeness.
+    const row = data as { is_discoverable?: boolean | null; is_suspended?: boolean | null };
+    return row.is_discoverable === true && row.is_suspended !== true;
   } catch {
     return null;
   }
