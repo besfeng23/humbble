@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
 import SigninScreen, { getSignInError } from '@/app/auth/signin';
 import SignupScreen from '@/app/auth/signup';
@@ -66,8 +66,9 @@ describe('enumeration-safe, unconfigured auth UI', () => {
   test('check-email keeps its single primary action in the shared colour family', () => {
     const tree = mount(<CheckEmailScreen />);
     expect(tree.root.findAllByType(Text).some((node) => textContent(node.children).includes("If this address can be used, we've sent a link."))).toBe(true);
-    expect(tree.root.findAllByType(Pressable)).toHaveLength(1);
-    const action = tree.root.findAll((node) => node.props.testID === 'check-email-signin' && node.props.style != null)[0];
+    // Primary: open mail app. Secondary text link: return to sign in.
+    expect(tree.root.findAllByProps({ testID: 'check-email-signin' }).length).toBeGreaterThan(0);
+    const action = tree.root.findAll((node) => node.props.testID === 'check-email-open-mail' && node.props.style != null)[0];
     const rawStyle = action.props.style;
     const buttonStyle = StyleSheet.flatten(typeof rawStyle === 'function' ? rawStyle({ pressed: false }) : rawStyle);
     expect(buttonStyle.backgroundColor).toBe('#FFD600');

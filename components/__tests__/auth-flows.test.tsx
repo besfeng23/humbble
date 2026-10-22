@@ -45,9 +45,22 @@ describe('auth request flows', () => {
   test('successful sign-up always goes to the neutral check-email state', async () => {
     mockSignUp.mockResolvedValue({ error: null });
     const tree = renderer.create(<SignupScreen />);
+    act(() => { tree.root.findByProps({ testID: 'signup-email' }).props.onChangeText('person@example.test'); tree.root.findByProps({ testID: 'signup-password' }).props.onChangeText('safe-password'); tree.root.findByProps({ testID: 'signup-consent-terms' }).props.onToggle(); });
+    await act(async () => { tree.root.findByProps({ testID: 'signup-submit' }).props.onPress({}); for (let i = 0; i < 6; i++) await Promise.resolve(); });
+    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/auth/check-email', params: { flow: 'confirm', email: 'person@example.test' } });
+  });
+  test('sign-up requires the unticked terms consent and sends marketing opt-out by default', async () => {
+    mockSignUp.mockResolvedValue({ error: null });
+    const tree = renderer.create(<SignupScreen />);
+    expect(tree.root.findByProps({ testID: 'signup-consent-terms' }).props.checked).toBe(false);
+    expect(tree.root.findByProps({ testID: 'signup-consent-marketing' }).props.checked).toBe(false);
     act(() => { tree.root.findByProps({ testID: 'signup-email' }).props.onChangeText('person@example.test'); tree.root.findByProps({ testID: 'signup-password' }).props.onChangeText('safe-password'); });
-    await act(async () => { tree.root.findByProps({ testID: 'signup-submit' }).props.onPress({}); await Promise.resolve(); await Promise.resolve(); });
-    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/auth/check-email', params: { flow: 'confirm' } });
+    await act(async () => { tree.root.findByProps({ testID: 'signup-submit' }).props.onPress({}); for (let i = 0; i < 6; i++) await Promise.resolve(); });
+    expect(mockSignUp).not.toHaveBeenCalled();
+    expect(tree.root.findAllByType(Text).some((node) => /agree to the Terms/i.test(textContent(node.children)))).toBe(true);
+    act(() => { tree.root.findByProps({ testID: 'signup-consent-terms' }).props.onToggle(); });
+    await act(async () => { tree.root.findByProps({ testID: 'signup-submit' }).props.onPress({}); for (let i = 0; i < 6; i++) await Promise.resolve(); });
+    expect(mockSignUp.mock.calls[0][0].options.data.consent).toMatchObject({ terms_privacy: true, marketing: false });
   });
   test('sign-in hides provider details for invalid credentials', async () => {
     mockSignIn.mockResolvedValue({ error: { code: 'invalid_credentials', status: 400, message: 'User lookup failed in backend' } });
@@ -59,9 +72,9 @@ describe('auth request flows', () => {
   test('sign-up routes a duplicate-email response to the same neutral check-email screen', async () => {
     mockSignUp.mockResolvedValue({ error: { code: 'user_already_exists', status: 400, message: 'User already registered' } });
     const tree = renderer.create(<SignupScreen />);
-    act(() => { tree.root.findByProps({ testID: 'signup-email' }).props.onChangeText('person@example.test'); tree.root.findByProps({ testID: 'signup-password' }).props.onChangeText('safe-password'); });
-    await act(async () => { tree.root.findByProps({ testID: 'signup-submit' }).props.onPress({}); await Promise.resolve(); await Promise.resolve(); });
-    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/auth/check-email', params: { flow: 'confirm' } });
+    act(() => { tree.root.findByProps({ testID: 'signup-email' }).props.onChangeText('person@example.test'); tree.root.findByProps({ testID: 'signup-password' }).props.onChangeText('safe-password'); tree.root.findByProps({ testID: 'signup-consent-terms' }).props.onToggle(); });
+    await act(async () => { tree.root.findByProps({ testID: 'signup-submit' }).props.onPress({}); for (let i = 0; i < 6; i++) await Promise.resolve(); });
+    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/auth/check-email', params: { flow: 'confirm', email: 'person@example.test' } });
     expect(tree.root.findAllByType(Text).some((node) => /already registered/i.test(textContent(node.children)))).toBe(false);
   });
   test('recovery still routes to a neutral response when the provider returns an error', async () => {
