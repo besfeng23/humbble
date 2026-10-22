@@ -53,7 +53,7 @@ export default function ModerationQueueScreen() {
     <ModerationLayout
       testID="scr-23-moderation-queue"
       title="Trust & Safety Moderation Queue"
-      subtitle="SCR-23 • Severity-Ordered Case Triage"
+      subtitle="Cases ordered by severity"
       fallbackHref="/(tabs)/profile"
       activeNavId="moderation-queue"
     >

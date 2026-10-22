@@ -22,6 +22,7 @@ import {
   useReducedMotion,
 } from "@/constants/Motion";
 import { Radii } from "@/constants/Radii";
+import { shadow } from "@/constants/Shadows";
 import { HitSlop, Spacing, TouchTargets } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -314,10 +315,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.xs,
   },
   focused: {
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 2,
+    ...shadow({ opacity: 0.35, radius: 4, elevation: 2 }),
   },
 });
 

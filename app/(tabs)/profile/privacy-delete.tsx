@@ -49,7 +49,7 @@ export default function PrivacyExportAndDeleteScreen() {
     <SettingsLayout
       testID="scr-19-privacy-delete"
       title="Data Export & Account Deletion"
-      subtitle="SCR-19 • Self-Service Privacy Rights (RA 10173 / GDPR)"
+      subtitle="Your privacy rights: export or delete your data"
       fallbackHref="/(tabs)/profile/settings"
       activeNavId="settings-privacy-delete"
     >

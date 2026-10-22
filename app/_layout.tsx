@@ -1,12 +1,14 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useGlobalSearchParams, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { foregroundBehavior, type PushData } from '@/lib/notificationFocus';
 import 'react-native-reanimated';
+import { NotFoundView } from '@/components/routing/NotFoundView';
+import { isUnknownUrlMatch } from '@/lib/routeMatching';
 import { SafetyReportRetry } from '@/components/safety/SafetyReportRetry';
 import { PendingState } from '@/components/state';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -23,6 +25,8 @@ function RootNavigator() {
   const { loading } = useAuth();
   const router = useRouter();
   const lastResponseId = useRef<string | null>(null);
+  const segments = useSegments();
+  const { conversationId } = useGlobalSearchParams<{ conversationId?: string }>();
   useEffect(() => {
     const openResponse = (response: Notifications.NotificationResponse | null) => {
       if (!response) return;
@@ -41,6 +45,8 @@ function RootNavigator() {
 
   // Keep the root navigator mounted after auth bootstrap; protected route layouts
   // independently redirect once this loading gate has completed.
+  // Unknown URLs fall through to the root-level chat route; show a real 404 instead of a sign-in redirect.
+  if (isUnknownUrlMatch(segments, conversationId)) return <NotFoundView />;
   if (loading) return <PendingState fullScreen title="Loading..." testID="auth-bootstrap-pending" />;
   return (
     <Stack screenOptions={{ headerShown: false, headerShadowVisible: false }}>

@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { toFriendlyMessage } from '@/lib/friendlyErrors';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
@@ -148,7 +149,7 @@ export default function OnboardingPhotosPromptsScreen() {
       await uploadProfilePhoto(user.id, { uri: asset.uri, type: mime, size: asset.fileSize, name: asset.fileName });
       await refreshPhotos(user.id);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'The photo could not be uploaded. Please retry.');
+      setNotice(toFriendlyMessage(error, 'The photo could not be uploaded. Please retry.'));
     } finally { setUploading(false); }
   };
 
@@ -162,7 +163,7 @@ export default function OnboardingPhotosPromptsScreen() {
     try {
       await reorderProfilePhotos(user.id, next.map((photo) => photo.id));
       await refreshPhotos(user.id);
-    } catch (error) { setNotice(error instanceof Error ? error.message : 'Photo order could not be saved.'); }
+    } catch (error) { setNotice(toFriendlyMessage(error, 'Photo order could not be saved.')); }
   };
 
   const removePhoto = async (photo: Photo) => {
@@ -172,7 +173,7 @@ export default function OnboardingPhotosPromptsScreen() {
       await deleteProfilePhoto(user.id, photo.id);
       await refreshPhotos(user.id);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Photo could not be removed.');
+      setNotice(toFriendlyMessage(error, 'Photo could not be removed.'));
       await refreshPhotos(user.id).catch(() => undefined);
     }
   };

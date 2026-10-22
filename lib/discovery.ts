@@ -31,9 +31,38 @@ function asError(error: { message?: string; code?: string } | null | undefined):
   return new DiscoveryError(error?.message || 'Discovery is temporarily unavailable.', error?.code);
 }
 
+/**
+ * Reads the caller's own profile flags before calling get_discovery_feed. The
+ * RPC rejects ineligible members with a 403, which browsers always log as a
+ * console error, so we short-circuit to the same friendly 'actor_not_eligible'
+ * state without the network round trip. Returns null when eligibility cannot
+ * be determined locally; the server remains the source of truth.
+ */
+export async function checkOwnDiscoveryEligibility(): Promise<boolean | null> {
+  try {
+    const client = supabase as unknown as { auth?: { getSession?: () => Promise<{ data: { session: { user?: { id?: string } } | null } }> }; from?: typeof supabase.from };
+    if (typeof client.auth?.getSession !== 'function' || typeof client.from !== 'function') return null;
+    const { data: { session } } = await client.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) return null;
+    const { data, error } = await supabase.from('profiles')
+      .select('verification_status, is_discoverable, is_suspended')
+      .eq('id', userId)
+      .maybeSingle();
+    if (error) return null;
+    // No profile row yet means onboarding is unfinished, so the member cannot be eligible.
+    if (!data) return false;
+    const row = data as { verification_status?: string | null; is_discoverable?: boolean | null; is_suspended?: boolean | null };
+    return row.verification_status === 'verified' && row.is_discoverable === true && row.is_suspended !== true;
+  } catch {
+    return null;
+  }
+}
+
 /** Production data path. Mock data is intentionally not accepted as a fallback. */
 export async function getDiscoveryPage(cursor: string | null, limit = DISCOVERY_PAGE_SIZE): Promise<DiscoveryPage> {
   if (!isSupabaseConfigured) throw new DiscoveryError('Discovery is unavailable in this build.');
+  if (!cursor && (await checkOwnDiscoveryEligibility()) === false) throw new DiscoveryError('actor_not_eligible', '42501');
   const args: GetDiscoveryFeedArgs = { p_limit: Math.max(1, Math.min(50, limit)), ...(cursor ? { p_cursor: cursor } : {}) };
   const { data, error } = await supabase.rpc('get_discovery_feed', args);
   if (error) throw asError(error);

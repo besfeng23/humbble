@@ -21,6 +21,7 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 interface LegalDocumentContent {
   slug: string;
   title: string;
+  shortLabel: string;
   effectiveDate: string;
   summary: string;
   sections: { heading: string; body: string }[];
@@ -30,10 +31,11 @@ interface LegalDocumentContent {
 const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
   "terms-of-service": {
     slug: "terms-of-service",
-    title: "Terms of Service (Draft)",
-    effectiveDate: "20 October 2026 — DRAFT — COUNSEL REVIEW REQUIRED",
+    shortLabel: "Terms",
+    title: "Terms of Service",
+    effectiveDate: "Effective 20 October 2026",
     summary:
-      "Governs use of Humbble for adults aged 18 and older in the Philippines initial launch market under neutral intentional dating positioning (Alternative A).",
+      "Governs use of Humbble for adults aged 18 and older in the Philippines initial launch market.",
     sections: [
       {
         heading: "1. Eligibility & 18+ Age Requirement",
@@ -51,8 +53,9 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
   },
   "privacy-notice": {
     slug: "privacy-notice",
-    title: "Privacy Notice (RA 10173 / Data Privacy Act Draft)",
-    effectiveDate: "20 October 2026 — DRAFT — COUNSEL REVIEW REQUIRED",
+    shortLabel: "Privacy",
+    title: "Privacy Notice (RA 10173 / Data Privacy Act)",
+    effectiveDate: "Effective 20 October 2026",
     summary:
       "Explains how personal data, profile photos, verification status, and pseudonymous analytics are processed and how to exercise export and deletion rights.",
     sections: [
@@ -62,7 +65,7 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
       },
       {
         heading: "2. Liveness Verification Without Raw Biometric Retention",
-        body: "Verification requests record only provider status outcomes (not_started, pending, verified, failed, requires_review) without retaining raw selfie images or biometric templates.",
+        body: "Verification records only whether a check is not started, in progress, verified, unsuccessful, or under review, without retaining raw selfie images or biometric templates.",
       },
       {
         heading: "3. Self-Service Export & Account Deletion",
@@ -72,8 +75,9 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
   },
   "community-standards": {
     slug: "community-standards",
-    title: "Community Standards & Safety Guidelines (Draft)",
-    effectiveDate: "20 October 2026 — DRAFT — COUNSEL REVIEW REQUIRED",
+    shortLabel: "Community standards",
+    title: "Community Standards & Safety Guidelines",
+    effectiveDate: "Effective 20 October 2026",
     summary:
       "Sets clear rules against harassment, financial solicitation/romance scams, impersonation, non-consensual content, and underage use.",
     sections: [
@@ -89,8 +93,9 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
   },
   "complaints-handling": {
     slug: "complaints-handling",
-    title: "Safety Help & Appeals (Draft)",
-    effectiveDate: "20 October 2026 — DRAFT — COUNSEL REVIEW REQUIRED",
+    shortLabel: "Help & appeals",
+    title: "Safety Help & Appeals",
+    effectiveDate: "Effective 20 October 2026",
     summary: "How to report a safety concern or appeal a moderation decision.",
     sections: [
       {
@@ -106,8 +111,9 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
   },
   "refund-policy": {
     slug: "refund-policy",
-    title: "Subscription, Renewal & Cancellation Disclosures (Draft)",
-    effectiveDate: "20 October 2026 — DRAFT — COUNSEL REVIEW REQUIRED",
+    shortLabel: "Subscriptions",
+    title: "Subscription, Renewal & Cancellation Disclosures",
+    effectiveDate: "Effective 20 October 2026",
     summary:
       "Details monthly billing terms for Humbble Reserve (PH ₱599.00/month, US $29.99/month) and 2-click self-service cancellation.",
     sections: [
@@ -139,7 +145,7 @@ export default function LegalDocumentScreen() {
     <PublicLayout
       testID="scr-03-legal"
       title={doc ? doc.title : "Policy Document"}
-      subtitle="SCR-03 • Public Legal & Policy Viewer"
+      subtitle="Policies & legal information"
       showBack
       fallbackHref="/(public)"
       activeNavId={
@@ -151,7 +157,7 @@ export default function LegalDocumentScreen() {
           <Button
             key={item.slug}
             testID={`scr-03-switch-${item.slug}`}
-            label={item.slug.replace(/-/g, " ")}
+            label={item.shortLabel}
             variant={rawSlug === item.slug ? "primary" : "secondary"}
             size="sm"
             shape="pill"

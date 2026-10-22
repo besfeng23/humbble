@@ -115,7 +115,7 @@ export function PublicLayout({
           ]}
         >
           <Text style={[styles.footerText, { color: palette.textSecondary }]}>
-            Humbble • 18+ Intentional Dating • DRAFT — COUNSEL REVIEW REQUIRED
+            Humbble • 18+ Intentional Dating
           </Text>
           <View style={styles.footerLinks}>
             <Button
