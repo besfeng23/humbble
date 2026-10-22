@@ -18,10 +18,15 @@
     "db:types:check": "bash scripts/db/check-types-drift.sh",
     "db:lint": "bash scripts/db/lint.sh",
     "db:diff": "bash scripts/db/diff.sh",
-    "db:test-photo-upload-limits": "node scripts/db/test-photo-upload-limits.mjs"
+    "db:test-photo-upload-limits": "node scripts/db/test-photo-upload-limits.mjs",
+    "test:functions": "cd supabase/functions/send-push && deno test --node-modules-dir=none --allow-env index.test.ts"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/supabase/functions/"
+    ]
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
@@ -52,7 +57,8 @@
     "react-native-safe-area-context": "4.12.0",
     "react-native-screens": "~4.4.0",
     "react-native-web": "~0.19.13",
-    "react-native-webview": "13.12.5"
+    "react-native-webview": "13.12.5",
+    "expo-notifications": "~0.29.14"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

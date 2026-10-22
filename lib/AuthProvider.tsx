@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from './supabase';
+import { unregisterCurrentPushToken } from './notifications';
 
 interface AuthContextValue {
   session: Session | null;
@@ -77,6 +78,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
     setAuthMessage(null);
     try {
+      // Best-effort token removal prevents a shared device from continuing to
+      // receive the previous account's alerts after sign-out.
+      await unregisterCurrentPushToken();
       if (isSupabaseConfigured) {
         // Client state is cleared immediately above; keep navigation public even if the network fails.
         await supabase.auth.signOut();

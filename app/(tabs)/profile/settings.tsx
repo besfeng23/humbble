@@ -14,7 +14,6 @@ export default function PrivacyAndSafetySettingsScreen() {
   const router = useRouter();
   const scheme = useColorScheme() ?? "light";
   const palette = Colors[scheme];
-  const [pushEnabled, setPushEnabled] = useState(true);
   const [analyticsConsent, setAnalyticsConsent] = useState(false);
   const [incognitoEnabled, setIncognitoEnabled] = useState(false);
   const [status, setStatus] = useState<FormStatus>("idle");
@@ -30,6 +29,7 @@ export default function PrivacyAndSafetySettingsScreen() {
       subtitle="SCR-18 • Consent Controls & Block Manager"
       fallbackHref="/(tabs)/profile"
       activeNavId="settings-main"
+      fadeEdge
     >
       <FormStateView
         testID="scr-18-form-state"
@@ -38,8 +38,8 @@ export default function PrivacyAndSafetySettingsScreen() {
         successTitle="Preferences saved"
         successMessage={
           analyticsConsent
-            ? "Pseudonymous analytics enabled. Notification settings updated."
-            : "PostHog analytics capture disabled. Notification settings updated."
+            ? "Pseudonymous analytics enabled."
+            : "PostHog analytics capture disabled."
         }
         failureTitle="Could not update settings"
         failureMessage="Network error while saving settings."
@@ -49,22 +49,10 @@ export default function PrivacyAndSafetySettingsScreen() {
           <View style={styles.section}>
             <View style={styles.switchRow}>
               <View style={styles.switchInfo}>
-                <Text style={[styles.label, { color: palette.text }]}>
-                  Match & Message Push Notifications
-                </Text>
-                <Text
-                  style={[styles.sublabel, { color: palette.textSecondary }]}
-                >
-                  Alerts for new mutual matches and messages (message text is never included in push payloads).
-                </Text>
+                <Text style={[styles.label, { color: palette.text }]}>Push notifications</Text>
+                <Text style={[styles.sublabel, { color: palette.textSecondary }]}>Choose alerts for mutual matches and new messages.</Text>
               </View>
-              <Switch
-                testID="scr-18-push-switch"
-                accessibilityRole="switch"
-                accessibilityLabel="Match and Message Push Notifications"
-                value={pushEnabled}
-                onValueChange={setPushEnabled}
-              />
+              <Button testID="scr-18-notification-settings-btn" label="Manage" variant="secondary" size="sm" onPress={() => router.push("/(tabs)/profile/notifications" as any)} />
             </View>
 
             <View style={styles.switchRow}>

@@ -407,6 +407,150 @@ export type Database = {
           },
         ]
       }
+      notification_deliveries: {
+        Row: {
+          job_id: number
+          last_error_code: string | null
+          status: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          job_id: number
+          last_error_code?: string | null
+          status: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          job_id?: number
+          last_error_code?: string | null
+          status?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "notification_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_jobs: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          dedupe_key: string
+          id: number
+          last_error_code: string | null
+          locked_at: string | null
+          match_id: string | null
+          message_id: string | null
+          next_attempt_at: string
+          notification_type: string
+          recipient_id: string
+          retry_count: number
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          dedupe_key: string
+          id?: never
+          last_error_code?: string | null
+          locked_at?: string | null
+          match_id?: string | null
+          message_id?: string | null
+          next_attempt_at?: string
+          notification_type: string
+          recipient_id: string
+          retry_count?: number
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          dedupe_key?: string
+          id?: never
+          last_error_code?: string | null
+          locked_at?: string | null
+          match_id?: string | null
+          message_id?: string | null
+          next_attempt_at?: string
+          notification_type?: string
+          recipient_id?: string
+          retry_count?: number
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_jobs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_jobs_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_jobs_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_jobs_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          matches_enabled: boolean
+          messages_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          matches_enabled?: boolean
+          messages_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          matches_enabled?: boolean
+          messages_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_events: {
         Row: {
           amount: number | null
@@ -626,6 +770,41 @@ export type Database = {
           verification_status?: Database["public"]["Enums"]["verification_state"]
         }
         Relationships: []
+      }
+      push_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reports: {
         Row: {
@@ -870,6 +1049,17 @@ export type Database = {
     }
     Functions: {
       block_user: { Args: { p_target_id: string }; Returns: string }
+      claim_notification_jobs: {
+        Args: { p_limit?: number }
+        Returns: {
+          conversation_id: string
+          id: number
+          match_id: string
+          notification_type: string
+          recipient_id: string
+          retry_count: number
+        }[]
+      }
       get_conversation_list: {
         Args: never
         Returns: {
@@ -923,6 +1113,10 @@ export type Database = {
           swipe_id: string
         }[]
       }
+      register_push_token: {
+        Args: { p_platform: string; p_token: string }
+        Returns: string
+      }
       request_privacy_action: {
         Args: {
           p_idempotency_key: string
@@ -956,6 +1150,7 @@ export type Database = {
       }
       unblock_user: { Args: { p_target_id: string }; Returns: boolean }
       unmatch: { Args: { p_target_id: string }; Returns: boolean }
+      unregister_push_token: { Args: { p_token: string }; Returns: boolean }
     }
     Enums: {
       consent_choice: "granted" | "denied" | "withdrawn"

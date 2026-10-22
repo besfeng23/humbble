@@ -9,6 +9,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/lib/AuthProvider';
 import { catchUpMessages, loadConversationList, loadMessages, sendMessage, validateMessage, type ChatMessage, type ConversationSummary, type MessageCursor } from '@/lib/messaging';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { setViewingConversation } from '@/lib/notificationFocus';
 
 function makeClientMessageId(): string {
   // UUID v4 shape generated locally; the server's unique key makes retries idempotent.
@@ -49,6 +50,8 @@ export default function ChatScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
+  // While this chat is open, foreground alerts for it are suppressed.
+  useEffect(() => (conversationId ? setViewingConversation(conversationId) : undefined), [conversationId]);
   const newestCursor = useCallback((): MessageCursor | null => {
     const newest = messagesRef.current[messagesRef.current.length - 1];
     return newest ? { created_at: newest.created_at, id: newest.id } : null;
