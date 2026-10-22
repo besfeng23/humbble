@@ -15,8 +15,10 @@ Entitlement (`public.entitlements`, key `premium`) is granted only by `billing_a
 Refund/reversal revokes; suspended/expired deactivate.
 
 ## Server-only env vars (never `EXPO_PUBLIC_*`, never committed or logged)
-`PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_ENV=sandbox`, `PAYPAL_PLAN_ID_PH`, `PAYPAL_PLAN_ID_US`,
-optional `BILLING_ENABLE_US=true` (US US$29.99 plan; also needs `billing_plans.is_enabled`), `BILLING_RETURN_URL`, `BILLING_CANCEL_URL`. Set with `supabase secrets set` on the staging project only after approval.
+`PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_ENV=sandbox`, `BILLING_RETURN_URL`, `BILLING_CANCEL_URL`,
+and one PayPal plan ID per currency: `PAYPAL_PLAN_ID_PHP`, `PAYPAL_PLAN_ID_USD`, `PAYPAL_PLAN_ID_EUR`, `PAYPAL_PLAN_ID_GBP`,
+`PAYPAL_PLAN_ID_SEK`, `PAYPAL_PLAN_ID_NOK`, `PAYPAL_PLAN_ID_CAD`, `PAYPAL_PLAN_ID_AUD`, `PAYPAL_PLAN_ID_NZD`
+(each PayPal plan must be created in that currency at exactly the `billing_plans.amount`; a currency without a plan ID returns `plan_not_configured`). Set with `supabase secrets set` on the staging project only after approval.
 
 ## Remaining (not done in this PR)
 1. Create sandbox app + two monthly plans (PHP 599.00, USD 29.99) in PayPal developer dashboard.
@@ -26,3 +28,16 @@ optional `BILLING_ENABLE_US=true` (US US$29.99 plan; also needs `billing_plans.i
 
 ## Rollback
 See the ROLLBACK block at the end of the migration. Disable checkout first; never delete ledger/audit rows.
+
+## Local market pricing (OWN-PRICE-01, Oct 23 2026)
+
+Markets are controlled only by DB flags (no env gate; `BILLING_ENABLE_US` is gone):
+
+- `public.billing_plans` — one row per currency (`currency`, `amount`, `is_enabled`). Prices: PHP 599, USD 29.99, EUR 27.99, GBP 23.99, SEK 299, NOK 329, CAD 39.99, AUD 44.99, NZD 49.99.
+- `public.billing_markets` — country code → plan (`is_enabled`). Service-role only; clients can't read it.
+- The client sends only an advisory 2-letter country hint (device locale region). `get_billing_plan` accepts it only if it is an enabled
+  allowlisted country, otherwise falls back to PH. Amount/currency always come from the DB and are re-checked on every webhook readback.
+
+To change a price: add a new migration that `UPDATE`s `billing_plans.amount` **and** create a new PayPal plan at that price, then update
+`PAYPAL_PLAN_ID_<CUR>`. Existing subscribers stay on their PayPal plan; readbacks for the old amount will no longer match, so migrate them deliberately.
+To switch a country off: `UPDATE public.billing_markets SET is_enabled = false WHERE country_code = 'XX'` (in a migration).

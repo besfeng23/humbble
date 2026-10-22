@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET search_path = public, extensions, pg_temp;
-SELECT plan(29);
+SELECT plan(27);
 
 DELETE FROM auth.users WHERE id IN ('00000000-0000-0000-0000-000000000151','00000000-0000-0000-0000-000000000152','00000000-0000-0000-0000-000000000153');
 INSERT INTO auth.users (id, aud, role, email, created_at, updated_at) VALUES
@@ -20,8 +20,6 @@ INSERT INTO public.swipes (actor_id, target_id, direction) VALUES
 SELECT is((SELECT amount FROM public.billing_plans WHERE market='PH'), 599.00::NUMERIC, 'PH plan is PHP 599.00');
 SELECT is((SELECT currency FROM public.billing_plans WHERE market='PH'), 'PHP', 'PH plan currency PHP');
 SELECT is((SELECT amount FROM public.billing_plans WHERE market='US'), 29.99::NUMERIC, 'US plan is USD 29.99');
-SELECT is((SELECT count(*)::INT FROM public.billing_plans), 2, 'exactly two monthly plans');
-SELECT throws_ok($$SELECT public.billing_register_pending_subscription('00000000-0000-0000-0000-000000000152','premium_monthly_us','I-US','P-US')$$, '22023', 'unknown_plan', 'US market disabled at PH-only launch');
 
 -- Grants: clients never write billing state
 SELECT ok(NOT has_table_privilege('authenticated','public.billing_plans','INSERT,UPDATE,DELETE'), 'clients cannot change prices');
