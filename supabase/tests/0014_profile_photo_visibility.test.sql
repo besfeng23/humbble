@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET search_path = public, extensions, pg_temp;
-SELECT plan(11);
+SELECT plan(14);
 
 INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 SELECT ('00000000-0000-0000-0000-' || pg_catalog.lpad(g::TEXT, 12, '0'))::UUID,
@@ -10,7 +10,7 @@ SELECT ('00000000-0000-0000-0000-' || pg_catalog.lpad(g::TEXT, 12, '0'))::UUID,
 ON CONFLICT (id) DO NOTHING;
 
 -- 401 verified viewer, 402 visible owner, 403 incognito owner, 404 blocked owner,
--- 405 unverified viewer, 406 incognito owner matched with 401, 407 suspended owner, 408 reported owner.
+-- 405 unverified (complete) viewer, 406 incognito owner matched with 401, 407 suspended owner, 408 reported owner.
 INSERT INTO public.profiles (id, display_name, birth_date, city_region, relationship_intention, verification_status, is_discoverable, is_incognito, is_suspended)
 VALUES
 ('00000000-0000-0000-0000-000000000401','Viewer','1990-01-01','Manila','long_term_dating','verified',true,false,false),
@@ -29,6 +29,15 @@ SELECT ('00000000-0000-0000-0000-' || pg_catalog.lpad(g::TEXT, 12, '0'))::UUID,
        '00000000-0000-0000-0000-' || pg_catalog.lpad(g::TEXT, 12, '0') || '/a.jpg', 0
   FROM pg_catalog.generate_series(401, 408) AS series(g)
 ON CONFLICT (storage_path) DO NOTHING;
+-- OWN-OPEN-01: discovery visibility requires a complete profile (2 photos, 3 prompts).
+INSERT INTO public.profile_photos (user_id, storage_path, position)
+SELECT ('00000000-0000-0000-0000-' || pg_catalog.lpad(g::TEXT, 12, '0'))::UUID,
+       '00000000-0000-0000-0000-' || pg_catalog.lpad(g::TEXT, 12, '0') || '/b.jpg', 1
+  FROM pg_catalog.generate_series(401, 408) AS series(g)
+ON CONFLICT (storage_path) DO NOTHING;
+UPDATE public.profiles
+   SET prompts = '[{"key":"weekend","question":"q","answer":"a"},{"key":"values","question":"q","answer":"b"},{"key":"relationship_goal","question":"q","answer":"c"}]'::JSONB
+ WHERE id BETWEEN '00000000-0000-0000-0000-000000000401'::UUID AND '00000000-0000-0000-0000-000000000408'::UUID;
 INSERT INTO storage.objects (bucket_id, name, owner_id, metadata)
 SELECT 'profile_photos', ph.storage_path, ph.user_id::TEXT, '{"mimetype":"image/jpeg","size":1024}'::JSONB
   FROM public.profile_photos ph
@@ -58,8 +67,21 @@ RESET ROLE;
 
 SET LOCAL ROLE authenticated;
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000405","role":"authenticated"}';
-SELECT is((SELECT count(*)::INT FROM storage.objects WHERE name='00000000-0000-0000-0000-000000000402/a.jpg'),0,'unverified viewer cannot read other member photos');
+SELECT is((SELECT count(*)::INT FROM storage.objects WHERE name='00000000-0000-0000-0000-000000000402/a.jpg'),1,'complete unverified viewer can read a discoverable member photo (OWN-OPEN-01)');
 SELECT is((SELECT count(*)::INT FROM storage.objects WHERE name='00000000-0000-0000-0000-000000000405/a.jpg'),1,'owner still reads own photo');
+RESET ROLE;
+
+-- Completeness still gates discovery visibility for the viewer and the owner.
+UPDATE public.profiles SET prompts = '[]'::JSONB WHERE id = '00000000-0000-0000-0000-000000000405';
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000405","role":"authenticated"}';
+SELECT is((SELECT count(*)::INT FROM storage.objects WHERE name='00000000-0000-0000-0000-000000000402/a.jpg'),0,'incomplete viewer cannot read other member photos');
+RESET ROLE;
+DELETE FROM public.profile_photos WHERE storage_path = '00000000-0000-0000-0000-000000000402/b.jpg';
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000401","role":"authenticated"}';
+SELECT is((SELECT count(*)::INT FROM storage.objects WHERE name='00000000-0000-0000-0000-000000000402/a.jpg'),0,'incomplete owner photo is hidden from discovery viewers');
+SELECT is((SELECT count(*)::INT FROM storage.objects WHERE name='00000000-0000-0000-0000-000000000406/a.jpg'),1,'active match photo stays readable');
 RESET ROLE;
 
 SET LOCAL ROLE anon;

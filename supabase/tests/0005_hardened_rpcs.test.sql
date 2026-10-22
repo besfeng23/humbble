@@ -37,6 +37,9 @@ UPDATE public.profiles SET created_at = pg_catalog.now() + INTERVAL '1 second'
  WHERE id = '00000000-0000-0000-0000-000000000052';
 UPDATE public.profiles SET birth_date = DATE '1970-01-01'
  WHERE id = '00000000-0000-0000-0000-000000000060';
+-- OWN-OPEN-01: keep unverified-but-complete candidate 0053 on the first feed page.
+UPDATE public.profiles SET created_at = pg_catalog.now() + INTERVAL '2 seconds'
+ WHERE id = '00000000-0000-0000-0000-000000000053';
 
 INSERT INTO public.user_preferences (user_id, min_age, max_age, max_distance_km)
 VALUES ('00000000-0000-0000-0000-000000000051', 30, 40, 100);
@@ -148,7 +151,8 @@ SELECT ok(NOT EXISTS (
 SELECT is_empty($$SELECT profile_id FROM public.get_discovery_feed() WHERE profile_id = '00000000-0000-0000-0000-000000000051'$$, 'feed excludes caller');
 SELECT is((SELECT age FROM public.get_discovery_feed() WHERE profile_id = '00000000-0000-0000-0000-000000000052'), 34, 'feed computes age server-side');
 SELECT is((SELECT primary_photo_path::TEXT COLLATE "C" FROM public.get_discovery_feed() WHERE profile_id = '00000000-0000-0000-0000-000000000052'), '00000000-0000-0000-0000-000000000052/p205-primary.jpg'::TEXT COLLATE "C", 'feed returns only photo object path projection');
-SELECT is_empty($$SELECT profile_id FROM public.get_discovery_feed() WHERE profile_id = '00000000-0000-0000-0000-000000000053'$$, 'feed excludes unverified candidates');
+-- OWN-OPEN-01: complete 18+ profiles are discoverable without ID verification.
+SELECT isnt_empty($$SELECT profile_id FROM public.get_discovery_feed() WHERE profile_id = '00000000-0000-0000-0000-000000000053'$$, 'feed includes complete unverified candidates');
 SELECT is_empty($$SELECT profile_id FROM public.get_discovery_feed() WHERE profile_id = '00000000-0000-0000-0000-000000000054'$$, 'feed excludes undiscoverable candidates');
 SELECT is_empty($$SELECT profile_id FROM public.get_discovery_feed() WHERE profile_id = '00000000-0000-0000-0000-000000000055'$$, 'feed excludes suspended candidates');
 SELECT is_empty($$SELECT profile_id FROM public.get_discovery_feed() WHERE profile_id = '00000000-0000-0000-0000-000000000056'$$, 'feed excludes under-age candidates defensively');
@@ -186,7 +190,7 @@ RESET "request.jwt.claims";
 UPDATE public.profiles SET verification_status = 'not_started' WHERE id = '00000000-0000-0000-0000-000000000051';
 SET LOCAL ROLE authenticated;
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000051","role":"authenticated"}';
-SELECT throws_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-000000000061', 'like')$$, '42501', 'actor_not_eligible', 'unverified actor cannot swipe');
+SELECT lives_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-000000000119', 'pass')$$, 'complete unverified actor can swipe (OWN-OPEN-01)');
 RESET ROLE;
 UPDATE public.profiles SET verification_status = 'verified', is_discoverable = FALSE WHERE id = '00000000-0000-0000-0000-000000000051';
 SET LOCAL ROLE authenticated;
@@ -201,7 +205,7 @@ RESET ROLE;
 UPDATE public.profiles SET is_suspended = FALSE WHERE id = '00000000-0000-0000-0000-000000000051';
 SET LOCAL ROLE authenticated;
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000051","role":"authenticated"}';
-SELECT throws_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-000000000053', 'like')$$, '42501', 'target_not_eligible', 'unverified target cannot be swiped');
+SELECT lives_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-000000000053', 'pass')$$, 'complete unverified target can be swiped (OWN-OPEN-01)');
 SELECT throws_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-000000000054', 'like')$$, '42501', 'target_not_eligible', 'undiscoverable target cannot be swiped');
 SELECT throws_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-000000000055', 'like')$$, '42501', 'target_not_eligible', 'suspended target cannot be swiped');
 SELECT throws_ok($$SELECT * FROM public.record_swipe('00000000-0000-0000-0000-000000000056', 'like')$$, '42501', 'target_not_eligible', 'under-age target cannot be swiped');

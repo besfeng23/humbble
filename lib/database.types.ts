@@ -1211,6 +1211,7 @@ export type Database = {
           city_region: string
           cursor_created_at: string
           display_name: string
+          is_verified: boolean
           primary_photo_path: string
           profile_id: string
           relationship_intention: Database["public"]["Enums"]["relationship_intention"]
