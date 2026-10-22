@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { AuthNotice, AuthPrimaryButton } from '@/components/layout/AuthScreen';
 import { OnboardingLayout } from '@/components/layout';
-import { Button, TextField } from '@/components/ui';
+import { Button, CountryPicker, TextField } from '@/components/ui';
+import { defaultCountryFromLocale, normalizeCountryCode } from '@/lib/countries';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
@@ -17,7 +18,7 @@ import { MAX_PHOTOS, MIN_PHOTOS, PROFILE_PROMPTS, isProfileComplete, toProfilePr
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 type Photo = { id: string; storage_path: string; position: number; signedUrl: string | null };
-type Profile = { display_name: string; birth_date: string; city_region: string | null; relationship_intention: string | null; prompts: Json | null };
+type Profile = { display_name: string; birth_date: string; city_region: string | null; country_code?: string | null; relationship_intention: string | null; prompts: Json | null };
 const EMPTY_ANSWERS: ProfilePromptAnswers = { weekend: '', values: '', relationship_goal: '' };
 const previewAnswers: ProfilePromptAnswers = {
   weekend: 'A slow Sunday with coffee, a good book, and a new place to explore.',
@@ -35,6 +36,7 @@ export default function OnboardingPhotosPromptsScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [answers, setAnswers] = useState<ProfilePromptAnswers>(EMPTY_ANSWERS);
   const [cityRegion, setCityRegion] = useState('');
+  const [country, setCountry] = useState<string | null>(() => defaultCountryFromLocale());
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -74,7 +76,7 @@ export default function OnboardingPhotosPromptsScreen() {
       let serverPrompts: Json | null = null;
       let serverCityRegion: string | null = null;
       try {
-        const { data, error } = await supabase.from('profiles').select('display_name,birth_date,city_region,relationship_intention,prompts').eq('id', user.id).maybeSingle();
+        const { data, error } = await supabase.from('profiles').select('display_name,birth_date,city_region,country_code,relationship_intention,prompts').eq('id', user.id).maybeSingle();
         if (error) throw error;
         if (data) {
           serverPrompts = data.prompts;
@@ -82,6 +84,8 @@ export default function OnboardingPhotosPromptsScreen() {
           if (active) {
             setProfile(data as Profile);
             setCityRegion(data.city_region ?? '');
+            const saved = normalizeCountryCode(data.country_code);
+            if (saved) setCountry(saved);
           }
         } else if (active) {
           setNotice('Complete the previous onboarding steps before saving your profile.');
@@ -184,7 +188,7 @@ export default function OnboardingPhotosPromptsScreen() {
     if (debounceRef.current) { clearTimeout(debounceRef.current); debounceRef.current = null; }
     if (draftSaveRef.current) await draftSaveRef.current;
     setSaving(true); setNotice('');
-    const { error } = await supabase.from('profiles').update({ prompts: toProfilePrompts(answers), city_region: cityRegion.trim() }).eq('id', user.id);
+    const { error } = await supabase.from('profiles').update({ prompts: toProfilePrompts(answers), city_region: cityRegion.trim(), country_code: country }).eq('id', user.id);
     setSaving(false);
     if (error) { setNotice('Could not save your profile. Your draft is preserved locally; please retry.'); return; }
     try { await clearProfileDraft(user.id); } catch { /* successful server save is durable; stale local draft can be replaced next visit */ }
@@ -208,7 +212,8 @@ export default function OnboardingPhotosPromptsScreen() {
       </View>
       <Button testID="photo-add" label={uploading ? 'Uploading photo…' : 'Add photo'} variant="secondary" size="lg" disabled={uploading || saving || previewAllowed || photos.length >= MAX_PHOTOS} onPress={() => void handleAddPhoto()} />
 
-      <TextField testID="profile-city-region" label="City or region" value={cityRegion} onChangeText={changeCityRegion} placeholder="e.g. Manila" required />
+      <TextField testID="profile-city-region" label="City or region" value={cityRegion} onChangeText={changeCityRegion} placeholder="e.g. Stockholm" required />
+      <CountryPicker testID="profile-country" value={country} onChange={setCountry} disabled={saving} />
       {PROFILE_PROMPTS.map((prompt) => <TextField key={prompt.key} testID={`profile-prompt-${prompt.key}`} label={prompt.question} value={answers[prompt.key]} onChangeText={(value) => changeAnswers({ ...answers, [prompt.key]: value })} required />)}
       <Text testID="profile-checklist-city" style={[styles.check, { color: palette.textSecondary }]}> {cityRegion.trim() ? '✓' : '○'} City or region added</Text>
       <Text testID="profile-checklist-prompts" style={[styles.check, { color: palette.textSecondary }]}> {answeredCount === 3 ? '✓' : '○'} {answeredCount}/3 prompts answered</Text>
