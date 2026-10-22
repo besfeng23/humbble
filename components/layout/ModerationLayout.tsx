@@ -42,7 +42,7 @@ export interface ModerationLayoutProps {
 
 export function ModerationLayout({
   title,
-  subtitle = "Trust & Safety Console • Audited RBAC Surface",
+  subtitle = "Trust & Safety moderation",
   fallbackHref = "/(tabs)/profile",
   activeNavId,
   reduceMotion,
@@ -58,7 +58,7 @@ export function ModerationLayout({
   const rightSlot = (
     <Button
       testID={`${testID}-exit-btn`}
-      label="Exit Console"
+      label="Exit moderation"
       variant="secondary"
       size="sm"
       reduceMotion={reduceMotion}

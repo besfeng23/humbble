@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { toFriendlyMessage } from '@/lib/friendlyErrors';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SettingsLayout } from '@/components/layout';
@@ -31,7 +32,7 @@ export default function BlockedUsersScreen() {
     if (busyId) return;
     setBusyId(id); setError('');
     try { await unblockPerson(id); setConfirmId(''); await load(); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Couldn’t unblock. Try again.'); }
+    catch (cause) { setError(toFriendlyMessage(cause, 'Couldn’t unblock. Try again.')); }
     finally { setBusyId(''); }
   };
 
@@ -48,7 +49,7 @@ export default function BlockedUsersScreen() {
         </> : <Pressable testID={`unblock-${item.blocked_id}`} accessibilityRole="button" disabled={Boolean(busyId)} onPress={() => setConfirmId(item.blocked_id)} style={styles.textButton}><Text style={[styles.action, { color: palette.textSecondary }]}>Unblock</Text></Pressable>}
       </View>;
     })}</View>}
-    <Pressable accessibilityRole="link" onPress={() => router.push('/(public)/legal/complaints-handling' as any)} style={styles.help}><Text style={[styles.small, { color: palette.textSecondary }]}>Help & Appeals (draft)</Text></Pressable>
+    <Pressable accessibilityRole="link" onPress={() => router.push('/(public)/legal/complaints-handling' as any)} style={styles.help}><Text style={[styles.small, { color: palette.textSecondary }]}>Help & Appeals</Text></Pressable>
   </SettingsLayout>;
 }
 

@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { toFriendlyMessage } from '@/lib/friendlyErrors';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AuthGuard, ResponsiveNavHeader } from '@/components/layout';
@@ -44,6 +45,8 @@ export default function ChatScreen() {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  // A conversation that cannot be opened shows one clear empty state and no composer.
+  const [unavailable, setUnavailable] = useState(false);
   const [draftError, setDraftError] = useState('');
   const [canLoadOlder, setCanLoadOlder] = useState(false);
   const [clientMessageId, setClientMessageId] = useState(makeClientMessageId);
@@ -83,10 +86,10 @@ export default function ChatScreen() {
     }
     if (!conversationId || !user?.id || !isSupabaseConfigured) {
       setLoading(false);
-      setError('This conversation is unavailable.');
+      setUnavailable(true);
       return;
     }
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setUnavailable(false);
     void loadMessages(conversationId).then(page => {
       if (!active) return;
       setMessages(current => mergeMessages(current, page.messages));
@@ -136,13 +139,18 @@ export default function ChatScreen() {
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
     } catch (err) {
       // Keep clientMessageId unchanged: retrying the same send cannot create a duplicate.
-      setDraftError(err instanceof Error ? err.message : 'Message could not be sent.');
+      setDraftError(toFriendlyMessage(err, 'Message could not be sent.'));
     } finally { setSending(false); }
   };
 
   return <AuthGuard mode="protected" redirectTo="/auth/signin" testID="chatscreen-guard">
     <KeyboardAvoidingView testID="scr-16-chatscreen" style={[styles.root, { backgroundColor: palette.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ResponsiveNavHeader fadeEdge testID="scr-16-header" title={conversation?.counterpartName || 'Conversation'} subtitle="Free messaging for mutual matches" showBack fallbackHref="/(tabs)/(chats)" rightSlot={<Pressable testID="scr-16-shield-btn" accessibilityRole="button" accessibilityLabel="Safety: block, report, or unmatch" hitSlop={8} onPress={() => router.push({ pathname: '/(safety)/report-modal', params: { targetId: conversation?.counterpartId ?? '', targetName: conversation?.counterpartName ?? 'this person', source: 'chat', matched: '1' } } as any)}><Text style={styles.safetyLink}>Safety</Text></Pressable>} />
+      {unavailable ? <View testID="chat-unavailable" style={styles.center}>
+        <Text accessibilityRole="header" style={[styles.unavailableTitle, { color: palette.text }]}>Conversation not found</Text>
+        <Text style={[styles.empty, { color: palette.textSecondary, marginTop: 0 }]}>Open a conversation from your chats to keep talking.</Text>
+        <Pressable testID="chat-unavailable-back" accessibilityRole="button" onPress={() => router.replace('/(tabs)/(chats)' as any)} style={styles.send}><Text style={styles.sendText}>Go to chats</Text></Pressable>
+      </View> : <>
       {error ? <Pressable onPress={() => void catchUp()} style={styles.errorBanner}><Text style={styles.errorText}>{error}</Text><Text style={styles.retry}>Retry</Text></Pressable> : null}
       {loading ? <View style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Loading messages…</Text></View> :
         <ScrollView ref={scrollRef} testID="chat-messages" style={styles.messages} contentContainerStyle={styles.messagesContent}>
@@ -156,6 +164,7 @@ export default function ChatScreen() {
         <Pressable testID="scr-16-send-btn" accessibilityRole="button" accessibilityLabel="Send message" disabled={sending || !draft.trim()} onPress={() => void onSend()} style={[styles.send, (sending || !draft.trim()) && styles.sendDisabled]}><Text style={styles.sendText}>{sending ? 'Sending' : 'Send'}</Text></Pressable>
         {draftError ? <Text accessibilityRole="alert" testID="chat-send-error" style={styles.draftError}>{draftError}</Text> : null}
       </View>
+      </>}
     </KeyboardAvoidingView>
   </AuthGuard>;
 }
@@ -168,5 +177,5 @@ const styles = StyleSheet.create({
   sendDisabled: { opacity: 0.45 }, sendText: { color: '#FFFFFF', fontWeight: '700' }, safetyLink: { color: '#9A702C', fontWeight: '700', padding: 10 },
   older: { alignSelf: 'center', padding: 10 }, olderText: { color: '#9A702C', fontWeight: '600' },
   errorBanner: { padding: 10, backgroundColor: '#FFF2D9', flexDirection: 'row', justifyContent: 'space-between' }, errorText: { color: '#5D3B0A', flex: 1 }, retry: { color: '#5D3B0A', fontWeight: '700' },
-  draftError: { color: '#B42318', width: '100%', fontSize: 12 }, 
+  draftError: { color: '#B42318', width: '100%', fontSize: 12 }, unavailableTitle: { fontSize: 18, fontWeight: '700' },
 });

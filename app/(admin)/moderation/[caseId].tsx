@@ -35,7 +35,7 @@ export default function ModerationCaseDetailScreen() {
     <ModerationLayout
       testID="scr-24-moderation-case"
       title={`Moderation Case: ${caseId}`}
-      subtitle="SCR-24 • Audited Enforcement Inspector"
+      subtitle="Case details and actions"
       fallbackHref="/(admin)/moderation"
       activeNavId="moderation-sample-case"
     >

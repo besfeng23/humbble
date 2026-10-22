@@ -76,8 +76,15 @@ describe('enumeration-safe, unconfigured auth UI', () => {
   test('verification screen states provider unavailability without a success outcome', () => {
     const tree = mount(<OnboardingVerifyScreen />);
     const visible = tree.root.findAllByType(Text).map((node) => textContent(node.children)).join(' ');
-    expect(visible).toContain('Verification not available yet.');
+    expect(visible).toContain('Verification coming soon');
     expect(visible).not.toMatch(/verified successfully|verification complete|success/i);
+  });
+  test('without a provider, verification never fakes a pending state and offers no Check status', () => {
+    const tree = mount(<OnboardingVerifyScreen />);
+    const visible = tree.root.findAllByType(Text).map((node) => textContent(node.children)).join(' ');
+    expect(visible).not.toMatch(/pending/i);
+    expect(tree.root.findAll((node) => node.props.testID === 'verification-check-status')).toHaveLength(0);
+    expect(tree.root.findAll((node) => node.props.testID === 'verification-coming-soon').length).toBeGreaterThan(0);
   });
   test('wrong credentials and unknown accounts map to the same message; unconfirmed email is distinct', () => {
     expect(getSignInError({ message: 'Invalid login credentials' })).toBe('Email or password is incorrect');

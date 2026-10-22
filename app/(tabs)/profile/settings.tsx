@@ -26,7 +26,7 @@ export default function PrivacyAndSafetySettingsScreen() {
     <SettingsLayout
       testID="scr-18-settings"
       title="Privacy, Notification & Safety Settings"
-      subtitle="SCR-18 • Consent Controls & Block Manager"
+      subtitle="Privacy, consent & blocked people"
       fallbackHref="/(tabs)/profile"
       activeNavId="settings-main"
       fadeEdge
@@ -119,7 +119,7 @@ export default function PrivacyAndSafetySettingsScreen() {
           <View style={styles.linksRow}>
             <Button
               testID="scr-18-to-privacy-delete"
-              label="Data Export & Account Deletion (SCR-19)"
+              label="Data Export & Account Deletion"
               variant="danger"
               size="sm"
               onPress={() =>
@@ -128,7 +128,7 @@ export default function PrivacyAndSafetySettingsScreen() {
             />
             <Button
               testID="scr-18-to-legal"
-              label="Read Privacy Notice (SCR-03)"
+              label="Read Privacy Notice"
               variant="secondary"
               size="sm"
               onPress={() =>

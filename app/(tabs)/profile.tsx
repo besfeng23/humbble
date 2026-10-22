@@ -125,11 +125,11 @@ const Profile = () => {
           <Pressable
             testID="profile-link-moderation"
             accessibilityRole="button"
-            accessibilityLabel="Trust and Safety Moderation Console"
+            accessibilityLabel="Moderation"
             onPress={() => router.push("/(admin)/moderation" as any)}
             style={styles.quickNavPill}
           >
-            <Text style={styles.quickNavText}>T&S Console</Text>
+            <Text style={styles.quickNavText}>Moderation</Text>
           </Pressable>
         </View>
 
