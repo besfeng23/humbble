@@ -1,11 +1,19 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { PublicLayout } from "@/components/layout";
 import { EmptyState } from "@/components/state";
 import { Button, Card } from "@/components/ui";
 import { Colors } from "@/constants/Colors";
+import {
+  LEGAL_ENTITY_ADDRESS,
+  LEGAL_ENTITY_NAME,
+  SUPPORT_EMAIL,
+  SUPPORT_EMAIL_URL,
+  SUPPORT_PHONE_DISPLAY,
+  SUPPORT_PHONE_URL,
+} from "@/constants/Support";
 import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -16,6 +24,7 @@ interface LegalDocumentContent {
   effectiveDate: string;
   summary: string;
   sections: { heading: string; body: string }[];
+  showSupportContact?: boolean;
 }
 
 const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
@@ -82,8 +91,7 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
     slug: "complaints-handling",
     title: "Safety Help & Appeals (Draft)",
     effectiveDate: "20 October 2026 — DRAFT — COUNSEL REVIEW REQUIRED",
-    summary:
-      "Guidance for reporting safety concerns and understanding the moderation appeal path. This page is a draft; a separate support inbox is not configured in this build.",
+    summary: "How to report a safety concern or appeal a moderation decision.",
     sections: [
       {
         heading: "1. Report a safety concern",
@@ -91,9 +99,10 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
       },
       {
         heading: "2. Appeal a moderation decision",
-        body: "If Humbble sends you a moderation or account-restriction notice, follow the instructions in that notice and keep its case reference. A dedicated in-app appeal form and support contact are not configured in this build; this draft must be reviewed and completed before launch.",
+        body: "Contact us below with the case reference from your moderation or account-restriction notice.",
       },
     ],
+    showSupportContact: true,
   },
   "refund-policy": {
     slug: "refund-policy",
@@ -146,7 +155,9 @@ export default function LegalDocumentScreen() {
             variant={rawSlug === item.slug ? "primary" : "secondary"}
             size="sm"
             shape="pill"
-            onPress={() => router.replace(`/(public)/legal/${item.slug}` as any)}
+            onPress={() =>
+              router.replace(`/(public)/legal/${item.slug}` as any)
+            }
           />
         ))}
       </View>
@@ -195,6 +206,40 @@ export default function LegalDocumentScreen() {
                 </Text>
               </View>
             ))}
+
+            {doc.showSupportContact ? (
+              <View testID="scr-03-support-contact" style={styles.contactBlock}>
+                <Pressable
+                  testID="scr-03-support-email"
+                  accessibilityRole="link"
+                  accessibilityLabel={`Email support at ${SUPPORT_EMAIL}`}
+                  onPress={() => Linking.openURL(SUPPORT_EMAIL_URL)}
+                  style={styles.contactRow}
+                >
+                  <Text style={[styles.contactLink, { color: palette.tint }]}>
+                    {SUPPORT_EMAIL}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  testID="scr-03-support-phone"
+                  accessibilityRole="link"
+                  accessibilityLabel={`Call support at ${SUPPORT_PHONE_DISPLAY}`}
+                  onPress={() => Linking.openURL(SUPPORT_PHONE_URL)}
+                  style={styles.contactRow}
+                >
+                  <Text style={[styles.contactLink, { color: palette.tint }]}>
+                    {SUPPORT_PHONE_DISPLAY}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            <Text
+              testID="scr-03-operator"
+              style={[styles.operator, { color: palette.textSecondary }]}
+            >
+              {`Operated by ${LEGAL_ENTITY_NAME}, ${LEGAL_ENTITY_ADDRESS}`}
+            </Text>
           </View>
         </Card>
       )}
@@ -228,5 +273,19 @@ const styles = StyleSheet.create({
   },
   sectionText: {
     ...Typography.bodySmall,
+  },
+  contactBlock: {
+    gap: Spacing.xs,
+  },
+  contactRow: {
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  contactLink: {
+    ...Typography.body,
+    textDecorationLine: "underline",
+  },
+  operator: {
+    ...Typography.caption,
   },
 });
