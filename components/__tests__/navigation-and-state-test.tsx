@@ -912,3 +912,51 @@ describe("PR P1-03 — Route Smoke Tests & No Dead Buttons Verification (SCR-01.
     }
   });
 });
+
+describe("SCR-03 Help & Appeals support contact", () => {
+  it("shows tappable support email and phone plus operator details", async () => {
+    const { Linking } = require("react-native");
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    mockLocalSearchParams = { slug: "complaints-handling" };
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<LegalDocumentScreen />);
+    });
+    const byId = (id: string) =>
+      tree.root.find(
+        (n) => n.props.testID === id && typeof n.props.onPress === "function",
+      );
+    await act(async () => {
+      byId("scr-03-support-email").props.onPress();
+      byId("scr-03-support-phone").props.onPress();
+    });
+    expect(openURL).toHaveBeenCalledWith(
+      "mailto:markjohnsonbanatao888@gmail.com",
+    );
+    expect(openURL).toHaveBeenCalledWith("tel:+639681841001");
+    const operator = tree.root.find(
+      (n) => n.props.testID === "scr-03-operator" && n.type === Text,
+    );
+    expect(operator.props.children).toContain("JDR Blast Media");
+    expect(operator.props.children).toContain("Muntinlupa City");
+    expect(JSON.stringify(tree.toJSON())).not.toMatch(
+      /support inbox is not configured/,
+    );
+    openURL.mockRestore();
+    mockLocalSearchParams = {};
+    await act(async () => tree.unmount());
+  });
+
+  it("hides the contact block on other policy documents", async () => {
+    mockLocalSearchParams = { slug: "terms-of-service" };
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<LegalDocumentScreen />);
+    });
+    expect(
+      tree.root.findAll((n) => n.props.testID === "scr-03-support-contact"),
+    ).toHaveLength(0);
+    mockLocalSearchParams = {};
+    await act(async () => tree.unmount());
+  });
+});

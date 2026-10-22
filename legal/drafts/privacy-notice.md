@@ -10,11 +10,12 @@ DRAFT—COUNSEL REVIEW REQUIRED
 
 ---
 
-## 1. Personal Information Controller (`PIC`) & Data Protection Officer (`UNRESOLVED — VERIFICATION REQUIRED`)
+## 1. Personal Information Controller (`PIC`) & Data Protection Officer (`DPO PENDING — COUNSEL REVIEW REQUIRED`)
 
-1.1 **Unresolved PIC Identity:** Under Republic Act No. 10173, the Personal Information Controller (`PIC`) responsible for personal data processed through **Humbble** (and technology brand **Banatao Systems**) is currently tracked as an **unresolved open dependency** (`DEP-LEGAL-02`, `DEP-LEGAL-03`):
-- **Proposed Operator / PIC (Subject to Verification):** `[PROPOSED: RED-APPLE TECHNOLOGY AND DIGITAL SERVICES — LEGAL IDENTITY, REGISTRATION DETAILS, AND AUTHORITY UNVERIFIED]`
-- **Registered Address:** `[TBD UPON VERIFICATION BY OWNER & COUNSEL]`
+1.1 **PIC Identity:** Under Republic Act No. 10173, the Personal Information Controller (`PIC`) responsible for personal data processed through **Humbble** (technology brand **Banatao Systems**, which is not a legal entity) is:
+- **Operator / PIC:** JDR Blast Media
+- **Registered Address:** 3409 Spectrum Midway, Filinvest City, Alabang, Muntinlupa City, Metro Manila 1781, Philippines
+- **Privacy & Support Contact (until a DPO is appointed):** [markjohnsonbanatao888@gmail.com](mailto:markjohnsonbanatao888@gmail.com) · [+639681841001](tel:+639681841001)
 - **Designated Data Protection Officer (DPO):** `[UNAPPOINTED — OWNER TO APPOINT DPO PRIOR TO REAL-USER PILOT]`
 - **DPO Email & Contact Channel:** `[TBD UPON DPO APPOINTMENT]`
 - **NPC Registration Status:** `[TBD — COUNSEL TO ASSESS MANDATORY NPC REGISTRATION THRESHOLDS UNDER NPC CIRCULAR NO. 2022-04]`

@@ -10,15 +10,15 @@ DRAFT—COUNSEL REVIEW REQUIRED
 
 ---
 
-## 1. Contracting Entity & Service Brand (`UNRESOLVED — COUNSEL VERIFICATION REQUIRED`)
+## 1. Contracting Entity & Service Brand (`OWNER-PROVIDED — COUNSEL REVIEW REQUIRED`)
 
-1.1 **Proposed Operator Placeholder:** These Terms of Service ("Terms") are drafted for the proposed operator **`[PROPOSED OPERATOR: RED-APPLE TECHNOLOGY AND DIGITAL SERVICES — LEGAL IDENTITY, DTI/SEC REGISTRATION, BIR TIN, REGISTERED ADDRESS, AND CONTRACTING AUTHORITY UNVERIFIED]`** ("Operator", "we", "us", or "our").  
+1.1 **Operator:** These Terms of Service ("Terms") are between you and **JDR Blast Media**, 3409 Spectrum Midway, Filinvest City, Alabang, Muntinlupa City, Metro Manila 1781, Philippines ("Operator", "we", "us", or "our").  
 1.2 **Product Brand:** **Humbble** (and technology brand **Banatao Systems**) refers to the web and mobile software application and related dating services covered by these Terms.  
-1.3 **Binding Prerequisite:** Neither `RED-APPLE TECHNOLOGY AND DIGITAL SERVICES` nor `Banatao Systems` shall be represented to the public as an established contracting legal entity until the Owner and independent Philippine legal counsel verify its official registration certificates and insert the verified legal name, registration number, and registered principal office address below:
-- **Verified Legal Entity Name:** `[TBD BY OWNER & PHILIPPINE COUNSEL]`
+1.3 **Operator Details:** `Banatao Systems` is a product/technology brand only and is not the contracting legal entity. Registration details remain subject to Owner and Philippine counsel confirmation:
+- **Legal Entity Name:** JDR Blast Media
 - **DTI / SEC Registration No.:** `[TBD BY OWNER & PHILIPPINE COUNSEL]`
-- **Principal Office Address:** `[TBD BY OWNER & PHILIPPINE COUNSEL]`
-- **Official Support & Legal Notice Email:** `[TBD BY OWNER & PHILIPPINE COUNSEL]`
+- **Principal Office Address:** 3409 Spectrum Midway, Filinvest City, Alabang, Muntinlupa City, Metro Manila 1781, Philippines
+- **Official Support & Legal Notice Contact:** [markjohnsonbanatao888@gmail.com](mailto:markjohnsonbanatao888@gmail.com) · [+639681841001](tel:+639681841001)
 
 ---
 

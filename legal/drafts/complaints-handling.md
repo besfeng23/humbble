@@ -12,6 +12,12 @@ DRAFT—COUNSEL REVIEW REQUIRED
   - **Republic Act No. 10173** (*Data Privacy Act of 2012*) & NPC Rules of Procedure — data subject rights requests and privacy complaints;
   - **Republic Act No. 11862** (*Expanded Anti-Trafficking in Persons Act of 2022*) & **Republic Act No. 10906** (*Anti-Mail Order Spouse Act*) — safety, exploitation, and illegal solicitation complaints.
 
+## Support & Appeals Contact
+
+- **Email:** [markjohnsonbanatao888@gmail.com](mailto:markjohnsonbanatao888@gmail.com)
+- **Phone:** [+639681841001](tel:+639681841001)
+- **Operator:** JDR Blast Media, 3409 Spectrum Midway, Filinvest City, Alabang, Muntinlupa City, Metro Manila 1781, Philippines (Banatao Systems is the product brand only)
+
 ---
 
 ## 1. Unappointed Operational Roles (`OPEN DEPENDENCIES`)
@@ -33,10 +39,10 @@ In accordance with `owner-decisions.md` §2, §5, and `docs/plan/Humbble_Executi
 
 | Category | Description | Primary Intake Channel | Target Acknowledgment | Target Triage / Resolution Window |
 |---|---|---|---|---|
-| **1. Urgent Safety & Statutory Abuse (`P0` / `P1`)** | Suspected underage user (`<18`), CSAEM/OSAEC, human trafficking (`RA 11862`), mail-order marriage brokering (`RA 10906`), financial scam/extortion, or harassment (`RA 11313`) | One-tap in-app **Report** sheet (`SCR-22`, `submit_report` RPC) on any profile or chat; fallback safety email `[TBD UPON DEP-SAFE-01]` | Immediate automated ticket confirmation in-app | **Pilot Hypothesis:** ≥95% human triage within **24 hours** during staffed pilot hours; **≤ 24 hours** mandatory statutory takedown for unlawful trafficking content (`RA 11862 Sec. 9`) |
-| **2. Moderation & Account Enforcement Appeal** | User contesting a content removal, `requires_review` verification hold, temporary suspension (`is_suspended`), or permanent ban | Appeal form / support link presented on account restriction screen; email `[TBD]` | Within **24–48 hours** (automated receipt with case reference ID) | Human review by a moderator who did not issue the original action (where staffing permits) within **5 business days** (`[COUNSEL TO CONFIRM]`) |
-| **3. Data Privacy & Data Subject Rights Complaint (`RA 10173`)** | Issues with data export (`JSON`), account deletion (`SCR-19`), inaccurate `birth_date` clerical correction, unauthorized data use, or consent withdrawal | In-app `SCR-19` (`Privacy & Account Deletion`) and DPO contact email `[TBD UPON DEP-LEGAL-03]` | Within **24–48 hours** | Automated export/deletion completes promptly (`TEST-PRIV-01`); manual DPO review resolved within **15 business days** (`[COUNSEL TO CONFIRM NPC TIMELINE]`) |
-| **4. Subscription, Billing & Refund Inquiry (`PayPal Sandbox / Future Live`)** | Questions regarding `Humbble Reserve` monthly plan (`PHP 599.00/mo`), cancellation (`SCR-21`), duplicate checkout, failed webhook reconciliation, or refund requests | In-app `SCR-21` (`Billing Settings`) & billing support email `[TBD]` | Within **24–48 hours** | Initial investigation within **3 business days**; resolution within **7 business days** (`[COUNSEL TO CONFIRM UNDER RA 11967 / RA 7394]`) |
+| **1. Urgent Safety & Statutory Abuse (`P0` / `P1`)** | Suspected underage user (`<18`), CSAEM/OSAEC, human trafficking (`RA 11862`), mail-order marriage brokering (`RA 10906`), financial scam/extortion, or harassment (`RA 11313`) | One-tap in-app **Report** sheet (`SCR-22`, `submit_report` RPC) on any profile or chat; fallback safety contact markjohnsonbanatao888@gmail.com / +639681841001 | Immediate automated ticket confirmation in-app | **Pilot Hypothesis:** ≥95% human triage within **24 hours** during staffed pilot hours; **≤ 24 hours** mandatory statutory takedown for unlawful trafficking content (`RA 11862 Sec. 9`) |
+| **2. Moderation & Account Enforcement Appeal** | User contesting a content removal, `requires_review` verification hold, temporary suspension (`is_suspended`), or permanent ban | Appeal form / support link presented on account restriction screen; email markjohnsonbanatao888@gmail.com / phone +639681841001 | Within **24–48 hours** (automated receipt with case reference ID) | Human review by a moderator who did not issue the original action (where staffing permits) within **5 business days** (`[COUNSEL TO CONFIRM]`) |
+| **3. Data Privacy & Data Subject Rights Complaint (`RA 10173`)** | Issues with data export (`JSON`), account deletion (`SCR-19`), inaccurate `birth_date` clerical correction, unauthorized data use, or consent withdrawal | In-app `SCR-19` (`Privacy & Account Deletion`) and privacy contact markjohnsonbanatao888@gmail.com (DPO to be appointed, `DEP-LEGAL-03`) | Within **24–48 hours** | Automated export/deletion completes promptly (`TEST-PRIV-01`); manual DPO review resolved within **15 business days** (`[COUNSEL TO CONFIRM NPC TIMELINE]`) |
+| **4. Subscription, Billing & Refund Inquiry (`PayPal Sandbox / Future Live`)** | Questions regarding `Humbble Reserve` monthly plan (`PHP 599.00/mo`), cancellation (`SCR-21`), duplicate checkout, failed webhook reconciliation, or refund requests | In-app `SCR-21` (`Billing Settings`) & billing support email markjohnsonbanatao888@gmail.com | Within **24–48 hours** | Initial investigation within **3 business days**; resolution within **7 business days** (`[COUNSEL TO CONFIRM UNDER RA 11967 / RA 7394]`) |
 | **5. General Technical or Accessibility Feedback** | Bug reports, password reset issues (`SCR-06`), WCAG 2.2 AA accessibility barriers | In-app help/feedback link (`SCR-18`) | Within **48 hours** | Triaged into engineering backlog |
 
 ---

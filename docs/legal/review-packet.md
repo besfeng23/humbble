@@ -127,6 +127,7 @@ This checklist maps every planned user journey (`SCR-01` through `SCR-24` and ba
 
 - **Independent Philippine Legal Counsel Name & Firm:** `[UNAPPOINTED — OWNER TO DESIGNATE]`
 - **IBP Roll No. / PTR / MCLE Compliance Reference:** `[UNAPPOINTED]`
-- **Verified Contracting Entity / PIC Legal Name:** `[UNVERIFIED — PROPOSED: RED-APPLE TECHNOLOGY AND DIGITAL SERVICES]`
+- **Contracting Entity / PIC Legal Name (Owner-provided, counsel to verify):** JDR Blast Media, 3409 Spectrum Midway, Filinvest City, Alabang, Muntinlupa City, Metro Manila 1781, Philippines
+- **Support & Appeals Contact (Owner-provided):** markjohnsonbanatao888@gmail.com · +639681841001
 - **Counsel Written Opinion Reference & Date:** `[NONE — GATE-LEGAL-01 OPEN]`
 - **Owner Authorization Signature (Mark Johnson):** `[PENDING COUNSEL OPINION]`

@@ -39,3 +39,13 @@ export {
   useReducedMotion,
   type ResolvedMotionConfig,
 } from "./Motion";
+
+export {
+  LEGAL_ENTITY_ADDRESS,
+  LEGAL_ENTITY_NAME,
+  SUPPORT_EMAIL,
+  SUPPORT_EMAIL_URL,
+  SUPPORT_PHONE,
+  SUPPORT_PHONE_DISPLAY,
+  SUPPORT_PHONE_URL,
+} from "./Support";
