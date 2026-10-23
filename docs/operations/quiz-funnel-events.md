@@ -119,6 +119,7 @@ it means the minute cap is being hit), or on `n >= cap` in `private.quiz_event_r
 alert: cap hits no longer count as 5xx, so a 5xx-only alert would not see a flood. The Supabase gateway can also emit its own
 429s, so match on the path and on the PostgREST `PT429` error code. Oversize requests are never counted by the cap (they are
 400s); alert on a rising 4xx share on the same path as well.
+The alerts are defined as code (ids, thresholds, read-only queries, offline evaluator, tests) in `docs/operations/quiz-funnel-alerts.md`; scheduling and notification channel are not configured.
 
 ### Disk size and measured row growth
 Measured locally (Postgres 17, 1,001,000 rows via `generate_series`, realistic event mix, random uuids, hour-spread over 90 days):
