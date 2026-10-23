@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "scope": "record_quiz_event (public.quiz_events anonymous funnel); see docs/operations/quiz-funnel-events.md and docs/operations/quiz-funnel-alerts.md",
+  "rpc_path_regex": "^/rest/v1/rpc/record_quiz_event/?$",
+  "window_minutes": 15,
+  "threshold_note": "Starting values chosen from the documented cap (120 events/min) and per-visit volume (at most 7 events), NOT from measured production baselines. The web client stops sending for the rest of the session after the first failure, so one real visitor produces at most one 429/4xx. Re-tune after the first week of real traffic.",
+  "stats_inputs": {
+    "requests_total": "edge-status-mix.sql",
+    "edge_429_postgrest": "edge-status-mix.sql",
+    "edge_429_gateway": "edge-status-mix.sql (informational, not alerting)",
+    "edge_4xx_other": "edge-status-mix.sql",
+    "pt429_log_count": "postgres-log-sqlstate.sql",
+    "pt400_log_count": "postgres-log-sqlstate.sql (informational and pipeline self-test)",
+    "saturated_minutes": "cap-saturation.sql"
+  },
+  "alerts": [
+    {
+      "id": "QZ-429-PT429-LOG",
+      "title": "Quiz event cap hit: PT429 errors in the Postgres log",
+      "source": "postgres_logs",
+      "query": "postgres-log-sqlstate.sql",
+      "metric": "pt429_log_count",
+      "kind": "count",
+      "warn": 10,
+      "critical": 100,
+      "meaning": "The global 120/min cap is being hit and real visitors' events are being dropped (flood, ad burst above the cap, or an attack). Not a 5xx: the 5xx alert cannot see this."
+    },
+    {
+      "id": "QZ-429-EDGE-POSTGREST",
+      "title": "Quiz event cap hit: HTTP 429 from PostgREST at the API gateway",
+      "source": "edge_logs",
+      "query": "edge-status-mix.sql",
+      "metric": "edge_429_postgrest",
+      "kind": "count",
+      "warn": 10,
+      "critical": 100,
+      "meaning": "Same event as QZ-429-PT429-LOG seen from the gateway log; kept because the log-pipeline fields are not verified on hosted. Gateway-originated 429s (edge_429_gateway) are excluded."
+    },
+    {
+      "id": "QZ-CAP-SATURATED-MINUTES",
+      "title": "Quiz event cap hit: saturated one-minute counters in the database",
+      "source": "database",
+      "query": "cap-saturation.sql",
+      "metric": "saturated_minutes",
+      "kind": "count",
+      "warn": 1,
+      "critical": 5,
+      "meaning": "private.quiz_event_rate has minutes where n >= cap. Does not depend on the log pipeline; needs a postgres-role runner."
+    },
+    {
+      "id": "QZ-4XX-SHARE",
+      "title": "Quiz event 4xx share (excluding 429)",
+      "source": "edge_logs",
+      "query": "edge-status-mix.sql",
+      "metric": "edge_4xx_other",
+      "kind": "share",
+      "denominator": "requests_total",
+      "min_denominator": 50,
+      "warn": 0.05,
+      "critical": 0.2,
+      "meaning": "Oversize or malformed payloads (400), a rotated or wrong public key (401/403), or a client regression. Oversize requests are never counted by the cap, so this is the only alert that sees an oversize flood."
+    }
+  ]
+}
