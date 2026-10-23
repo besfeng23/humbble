@@ -1,5 +1,8 @@
 # Humbble Premium — Execution-Ready Build Plan v1.2
 
+> **Superseded:** this v1.2 plan is retained (content otherwise unchanged) for existing references. Its draft successor is [`Humbble_Execution_Build_Plan_v1.3.md`](Humbble_Execution_Build_Plan_v1.3.md), which contains this full text plus §V1.3 (Affiliate Growth & Performance Marketing; GATE-OWN-MKT-01 resolved; lawyer review waived by Owner as a risk acceptance). Once v1.3 is merged, edit v1.3, not this file.
+
+
 **Status:** Approved planning defaults; execution authorization remains separate  
 **Plan date:** 20 October 2026  
 **Canonical repository:** `besfeng23/humbble`, branch `main`  
