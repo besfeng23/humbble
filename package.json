@@ -19,6 +19,7 @@
     "db:lint": "bash scripts/db/lint.sh",
     "db:diff": "bash scripts/db/diff.sh",
     "db:test-photo-upload-limits": "node scripts/db/test-photo-upload-limits.mjs",
+    "ops:quiz-alerts": "node scripts/ops/quiz-funnel-alerts.js",
     "test:functions": "cd supabase/functions/send-push && deno test --node-modules-dir=none --allow-env index.test.ts"
   },
   "jest": {
