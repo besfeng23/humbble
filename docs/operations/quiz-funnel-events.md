@@ -72,7 +72,7 @@ carry a word-like slug up to 32 characters; digit-heavy and hash-like values are
 ## Write path
 `public.record_quiz_event(p_session_id, p_event, p_step, p_answer, p_country_code, p_network, p_utm_source, p_utm_medium, p_utm_campaign)`
 is `SECURITY DEFINER`, `search_path=''`, executable by `anon` and `authenticated` only. Checks run cheapest first:
-1. argument **lengths** (before any regex or parse): over-long text raises 54000 `payload_too_large`;
+1. argument **lengths** (before any regex or parse): over-long text raises `PT400` `payload_too_large` (PostgREST answers **HTTP 400**; it was SQLSTATE 54000 / HTTP 500 until migration `20261023000110`, which changed only this error code);
 2. session id v4 and shape (22023);
 3. duplicate `(session, event, step)` returns `false` (idempotent, never consumes the limit);
 4. lock-free peek at the current minute's counter: at the cap raises 53400 `rate_limited` without touching the counter row;
@@ -80,6 +80,18 @@ is `SECURITY DEFINER`, `search_path=''`, executable by `anon` and `authenticated
    (`INSERT ... ON CONFLICT DO UPDATE SET n = n + 1 WHERE n < cap`) and the insert.
 It returns `true` only when a row is inserted. The old `p_click_id` / `p_attribution` arguments no longer exist
 (calling with them fails with 42883).
+
+Error contract as seen through PostgREST (`POST /rest/v1/rpc/record_quiz_event`; the body is `{code, message, details, hint}`):
+
+| Condition | SQLSTATE | `message` | HTTP |
+| --- | --- | --- | --- |
+| argument longer than its limit (event/answer 32, country 2, network/utm 64) | `PT400` (PostgREST custom status; `details` is a fixed rule text, the value is never echoed) | `payload_too_large` | 400 |
+| bad session id | `22023` | `invalid_session_id` | 400 |
+| unknown event / step / answer / country | `22023` | `invalid_quiz_event` | 400 |
+| global per-minute cap reached | `53400` | `rate_limited` | 500 (PostgREST maps `53400`; unchanged, not a client error) |
+
+The web client only checks `res.ok` and stops sending for the rest of the session on any failure, so the status split has no
+client behaviour change; it keeps oversize probes out of 5xx error-rate alerts.
 
 ## Rate limit (global, documented config)
 - **Cap: 120 events per minute, all callers combined** (`private.quiz_event_global_rate_per_minute()`).

@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET search_path = public, extensions, pg_temp;
-SELECT plan(137);
+SELECT plan(147);
 
 -- Test fixtures (rolled back). Session ids are valid random-style v4 UUIDs.
 INSERT INTO public.attribution_networks (slug, display_name) VALUES ('qtestnet', 'Quiz Test Net');
@@ -71,6 +71,7 @@ SELECT is((SELECT count(*)::INT FROM pg_catalog.pg_proc p
             WHERE p.proname IN ('record_quiz_event','purge_quiz_events','quiz_funnel_summary') AND p.pronamespace = 'public'::regnamespace
               AND p.prosecdef AND pg_catalog.pg_get_userbyid(p.proowner) = 'postgres'), 3, 'the three public functions are SECURITY DEFINER owned by postgres');
 SELECT is((SELECT count(*)::INT FROM pg_catalog.pg_proc WHERE proname = 'record_quiz_event' AND pronamespace = 'public'::regnamespace), 1, 'exactly one record_quiz_event signature (no leftover JSON-attribution overload)');
+SELECT is((SELECT pg_catalog.cardinality(p.proacl) FROM pg_catalog.pg_proc p WHERE p.proname = 'record_quiz_event' AND p.pronamespace = 'public'::regnamespace), 3, 'record_quiz_event ACL is exactly owner + anon + authenticated (no PUBLIC, no service_role)');
 SELECT is(private.quiz_event_global_rate_per_minute(), 120, 'default global rate limit is 120 events/minute (F-03)');
 
 -- ===== Retention schedule (F-02): pg_cron job exists when pg_cron is available =====
@@ -130,7 +131,7 @@ SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-dddd
 SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_step', 2, 'serious')$$, '22023', 'invalid_quiz_event', 'rejects another step''s enum value');
 SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_step', 4, NULL, 'ZZ')$$, '22023', 'invalid_quiz_event', 'rejects a non-ISO country');
 SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_step', 4, NULL, 'ph')$$, '22023', 'invalid_quiz_event', 'rejects a lowercase country code');
-SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_step', 4, NULL, 'Manila')$$, '54000', 'payload_too_large', 'rejects a free-text country (too long)');
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_step', 4, NULL, 'Manila')$$, 'PT400', 'payload_too_large', 'rejects a free-text country (too long)');
 SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_step', 9, 'serious')$$, '22023', 'invalid_quiz_event', 'rejects an out-of-range step');
 SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_step', -1, 'serious')$$, '22023', 'invalid_quiz_event', 'rejects a negative step');
 SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_step', NULL, 'serious')$$, '22023', 'invalid_quiz_event', 'rejects a NULL step');
@@ -139,10 +140,32 @@ SELECT throws_ok($$SELECT public.record_quiz_event(NULL, 'quiz_started')$$, '220
 SELECT throws_ok($$SELECT public.record_quiz_event('00000000-0000-0000-0000-000000000000', 'quiz_started')$$, '22023', 'invalid_session_id', 'rejects the nil UUID');
 SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-1ddd-8ddd-ddddddddddd4', 'quiz_started')$$, '22023', 'invalid_session_id', 'rejects a non-v4 UUID');
 SELECT throws_ok($$SELECT public.record_quiz_event('not-a-uuid', 'quiz_started')$$, '22P02', NULL, 'rejects a malformed session id');
-SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started', 0, NULL, NULL, pg_catalog.repeat('a', 65))$$, '54000', 'payload_too_large', 'oversize: network longer than 64 chars');
-SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started', 0, NULL, NULL, NULL, pg_catalog.repeat('a', 65))$$, '54000', 'payload_too_large', 'oversize: utm_source longer than 64 chars');
-SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started', 0, NULL, NULL, NULL, NULL, pg_catalog.repeat('a', 100000))$$, '54000', 'payload_too_large', 'oversize: a 100 KB utm_medium is refused before any lookup');
-SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', pg_catalog.repeat('q', 100000))$$, '54000', 'payload_too_large', 'oversize: a 100 KB event name is refused');
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started', 0, NULL, NULL, pg_catalog.repeat('a', 65))$$, 'PT400', 'payload_too_large', 'oversize: network longer than 64 chars');
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started', 0, NULL, NULL, NULL, pg_catalog.repeat('a', 65))$$, 'PT400', 'payload_too_large', 'oversize: utm_source longer than 64 chars');
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started', 0, NULL, NULL, NULL, NULL, pg_catalog.repeat('a', 100000))$$, 'PT400', 'payload_too_large', 'oversize: a 100 KB utm_medium is refused before any lookup');
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', pg_catalog.repeat('q', 100000))$$, 'PT400', 'payload_too_large', 'oversize: a 100 KB event name is refused');
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started', 0, NULL, NULL, NULL, NULL, NULL, pg_catalog.repeat('a', 65))$$, 'PT400', 'payload_too_large', 'oversize: utm_campaign longer than 64 chars');
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_step', 1, pg_catalog.repeat('a', 33))$$, 'PT400', 'payload_too_large', 'oversize: answer longer than 32 chars');
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_step', 1, pg_catalog.repeat('a', 100000))$$, 'PT400', 'payload_too_large', 'oversize: a 100 KB answer is refused');
+-- Boundary: exactly at the limit passes the length guard (and is then refused by the NEXT check, with the ordinary 22023, not PT400).
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'signup_completed', 0, NULL, NULL, pg_catalog.repeat('a', 64))$$, '22023', 'invalid_quiz_event', 'boundary: a 64-char network is within the limit (guard passes, event name then refused)');
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_step', 1, pg_catalog.repeat('a', 32))$$, '22023', 'invalid_quiz_event', 'boundary: a 32-char answer is within the limit (guard passes, enum then refuses it)');
+-- Error contract (Themis LOW): oversize is SQLSTATE PT400 (PostgREST: HTTP 400, not 500 as for the old 54000), message unchanged, a fixed DETAIL, no echo of the value.
+DO $$
+DECLARE v_state TEXT; v_msg TEXT; v_detail TEXT;
+BEGIN
+  PERFORM public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started', 0, NULL, NULL, NULL, pg_catalog.repeat('z', 70));
+  PERFORM pg_catalog.set_config('rqe.state', 'NO ERROR', true);
+EXCEPTION WHEN OTHERS THEN
+  GET STACKED DIAGNOSTICS v_state = RETURNED_SQLSTATE, v_msg = MESSAGE_TEXT, v_detail = PG_EXCEPTION_DETAIL;
+  PERFORM pg_catalog.set_config('rqe.state', v_state, true);
+  PERFORM pg_catalog.set_config('rqe.msg', v_msg, true);
+  PERFORM pg_catalog.set_config('rqe.detail', COALESCE(v_detail, ''), true);
+END $$;
+SELECT is(current_setting('rqe.state'), 'PT400', 'oversize raises SQLSTATE PT400 (PostgREST maps PTxyz to HTTP xyz = 400), no longer 54000 (HTTP 500)');
+SELECT is(current_setting('rqe.msg'), 'payload_too_large', 'oversize message text is unchanged');
+SELECT is(current_setting('rqe.detail'), 'An argument exceeds its maximum length (event, answer 32; country 2; network, utm 64).', 'oversize DETAIL is the fixed rule text');
+SELECT ok(current_setting('rqe.msg') || current_setting('rqe.detail') NOT LIKE '%zzzz%', 'the oversize error does not echo the caller-supplied value');
 SELECT throws_ok($$SELECT public.record_quiz_event(p_session_id => 'dddddddd-dddd-4ddd-8ddd-ddddddddddd4', p_event => 'quiz_started', p_click_id => 'abc')$$, '42883', NULL, 'the function no longer accepts a click id (or any attribution JSON)');
 SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started', 0, NULL, NULL, NULL, NULL, NULL, NULL, '{"click_id":"x"}'::JSONB)$$, '42883', NULL, 'a JSON attribution argument is not accepted');
 
