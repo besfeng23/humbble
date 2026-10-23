@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET search_path = public, extensions, pg_temp;
-SELECT plan(43);
+SELECT plan(42);
 
 -- PROFILE-COMPLETED fixtures 0301-0305 (rolled back).
 -- 301 member who builds the profile step by step as 'authenticated' (the real client path)
@@ -151,8 +151,9 @@ SELECT is((SELECT bool_or(pg_catalog.has_table_privilege('authenticated', 'publi
   'authenticated has no privilege on funnel_events');
 SELECT is(pg_catalog.has_table_privilege('anon', 'public.funnel_events', 'INSERT'), FALSE, 'anon cannot INSERT funnel_events (privilege)');
 SELECT is(pg_catalog.has_table_privilege('authenticated', 'public.funnel_events', 'INSERT'), FALSE, 'authenticated cannot INSERT funnel_events (privilege)');
-SELECT is(pg_catalog.has_table_privilege('service_role', 'public.funnel_events', 'INSERT'), TRUE,
-  'service_role keeps INSERT on funnel_events (server-written table; narrowing is a tracked follow-up)');
+-- service_role's table privileges are deliberately NOT pinned here: they are owned by the privilege-hardening
+-- migrations (service_role may be ALL today and SELECT-only after the funnel_events narrowing). The recorder is
+-- SECURITY DEFINER and writes as the table owner, so it does not depend on them.
 SELECT is((SELECT relrowsecurity FROM pg_catalog.pg_class WHERE oid = 'public.funnel_events'::regclass), TRUE, 'funnel_events keeps row level security on');
 
 -- 8. A failing funnel write never aborts the member's write (analytics is best-effort), and is retried later.

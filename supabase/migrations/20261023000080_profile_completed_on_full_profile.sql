@@ -45,9 +45,17 @@
 --   COMMIT;
 -- (record_funnel_event stays owner-only: nothing outside SECURITY DEFINER code needs to call it.)
 --
--- Apply in a quiet window: the DROP TRIGGER / CREATE TRIGGER statements below take ACCESS EXCLUSIVE locks on
--- public.profiles and public.profile_photos until the migration commits. The lock_timeout makes the migration
--- fail fast (and roll back, nothing applied) instead of queueing behind a long transaction and blocking reads.
+-- Apply in a quiet window: the DROP TRIGGER / CREATE TRIGGER statements below take strong locks on
+-- public.profiles and public.profile_photos until the migration commits (ACCESS EXCLUSIVE on profiles; on
+-- profile_photos ACCESS EXCLUSIVE when the trigger already exists, SHARE ROW EXCLUSIVE on first apply). The
+-- lock_timeout makes the migration fail fast (and roll back, nothing applied) instead of queueing behind a long
+-- transaction and blocking reads.
+--
+-- The file carries its OWN BEGIN / COMMIT so that SET LOCAL lock_timeout is effective and the whole migration is
+-- one transaction under any runner, including plain `psql -f` (autocommit), where a bare SET LOCAL is a no-op
+-- with only a WARNING. Do not split the file or run it statement by statement on dev / prod.
+
+BEGIN;
 
 SET LOCAL lock_timeout = '5s';
 
@@ -153,3 +161,5 @@ $function$;
 ALTER FUNCTION private.sync_profile_discoverability(UUID) OWNER TO postgres;
 REVOKE ALL ON FUNCTION private.sync_profile_discoverability(UUID) FROM PUBLIC;
 REVOKE ALL ON FUNCTION private.sync_profile_discoverability(UUID) FROM anon, authenticated, service_role;
+
+COMMIT;
