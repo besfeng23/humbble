@@ -13,7 +13,7 @@ export default function AdminModerationStackLayout() {
     >
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="moderation/index" />
-        <Stack.Screen name="moderation/[caseId]" />
+        <Stack.Screen name="moderation/[reportId]" />
       </Stack>
     </AuthGuard>
   );

@@ -103,7 +103,7 @@ export function ModerationLayout({
           ]}
         >
           <Text style={[styles.slaBannerText, { color: palette.infoText }]}>
-            SLA Policy: Urgent safety reports require triage within 4h and action within 24h. All actions are recorded in immutable audit_events.
+            Internal pilot targets: urgent reports are triaged within 4h, all others within 24h. Viewing a case and every action are recorded in the audit log.
           </Text>
         </View>
 

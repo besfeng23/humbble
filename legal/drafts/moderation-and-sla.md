@@ -60,13 +60,15 @@ DRAFT—COUNSEL REVIEW REQUIRED
 ## 4. Trust & Safety Console (`SCR-23` / `SCR-24`) & Audit Controls (`PR P5-01`)
 
 1. **Strict Server-Side RBAC:**
-   - Access to `SCR-23` (`app/(admin)/moderation/index.tsx`), `SCR-24` (`app/(admin)/moderation/[caseId].tsx`), and `moderation_transition` RPC requires a trusted server-assigned moderator/admin role claim.
+   - Access to `SCR-23` (`app/(admin)/moderation/index.tsx`), `SCR-24` (`app/(admin)/moderation/[reportId].tsx`), and `moderation_transition` RPC requires a trusted server-assigned `moderator` role claim (`app_metadata.role = 'moderator'`). An `admin` claim or `user_metadata` does not grant access.
    - No moderator role may ever be granted via a client-editable profile column (`TEST-RLS-08`).
 2. **Case-Scoped Least Privilege:**
    - Moderators may view reported profile content or the specific reported message context **only** within an active `moderation_cases` record. General browsing of private user conversations is prohibited.
+   - *Implementation note (Themis N46-03, open):* the console enforces this through its RPCs, but database RLS currently also lets a moderator `SELECT` all `reports` and `moderation_cases` directly (not limited to an opened case). That is a known deviation from this paragraph until the direct-read policies are dropped or the deviation is formally accepted.
 3. **Immutable Audit Trail (`public.audit_events`):**
    - Every moderator view of case evidence and every state transition (`warn`, `remove_content`, `set_undiscoverable`, `suspend`, `ban`, `restore`, `place_legal_hold`) writes an append-only row to `public.audit_events` recording `actor_id`, `action`, `target_id`, `case_id`, `reason`, and `created_at`.
    - `UPDATE` and `DELETE` privileges on `public.audit_events` are revoked from all application and client roles.
+   - *Implementation note (Themis N46-03, open):* a view is audited only when it goes through the console RPC (`moderation_get_case`). Direct table reads by a moderator, and the queue listing, are **not** audited; do not describe every read as audited in any external or counsel-facing text until that is resolved.
 
 ---
 

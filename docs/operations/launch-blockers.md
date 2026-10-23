@@ -62,3 +62,15 @@ and only a TRUNCATE guard protects it. There is therefore **no API path to recor
 exists, do not tell members in the app, store listings or privacy copy that they can withdraw marketing consent in-app. Fix (product/legal + engineering):
 add a definer RPC that appends a consent change to `public.consent_records` (it already has `choice`, `consent_key`, `version`) and derives the effective state
 from the latest row, or document where withdrawal is handled (support/privacy request). Tracked here because the draft privacy notice promises instant revocation.
+
+## Moderation console (P5-01, PR #46): production-enable gates (Themis review of 2026-10-24)
+Source: `THEMIS_PR46_REVIEW_2026-10-24.md`, verdict (c) **CHANGES REQUESTED** for production enable. Merging #46 and a single-apply on dev with one *test* moderator are acceptable (nothing is enabled by merge);
+**do not apply the migration to production and do not grant the first real moderator claim until ALL of the following are done.** See `docs/operations/moderation-console.md` for what the console does and does not guarantee.
+
+- [ ] **N46-01 (HIGH) fixed and proven.** A suspended member could still send messages in existing matches and the recipient was pushed. Fix: PR #50 (`private.can_send_message` denies a suspended sender with the same `conversation_not_sendable` as a blocked sender). Gate = that fix **merged, applied on the target project, and its pgTAP (`0034_suspended_sender_cannot_message`) green**. Status at time of writing: PR open, not merged, not applied.
+- [ ] **N46-02 (MEDIUM) fixed.** A moderator can open, review, warn, dismiss or close a case in which they are the reported member (the self-action guard covers only suspend / lift_suspension). Extend the guard to **every** action (and `open_case` / view when `reported_user_id = auth.uid()`), add pgTAP, and document recusal.
+- [ ] **N46-03 (MEDIUM) decision recorded.** Moderators can `SELECT` all `reports` / `moderation_cases` directly via RLS with no audit row, so "every read is audited / no direct table reads" holds only on the console RPC path (docs corrected). Decide and record: drop the two moderator SELECT policies (RPCs only) **or** accept and monitor direct reads.
+- [ ] **At least two named moderators, with MFA.** Dedicated named accounts (not the owner/admin or a founder's personal login), MFA enabled, so a conflicted moderator can recuse. Document revocation (JWT role changes apply only after the token refreshes) and a periodic review of who holds the claim. Nobody is appointed yet (DEP-SAFE-01).
+- [ ] **Mark's explicit OK** to enable the console in production (recorded here with date).
+
+Also required by Themis before production enable (not part of the five gates above): guidance that moderator reasons contain IDs/enums and no personal data beyond IDs, and confirmation of retention for moderation `audit_events` rows (N46-10); a post-apply smoke test (anon and non-moderator denied; a moderator's case view produces a `moderation.case_viewed` row).

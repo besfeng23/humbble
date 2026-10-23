@@ -46,7 +46,12 @@ INSERT INTO allowed_exec VALUES
  ('get_my_premium_status()',                                     false, true, true, 'postgres', 'search_path=public, pg_temp', 'billing (read only): own entitlement status'),
  ('get_billing_plan(text)',                                      false, true, true, 'postgres', 'search_path=public, pg_temp', 'billing (read only): price shown to the member'),
  ('has_active_entitlement(uuid)',                                false, true, false, 'postgres', 'search_path=public, pg_temp', 'used by RLS/RPC checks that run as the member; invoker function, reads only'),
- ('moderation_transition_case(uuid,moderation_case_status,text)',  false, true, true, 'postgres', 'search_path=public, pg_temp', 'moderator tooling; authorisation (moderator role) is checked inside the definer');
+ ('moderation_transition_case(uuid,moderation_case_status,text)',  false, true, true, 'postgres', 'search_path=public, pg_temp', 'moderator tooling; authorisation (moderator role) is checked inside the definer'),
+ -- P5-01 moderation console (migration 20261024000130): authenticated only; each checks auth.uid() + private.is_trusted_moderator() inside; not executable by service_role
+ ('moderation_list_queue(text,integer,integer)',                  false, true, true, 'postgres', 'search_path=public, pg_temp', 'moderator console: queue (reports LEFT JOIN cases), moderator role checked inside'),
+ ('moderation_get_case(uuid)',                                    false, true, true, 'postgres', 'search_path=public, pg_temp', 'moderator console: case detail + audit history; the read is itself audited'),
+ ('moderation_open_case(uuid,text)',                              false, true, true, 'postgres', 'search_path=public, pg_temp', 'moderator console: open a case for a report (reason required, audited)'),
+ ('moderation_take_action(uuid,text,text)',                       false, true, true, 'postgres', 'search_path=public, pg_temp', 'moderator console: review/warn/suspend/dismiss/lift/close (reason required, audited)');
 
 CREATE TEMP VIEW v_fn_actual AS
 SELECT p.oid::regprocedure::text AS sig,

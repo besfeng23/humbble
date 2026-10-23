@@ -1580,6 +1580,58 @@ export type Database = {
           display_name: string
         }[]
       }
+      moderation_get_case: {
+        Args: { p_report_id: string }
+        Returns: {
+          assigned_moderator_id: string
+          blocks_against_count: number
+          case_id: string
+          case_status: string
+          case_updated_at: string
+          category: string
+          context_summary: string
+          history: Json
+          report_id: string
+          report_status: string
+          reported_at: string
+          reported_display_name: string
+          reported_is_suspended: boolean
+          reported_user_id: string
+          reporter_id: string
+          reports_against_count: number
+          resolution_code: string
+          severity: string
+        }[]
+      }
+      moderation_list_queue: {
+        Args: { p_filter?: string; p_limit?: number; p_offset?: number }
+        Returns: {
+          assigned_to_me: boolean
+          case_id: string
+          case_status: string
+          case_updated_at: string
+          category: string
+          report_id: string
+          report_status: string
+          reported_at: string
+          reported_display_name: string
+          reported_is_suspended: boolean
+          reported_user_id: string
+          reports_against_count: number
+          severity: string
+        }[]
+      }
+      moderation_open_case: {
+        Args: { p_reason: string; p_report_id: string }
+        Returns: string
+      }
+      moderation_take_action: {
+        Args: { p_action: string; p_case_id: string; p_reason: string }
+        Returns: {
+          case_status: string
+          reported_is_suspended: boolean
+        }[]
+      }
       moderation_transition_case: {
         Args: {
           p_case_id: string

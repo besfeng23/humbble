@@ -6,6 +6,7 @@
  */
 import { supabase } from './supabase';
 import type { Database } from './database.types';
+import type { ModerationActionId } from './moderation';
 import type {
   ModerationCaseStatus,
   PrivacyRequestType,
@@ -133,6 +134,65 @@ export function moderationTransitionCase(input: {
       p_case_id: input.caseId,
       p_new_status: input.newStatus,
       p_note: input.note ?? null,
+    }),
+  );
+}
+
+// ---- P5-01 moderation console (migration 20261024000130). Authorization is enforced by the database: each RPC requires a
+// trusted app_metadata moderator claim and rejects everyone else with `moderator_required`. These wrappers never accept an actor id.
+export type ModerationQueueRow =
+  Database['public']['Functions']['moderation_list_queue']['Returns'][number];
+export type ModerationCaseDetailRow =
+  Database['public']['Functions']['moderation_get_case']['Returns'][number];
+export type ModerationActionResult =
+  Database['public']['Functions']['moderation_take_action']['Returns'][number];
+
+export function moderationListQueue(options?: {
+  filter?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<RpcResult<ModerationQueueRow[]>> {
+  return typedResult<ModerationQueueRow[]>(
+    supabase.rpc('moderation_list_queue', {
+      p_filter: options?.filter ?? 'active',
+      p_limit: options?.limit ?? 50,
+      p_offset: options?.offset ?? 0,
+    }),
+  );
+}
+
+/** Reading a case is itself recorded in audit_events (who looked at which report, when). */
+export function moderationGetCase(
+  reportId: string,
+): Promise<RpcResult<ModerationCaseDetailRow[]>> {
+  return typedResult<ModerationCaseDetailRow[]>(
+    supabase.rpc('moderation_get_case', { p_report_id: reportId }),
+  );
+}
+
+/** Idempotent: returns the existing case id when the report already has a case. */
+export function moderationOpenCase(input: {
+  reportId: string;
+  reason: string;
+}): Promise<RpcResult<string>> {
+  return typedResult<string>(
+    supabase.rpc('moderation_open_case', {
+      p_report_id: input.reportId,
+      p_reason: input.reason,
+    }),
+  );
+}
+
+export function moderationTakeAction(input: {
+  caseId: string;
+  action: ModerationActionId;
+  reason: string;
+}): Promise<RpcResult<ModerationActionResult[]>> {
+  return typedResult<ModerationActionResult[]>(
+    supabase.rpc('moderation_take_action', {
+      p_case_id: input.caseId,
+      p_action: input.action,
+      p_reason: input.reason,
     }),
   );
 }
