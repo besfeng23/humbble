@@ -18,7 +18,7 @@ const activeSub = (over: Partial<PayPalSubscription> = {}): PayPalSubscription =
 function fakeStore(subs: Record<string, { status: string; plan: string; createdMinutesAgo?: number }> = { 'I-1': { status: 'approval_pending', plan: 'P-PH' } }) {
   const events = new Map<string, { eventId: string; providerEventId: string; type: string; resourceId: string | null; status: string }>();
   const premium = new Set<string>(); const flagged: { eventId: string; reason: string }[] = []; const registered: unknown[][] = [];
-  const state = { subs: { ...subs } };
+  const state = { subs: { ...subs }, cancel: {} as Record<string, { status: string; attempts: number }> };
   const store: BillingStore = {
     recordEvent: async (e) => {
       const hit = events.get(e.id);
@@ -46,9 +46,20 @@ function fakeStore(subs: Record<string, { status: string; plan: string; createdM
         if (i.lastPaymentAmount !== '599.00' || i.lastPaymentCurrency !== 'PHP' || !i.periodEnd || Date.parse(i.periodEnd) <= Date.now()) return { outcome: 'settlement_mismatch', granted: false };
         s.status = 'active'; premium.add(i.providerSubscriptionId); return { outcome: 'granted', granted: true };
       }
-      if (i.status === 'refunded' || i.status === 'revoked' || i.status === 'suspended' || i.status === 'expired') { s.status = i.status; premium.delete(i.providerSubscriptionId); return { outcome: 'revoked', granted: false }; }
+      if (i.status === 'refunded' || i.status === 'revoked' || i.status === 'suspended' || i.status === 'expired') {
+        s.status = i.status; premium.delete(i.providerSubscriptionId);
+        if ((i.status === 'refunded' || i.status === 'revoked') && !state.cancel[i.providerSubscriptionId]) state.cancel[i.providerSubscriptionId] = { status: 'pending', attempts: 0 };
+        return { outcome: 'revoked', granted: false };
+      }
       if (i.status === 'cancelled') { s.status = 'cancelled'; return { outcome: 'cancel_at_period_end', granted: false }; }
       return { outcome: 'no_change', granted: false };
+    },
+    // Mirrors billing_list_pending_provider_cancels / billing_record_provider_cancel (idempotent: only 'pending' rows change).
+    listPendingProviderCancels: async () => Object.entries(state.cancel).filter(([, c]) => c.status === 'pending').map(([id, c]) => ({ providerSubscriptionId: id, attempts: c.attempts })),
+    recordProviderCancel: async (id, result) => {
+      const c = state.cancel[id]; if (!c) return 'ignored'; if (c.status !== 'pending') return c.status;
+      if (result === 'done') c.status = 'done'; else { c.attempts++; if (c.attempts >= 20) c.status = 'failed'; }
+      return c.status;
     },
     registerPending: async (...a) => { registered.push(a); },
     resolvePlan: async () => ({ countryCode: 'PH', planKey: 'premium_monthly_ph', currency: 'PHP', amount: '599.00' }),
@@ -65,16 +76,17 @@ function fakeStore(subs: Record<string, { status: string; plan: string; createdM
 
 type PayPalFake = {
   sub?: () => PayPalSubscription | Promise<PayPalSubscription>; sale?: (id: string) => PayPalSale | null | Promise<PayPalSale | null>;
-  verify?: boolean;
+  verify?: boolean; cancel?: (id: string) => void | Promise<void>;
 };
 function fakePayPal(f: PayPalFake = {}) {
-  const calls = { getSubscription: [] as string[], getSale: [] as string[] };
+  const calls = { getSubscription: [] as string[], getSale: [] as string[], cancel: [] as string[] };
   return {
     calls,
     paypal: {
       verifyWebhookSignature: async () => f.verify ?? true,
       getSubscription: async (id: string) => { calls.getSubscription.push(id); return await (f.sub ?? (() => activeSub()))(); },
       getSale: async (id: string) => { calls.getSale.push(id); return await (f.sale ?? (() => null))(id); },
+      cancelSubscription: async (id: string, _reason: string) => { calls.cancel.push(id); await f.cancel?.(id); },
     },
   };
 }
@@ -400,7 +412,9 @@ Deno.test('F3: refund, then a stale quarantined ACTIVATED event, is NOT re-grant
   assert(!m.premium.has('I-1')); assertEquals(m.state.subs['I-1'].status, 'refunded');
   const pp = fakePayPal({ sub: () => activeSub() }); // PayPal still says ACTIVE with a matching last payment
   const body = await (await handleReconcile(reconReq(KEY), reconDeps(m, pp))).json();
-  assertEquals(pp.calls.getSubscription, [], 'neither the stale event nor the refunded subscription is re-read');
+  // N1: the only PayPal read is the pending provider-cancel check of the refunded subscription (never an apply of its ACTIVE state).
+  assertEquals(pp.calls.getSubscription, ['I-1'], 'the stale event is not re-read; only the cancel check reads the refunded subscription');
+  assertEquals(pp.calls.cancel, ['I-1']); assertEquals(body.providerCancels, { done: 1 });
   assertEquals(body.events, {}); assertEquals(body.subscriptions, {});
   assert(!m.premium.has('I-1'), 'premium stays revoked'); assertEquals(m.state.subs['I-1'].status, 'refunded');
   assertEquals(m.events.get('WH-STALE')!.status, 'quarantined');
@@ -447,4 +461,99 @@ Deno.test('F10: a sale object without an id (or with another id) never counts as
     assertEquals(res.status, 503); assertEquals((await res.json()).error, 'refund_unresolved');
     assert(m.premium.has('I-1'), 'no revoke from a sale PayPal did not confirm'); assertEquals(m.flagged.length, 1);
   }
+});
+
+// ---------------------------------------------------------------- F-05/N1: PayPal-side cancel of a refunded/revoked subscription
+const refundWh = (id = 'WH-RC') => ({ id, event_type: 'PAYMENT.SALE.REFUNDED', resource: { id: 'R', sale_id: 'S', billing_agreement_id: 'I-1' } });
+
+Deno.test('N1: refund while PayPal still reports ACTIVE revokes premium AND cancels the subscription at PayPal (sandbox), recorded done', async () => {
+  const m = fakeStore(); await grantFirst(m);
+  const pp = fakePayPal({ sub: () => activeSub() });
+  const res = await handleWebhook(post(refundWh()), { store: m.store, paypal: pp.paypal, environment: 'sandbox' });
+  assertEquals((await res.json()).outcome, 'revoked'); assert(!m.premium.has('I-1'));
+  assertEquals(pp.calls.cancel, ['I-1']); assertEquals(m.state.cancel['I-1'].status, 'done');
+  // a redelivered refund is idempotent: no second PayPal cancel once recorded done... (status read says ACTIVE again only in this fake)
+  await handleWebhook(post(refundWh('WH-RC2')), { store: m.store, paypal: fakePayPal({ sub: () => activeSub({ status: 'CANCELLED' }) }).paypal, environment: 'sandbox' });
+  assertEquals(m.state.cancel['I-1'].status, 'done');
+});
+
+Deno.test('N1: a failing PayPal cancel never blocks the revoke; it stays pending and the reconciler retries until done, then stops', async () => {
+  const m = fakeStore(); await grantFirst(m);
+  let down = true;
+  const pp = fakePayPal({ sub: () => activeSub(), cancel: () => { if (down) throw new Error('paypal_cancel_failed_503'); } });
+  const res = await handleWebhook(post(refundWh()), { store: m.store, paypal: pp.paypal, environment: 'sandbox' });
+  assertEquals(res.status, 200); assertEquals((await res.json()).outcome, 'revoked'); assert(!m.premium.has('I-1'));
+  assertEquals(m.events.get('WH-RC')!.status, 'processed', 'the refund event itself is complete');
+  assertEquals(m.state.cancel['I-1'], { status: 'pending', attempts: 1 });
+  const still = await (await handleReconcile(reconReq(KEY), reconDeps(m, pp))).json();
+  assertEquals(still.providerCancels.failed, 1); assertEquals(m.state.cancel['I-1'].status, 'pending'); assert(!m.premium.has('I-1'));
+  down = false;
+  const healed = await (await handleReconcile(reconReq(KEY), reconDeps(m, pp))).json();
+  assertEquals(healed.providerCancels.done, 1); assertEquals(m.state.cancel['I-1'].status, 'done');
+  const calls = pp.calls.cancel.length;
+  const again = await (await handleReconcile(reconReq(KEY), reconDeps(m, pp))).json();
+  assertEquals(again.providerCancels, {}); assertEquals(pp.calls.cancel.length, calls, 'idempotent: nothing left to cancel');
+});
+
+Deno.test('N1: a recording failure cannot block the revoke either, and PayPal that is already inactive is marked done without a cancel call', async () => {
+  const m = fakeStore(); await grantFirst(m);
+  m.store.recordProviderCancel = async () => { throw new Error('db_down'); };
+  const pp = fakePayPal({ sub: () => activeSub() });
+  const res = await handleWebhook(post(refundWh()), { store: m.store, paypal: pp.paypal, environment: 'sandbox' });
+  assertEquals((await res.json()).outcome, 'revoked'); assert(!m.premium.has('I-1'));
+  const m2 = fakeStore(); await grantFirst(m2);
+  const pp2 = fakePayPal({ sub: () => activeSub({ status: 'CANCELLED' }) });
+  await handleWebhook(post(refundWh()), { store: m2.store, paypal: pp2.paypal, environment: 'sandbox' });
+  assertEquals(pp2.calls.cancel, []); assertEquals(m2.state.cancel['I-1'].status, 'done');
+});
+
+Deno.test('N1: the PayPal cancel is sandbox-only: no environment or live environment never calls PayPal cancel', async () => {
+  for (const environment of [undefined, 'live'] as const) {
+    const m = fakeStore(); await grantFirst(m);
+    const pp = fakePayPal({ sub: () => activeSub() });
+    const res = await handleWebhook(post(refundWh()), { store: m.store, paypal: pp.paypal, environment });
+    assertEquals((await res.json()).outcome, 'revoked'); assertEquals(pp.calls.cancel, []); assertEquals(m.state.cancel['I-1'].status, 'pending');
+  }
+  const m = fakeStore(); await grantFirst(m);
+  await handleWebhook(post(refundWh()), { store: m.store, paypal: fakePayPal({ sub: () => activeSub() }).paypal });
+  const pp = fakePayPal({ sub: () => activeSub() });
+  const body = await (await handleReconcile(reconReq(KEY), reconDeps(m, pp, { environment: 'live' }))).json();
+  assertEquals(pp.calls.cancel, []); assertEquals(body.providerCancels, { skipped: 1 });
+});
+
+// ---------------------------------------------------------------- F-01: the real store only ever applies a STORED, database-checked readback
+Deno.test('F-01: store records the raw PayPal status first, then applies only the returned readback id (no caller-supplied grant parameters)', async () => {
+  const calls: { fn: string; args: Record<string, unknown> }[] = [];
+  // deno-lint-ignore no-explicit-any
+  const db: any = { from: () => ({}), rpc: async (fn: string, args: Record<string, unknown>) => {
+    calls.push({ fn, args });
+    return { error: null, data: fn === 'billing_apply_readback' ? [{ outcome: 'granted', granted: true }] : 'rb-1' };
+  } };
+  const store = supabaseBillingStore(db);
+  const r = await store.applyReadback({ providerSubscriptionId: 'I-1', providerPlanId: 'P-PH', status: 'active', providerStatus: 'ACTIVE', periodEnd: FUTURE, lastPaymentAmount: '599.00', lastPaymentCurrency: 'PHP', eventId: 'ev-1' });
+  assertEquals(r, { outcome: 'granted', granted: true });
+  assertEquals(calls.map((c) => c.fn), ['billing_record_readback', 'billing_apply_readback']);
+  assertEquals(calls[0].args.p_provider_status, 'ACTIVE'); assertEquals(Object.keys(calls[1].args), ['p_readback_id']); assertEquals(calls[1].args.p_readback_id, 'rb-1');
+});
+
+Deno.test('F-01: refunds use the verified-event recorder; refund without a ledger event, or a non-refund without raw status, is refused before any RPC', async () => {
+  const calls: string[] = [];
+  // deno-lint-ignore no-explicit-any
+  const db: any = { from: () => ({}), rpc: async (fn: string) => { calls.push(fn); return { error: null, data: fn === 'billing_apply_readback' ? [{ outcome: 'revoked', granted: false }] : 'rb-2' }; } };
+  const store = supabaseBillingStore(db);
+  const base = { providerSubscriptionId: 'I-1', providerPlanId: 'P-PH', periodEnd: null, lastPaymentAmount: null, lastPaymentCurrency: null } as const;
+  assertEquals((await store.applyReadback({ ...base, status: 'refunded', eventId: 'ev-9' })).outcome, 'revoked');
+  assertEquals(calls, ['billing_record_refund_readback', 'billing_apply_readback']);
+  calls.length = 0;
+  await assertRejects(() => store.applyReadback({ ...base, status: 'refunded', eventId: null }));
+  await assertRejects(() => store.applyReadback({ ...base, status: 'active', eventId: null }));
+  assertEquals(calls, []);
+});
+
+Deno.test('F-01: an unknown subscription (record returns null) is reported without calling apply', async () => {
+  const calls: string[] = [];
+  // deno-lint-ignore no-explicit-any
+  const db: any = { from: () => ({}), rpc: async (fn: string) => { calls.push(fn); return { error: null, data: null }; } };
+  const r = await supabaseBillingStore(db).applyReadback({ providerSubscriptionId: 'I-X', providerPlanId: null, status: 'active', providerStatus: 'ACTIVE', periodEnd: null, lastPaymentAmount: null, lastPaymentCurrency: null, eventId: null });
+  assertEquals(r, { outcome: 'unknown_subscription', granted: false }); assertEquals(calls, ['billing_record_readback']);
 });

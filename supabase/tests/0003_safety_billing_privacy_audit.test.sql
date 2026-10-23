@@ -55,7 +55,7 @@ VALUES
  ('00000000-0000-0000-0000-000000000025', 'paypal', 'p203-sub-retention', 'p203-plan-test', 'active', now(), now() + interval '1 month');
 
 -- An ACTIVE subscription alone does not create an entitlement.
-SELECT plan(92);
+SELECT plan(93);
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM public.entitlements WHERE user_id = '00000000-0000-0000-0000-000000000021'),
   'active subscription alone does not mint an entitlement'
@@ -276,20 +276,28 @@ SELECT throws_ok(
 RESET ROLE;
 RESET "request.jwt.claims";
 
--- Provider event processing is server-only and provider facts remain immutable.
+-- Provider event processing: since migration 20261023000090 (F-06) service_role has no direct UPDATE on the ledger at all (billing_finish_event,
+-- SECURITY DEFINER, is the only writer); the state machine and provider-fact immutability are enforced by the guard trigger for every role,
+-- so those are asserted here as the table owner.
 SET ROLE service_role;
+SELECT throws_ok(
+ $$UPDATE public.payment_events SET status = 'verified', provider_verified = TRUE WHERE provider_event_id::TEXT COLLATE "C" = 'p203-event-main'::TEXT COLLATE "C"$$,
+ '42501', 'permission denied for table payment_events', 'service_role has no direct payment_events UPDATE (F-06)'
+);
+RESET ROLE;
 SELECT lives_ok(
  $$UPDATE public.payment_events SET status = 'verified', provider_verified = TRUE WHERE provider_event_id::TEXT COLLATE "C" = 'p203-event-main'::TEXT COLLATE "C"$$,
- 'trusted server can advance payment verification state'
+ 'ledger state machine advances (owner path; billing_finish_event is the service_role path)'
 );
 SELECT throws_ok(
  $$UPDATE public.payment_events SET provider_event_id = 'p203-event-mutated' WHERE provider_event_id::TEXT COLLATE "C" = 'p203-event-main'::TEXT COLLATE "C"$$,
- '42501', NULL, 'trusted server cannot rewrite provider event id through narrow grants'
+ '42501', NULL, 'provider event id is immutable (guard trigger)'
 );
 SELECT throws_ok(
  $$UPDATE public.payment_events SET status = 'processed', provider_verified = TRUE, processed_at = now() WHERE provider_event_id::TEXT COLLATE "C" = 'p203-event-main'::TEXT COLLATE "C"$$,
  '23514', NULL, 'payment event cannot skip the processing state'
 );
+SET ROLE service_role;
 SELECT throws_ok(
  $$UPDATE public.audit_events SET action = 'mutated' WHERE action::TEXT COLLATE "C" = 'p203-test-event'::TEXT COLLATE "C"$$,
  '42501', NULL, 'server role cannot update immutable audit records'

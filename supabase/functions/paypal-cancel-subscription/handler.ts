@@ -18,7 +18,7 @@ export async function handleCancel(req: Request, deps: CancelDeps): Promise<Resp
   await deps.paypal.cancelSubscription(sub.provider_subscription_id, 'Cancelled by user in Humbble');
   const after = await deps.paypal.getSubscription(sub.provider_subscription_id);
   const result = await deps.store.applyReadback({
-    providerSubscriptionId: sub.provider_subscription_id, providerPlanId: after.plan_id ?? null, status: mapPayPalStatus(after.status),
+    providerSubscriptionId: sub.provider_subscription_id, providerPlanId: after.plan_id ?? null, status: mapPayPalStatus(after.status), providerStatus: after.status,
     periodEnd: null, lastPaymentAmount: null, lastPaymentCurrency: null, eventId: null,
   });
   return json(200, { ok: true, outcome: result.outcome });

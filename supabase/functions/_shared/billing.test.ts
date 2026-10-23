@@ -60,6 +60,8 @@ function memoryStore() {
     flagUnresolvedEvent: async () => {},
     listReconcileSubscriptions: async () => [],
     listReprocessableEvents: async () => [],
+    listPendingProviderCancels: async () => [],
+    recordProviderCancel: async () => 'ignored',
   };
   return { store, events, applied, grants: () => grants };
 }
@@ -70,13 +72,13 @@ const req = (body: string) => new Request('http://x', { method: 'POST', body });
 
 Deno.test('forged signature never reaches the ledger or grants', async () => {
   const m = memoryStore();
-  const res = await handleWebhook(req(event), { store: m.store, paypal: { verifyWebhookSignature: async () => false, getSubscription: async () => activeSub, getSale: async () => null } });
+  const res = await handleWebhook(req(event), { store: m.store, paypal: { verifyWebhookSignature: async () => false, getSubscription: async () => activeSub, getSale: async () => null, cancelSubscription: async () => {} } });
   assertEquals(res.status, 401); assertEquals(m.events.size, 0); assertEquals(m.grants(), 0);
 });
 
 Deno.test('verified ACTIVE readback grants exactly once; replayed event is a no-op', async () => {
   const m = memoryStore(); let reads = 0;
-  const deps = { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSale: async () => null, getSubscription: async () => { reads++; return activeSub; } } };
+  const deps = { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSale: async () => null, cancelSubscription: async () => {}, getSubscription: async () => { reads++; return activeSub; } } };
   assertEquals((await (await handleWebhook(req(event), deps)).json()).outcome, 'granted');
   const dup = await (await handleWebhook(req(event), deps)).json();
   assertEquals(dup.duplicate, true); assertEquals(m.grants(), 1); assertEquals(reads, 1);
@@ -84,20 +86,20 @@ Deno.test('verified ACTIVE readback grants exactly once; replayed event is a no-
 
 Deno.test('webhook claiming ACTIVE but readback APPROVAL_PENDING grants nothing', async () => {
   const m = memoryStore();
-  const res = await handleWebhook(req(event), { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSale: async () => null, getSubscription: async () => ({ ...activeSub, status: 'APPROVAL_PENDING' }) } });
+  const res = await handleWebhook(req(event), { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSale: async () => null, cancelSubscription: async () => {}, getSubscription: async () => ({ ...activeSub, status: 'APPROVAL_PENDING' }) } });
   assertEquals((await res.json()).outcome, 'no_change'); assertEquals(m.grants(), 0);
 });
 
 Deno.test('amount mismatch is quarantined', async () => {
   const m = memoryStore();
   const bad = { ...activeSub, billing_info: { ...activeSub.billing_info, last_payment: { amount: { value: '1.00', currency_code: 'PHP' } } } };
-  await handleWebhook(req(event), { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSale: async () => null, getSubscription: async () => bad } });
+  await handleWebhook(req(event), { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSale: async () => null, cancelSubscription: async () => {}, getSubscription: async () => bad } });
   assertEquals([...m.events.values()][0].status, 'quarantined'); assertEquals(m.grants(), 0);
 });
 
 Deno.test('transient failure leaves the event retryable', async () => {
   const m = memoryStore(); let fail = true;
-  const deps = { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSale: async () => null, getSubscription: async () => { if (fail) throw new Error('down'); return activeSub; } } };
+  const deps = { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSale: async () => null, cancelSubscription: async () => {}, getSubscription: async () => { if (fail) throw new Error('down'); return activeSub; } } };
   await handleWebhook(req(event), deps).catch(() => null);
   fail = false;
   assertEquals((await (await handleWebhook(req(event), deps)).json()).outcome, 'granted');

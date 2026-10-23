@@ -1,5 +1,5 @@
 import type { BillingStore } from '../_shared/billingStore.ts';
-import { applySubscriptionReadback, inputFromLedgerRow, processBillingEvent, type ProcessorPayPal } from '../_shared/billingProcessor.ts';
+import { applySubscriptionReadback, attemptProviderCancel, inputFromLedgerRow, processBillingEvent, type ProcessorPayPal } from '../_shared/billingProcessor.ts';
 import { bearerMatches, json } from '../_shared/paypal.ts';
 
 export type ReconcileDeps = {
@@ -30,7 +30,7 @@ export async function handleReconcile(req: Request, deps: ReconcileDeps): Promis
   const limit = deps.limit ?? 50;
   const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const log = deps.log ?? ((line: string) => console.log(line));
-  const subscriptions: Counts = {}; const events: Counts = {}; let errors = 0;
+  const subscriptions: Counts = {}; const events: Counts = {}; const providerCancels: Counts = {}; let errors = 0;
   const reconciled = new Set<string>();
   let calls = 0;
   const pace = async () => { if (calls++ > 0) await sleep(200); };
@@ -61,8 +61,16 @@ export async function handleReconcile(req: Request, deps: ReconcileDeps): Promis
     } catch { errors++; bump(subscriptions, 'error'); }
   }
 
-  const alert = (subscriptions.settlement_mismatch ?? 0) + (subscriptions.plan_mismatch ?? 0) + (events.settlement_mismatch ?? 0) + (events.plan_mismatch ?? 0) + (events.unresolved_refund ?? 0);
+  // 3. F-05/N1: refunded/revoked subscriptions that may still be billing at PayPal (sandbox only; failures stay pending and retry).
+  let cancelRows: Awaited<ReturnType<BillingStore['listPendingProviderCancels']>> = [];
+  try { cancelRows = await deps.store.listPendingProviderCancels(deps.environment, limit); } catch { errors++; }
+  for (const row of cancelRows) {
+    await pace();
+    bump(providerCancels, await attemptProviderCancel(deps, row.providerSubscriptionId, null));
+  }
+
+  const alert = (providerCancels.failed ?? 0) + (subscriptions.settlement_mismatch ?? 0) + (subscriptions.plan_mismatch ?? 0) + (events.settlement_mismatch ?? 0) + (events.plan_mismatch ?? 0) + (events.unresolved_refund ?? 0);
   // One structured line per run; counts only (no ids, no secrets).
-  log(JSON.stringify({ event: 'paypal_reconcile', level: alert > 0 ? 'warn' : 'info', environment: deps.environment, subscriptions, events, errors }));
-  return json(200, { ok: true, subscriptions, events, errors });
+  log(JSON.stringify({ event: 'paypal_reconcile', level: alert > 0 ? 'warn' : 'info', environment: deps.environment, subscriptions, events, providerCancels, errors }));
+  return json(200, { ok: true, subscriptions, events, providerCancels, errors });
 }

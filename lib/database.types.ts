@@ -140,6 +140,72 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_readbacks: {
+        Row: {
+          applied_at: string | null
+          apply_outcome: string | null
+          id: string
+          kind: string
+          last_payment_amount: number | null
+          last_payment_currency: string | null
+          mapped_status: Database["public"]["Enums"]["subscription_status"]
+          payment_event_id: string | null
+          period_end: string | null
+          provider_plan_id: string | null
+          provider_status: string | null
+          provider_subscription_id: string
+          recorded_at: string
+          subscription_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          apply_outcome?: string | null
+          id?: string
+          kind: string
+          last_payment_amount?: number | null
+          last_payment_currency?: string | null
+          mapped_status: Database["public"]["Enums"]["subscription_status"]
+          payment_event_id?: string | null
+          period_end?: string | null
+          provider_plan_id?: string | null
+          provider_status?: string | null
+          provider_subscription_id: string
+          recorded_at?: string
+          subscription_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          apply_outcome?: string | null
+          id?: string
+          kind?: string
+          last_payment_amount?: number | null
+          last_payment_currency?: string | null
+          mapped_status?: Database["public"]["Enums"]["subscription_status"]
+          payment_event_id?: string | null
+          period_end?: string | null
+          provider_plan_id?: string | null
+          provider_status?: string | null
+          provider_subscription_id?: string
+          recorded_at?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_readbacks_payment_event_id_fkey"
+            columns: ["payment_event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_readbacks_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocks: {
         Row: {
           blocked_id: string
@@ -1112,6 +1178,9 @@ export type Database = {
           legal_hold: boolean | null
           plan_key: string | null
           provider: string
+          provider_cancel_attempts: number
+          provider_cancel_last_attempt_at: string | null
+          provider_cancel_status: string | null
           provider_plan_id: string
           provider_subscription_id: string
           retention_until: string | null
@@ -1131,6 +1200,9 @@ export type Database = {
           legal_hold?: boolean | null
           plan_key?: string | null
           provider: string
+          provider_cancel_attempts?: number
+          provider_cancel_last_attempt_at?: string | null
+          provider_cancel_status?: string | null
           provider_plan_id: string
           provider_subscription_id: string
           retention_until?: string | null
@@ -1150,6 +1222,9 @@ export type Database = {
           legal_hold?: boolean | null
           plan_key?: string | null
           provider?: string
+          provider_cancel_attempts?: number
+          provider_cancel_last_attempt_at?: string | null
+          provider_cancel_status?: string | null
           provider_plan_id?: string
           provider_subscription_id?: string
           retention_until?: string | null
@@ -1329,15 +1404,7 @@ export type Database = {
         Returns: boolean
       }
       billing_apply_readback: {
-        Args: {
-          p_event_id?: string
-          p_last_payment_amount: number
-          p_last_payment_currency: string
-          p_period_end: string
-          p_provider_plan_id: string
-          p_provider_subscription_id: string
-          p_status: Database["public"]["Enums"]["subscription_status"]
-        }
+        Args: { p_readback_id: string }
         Returns: {
           granted: boolean
           outcome: string
@@ -1354,6 +1421,13 @@ export type Database = {
       billing_flag_unresolved_event: {
         Args: { p_event_id: string; p_reason: string }
         Returns: undefined
+      }
+      billing_list_pending_provider_cancels: {
+        Args: { p_environment: string; p_limit?: number }
+        Returns: {
+          attempts: number
+          provider_subscription_id: string
+        }[]
       }
       billing_list_reconcile_subscriptions: {
         Args: { p_environment: string; p_limit?: number }
@@ -1372,6 +1446,10 @@ export type Database = {
           resource_id: string
         }[]
       }
+      billing_purge_readbacks: {
+        Args: { p_older_than?: string }
+        Returns: number
+      }
       billing_record_event: {
         Args: {
           p_event_type: string
@@ -1385,6 +1463,30 @@ export type Database = {
           event_status: Database["public"]["Enums"]["payment_event_status"]
           is_new: boolean
         }[]
+      }
+      billing_record_provider_cancel: {
+        Args: { p_provider_subscription_id: string; p_result: string }
+        Returns: string
+      }
+      billing_record_readback: {
+        Args: {
+          p_event_id?: string
+          p_last_payment_amount: number
+          p_last_payment_currency: string
+          p_period_end: string
+          p_provider_plan_id: string
+          p_provider_status: string
+          p_provider_subscription_id: string
+        }
+        Returns: string
+      }
+      billing_record_refund_readback: {
+        Args: {
+          p_event_id: string
+          p_provider_plan_id: string
+          p_provider_subscription_id: string
+        }
+        Returns: string
       }
       billing_register_pending_subscription: {
         Args: {

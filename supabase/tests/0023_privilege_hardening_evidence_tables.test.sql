@@ -5,6 +5,26 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET search_path = public, extensions, pg_temp;
+
+-- Test helper: drives the REAL two-step flow (billing_record_event / billing_record_readback / billing_record_refund_readback ->
+-- billing_apply_readback(uuid)) with the old call shape, so the legacy scenarios below keep covering it. SECURITY INVOKER: runs as the caller.
+CREATE OR REPLACE FUNCTION public.t_apply_readback(p_sub TEXT, p_plan TEXT, p_status TEXT, p_period TIMESTAMPTZ, p_amount NUMERIC, p_cur TEXT, p_event UUID DEFAULT NULL)
+RETURNS TABLE (subscription_id UUID, granted BOOLEAN, outcome TEXT) LANGUAGE plpgsql AS $f$
+DECLARE v_id UUID; v_ev UUID;
+BEGIN
+  IF p_status = 'revoked' THEN RAISE EXCEPTION 'revoked_cannot_be_produced_by_a_readback'; END IF;
+  IF p_status = 'refunded' THEN
+    SELECT e.event_id INTO v_ev FROM public.billing_record_event('T-RF-' || pg_catalog.gen_random_uuid()::TEXT, 'PAYMENT.SALE.REFUNDED', p_sub, NULL, now()) e;
+    v_id := public.billing_record_refund_readback(p_sub, p_plan, v_ev);
+  ELSE
+    v_id := public.billing_record_readback(p_sub, p_plan,
+      CASE p_status WHEN 'active' THEN 'ACTIVE' WHEN 'suspended' THEN 'SUSPENDED' WHEN 'cancelled' THEN 'CANCELLED' WHEN 'expired' THEN 'EXPIRED' ELSE 'APPROVAL_PENDING' END,
+      p_period, p_amount, p_cur, p_event);
+  END IF;
+  IF v_id IS NULL THEN RETURN QUERY SELECT NULL::UUID, FALSE, 'unknown_subscription'::TEXT; RETURN; END IF;
+  RETURN QUERY SELECT a.subscription_id, a.granted, a.outcome FROM public.billing_apply_readback(v_id) a;
+END;
+$f$;
 SELECT plan(101);
 
 DELETE FROM auth.users WHERE id IN ('00000000-0000-0000-0000-000000000231','00000000-0000-0000-0000-000000000232');
@@ -39,7 +59,8 @@ SELECT ok(NOT (has_table_privilege('service_role','public.privacy_requests','DEL
             OR has_table_privilege('service_role','public.privacy_requests','TRIGGER')), 'privacy_requests: service_role has no DELETE/TRUNCATE/table-level UPDATE/REFERENCES/TRIGGER');
 SELECT ok(has_table_privilege('service_role','public.privacy_requests','SELECT') AND has_table_privilege('service_role','public.privacy_requests','INSERT'), 'privacy_requests: service_role keeps SELECT, INSERT');
 SELECT ok(has_column_privilege('service_role','public.privacy_requests','status','UPDATE') AND has_column_privilege('service_role','public.privacy_requests','completion_metadata','UPDATE')
-          AND has_column_privilege('service_role','public.privacy_requests','failure_code','UPDATE') AND has_column_privilege('service_role','public.privacy_requests','legal_hold','UPDATE'), 'privacy_requests: workflow column UPDATE kept');
+          AND has_column_privilege('service_role','public.privacy_requests','failure_code','UPDATE') AND NOT has_column_privilege('service_role','public.privacy_requests','legal_hold','UPDATE')
+          AND NOT has_column_privilege('service_role','public.privacy_requests','retention_until','UPDATE'), 'privacy_requests: workflow column UPDATE kept; legal_hold/retention_until no longer updatable (F-06)');
 SELECT ok(NOT (has_column_privilege('service_role','public.privacy_requests','user_id','UPDATE') OR has_column_privilege('service_role','public.privacy_requests','request_type','UPDATE')
             OR has_column_privilege('service_role','public.privacy_requests','idempotency_key','UPDATE') OR has_column_privilege('service_role','public.privacy_requests','created_at','UPDATE')), 'privacy_requests: identity columns are not updatable by service_role');
 SELECT ok(NOT (has_table_privilege('service_role','public.subscriptions','INSERT') OR has_table_privilege('service_role','public.subscriptions','UPDATE')
@@ -52,10 +73,10 @@ SELECT ok(NOT (has_table_privilege('service_role','public.entitlements','INSERT'
 SELECT ok(has_table_privilege('service_role','public.entitlements','SELECT'), 'entitlements: service_role keeps SELECT');
 SELECT ok(NOT (has_table_privilege('service_role','public.payment_events','DELETE') OR has_table_privilege('service_role','public.payment_events','TRUNCATE')
             OR has_table_privilege('service_role','public.payment_events','UPDATE')), 'payment_events: still no DELETE/TRUNCATE/table-level UPDATE');
-SELECT ok(has_column_privilege('service_role','public.payment_events','status','UPDATE') AND has_column_privilege('service_role','public.payment_events','provider_verified','UPDATE')
-          AND has_column_privilege('service_role','public.payment_events','processed_at','UPDATE') AND has_column_privilege('service_role','public.payment_events','legal_hold','UPDATE'), 'payment_events: 4 process-state columns remain updatable');
+SELECT ok(NOT (has_column_privilege('service_role','public.payment_events','status','UPDATE') OR has_column_privilege('service_role','public.payment_events','provider_verified','UPDATE')
+          OR has_column_privilege('service_role','public.payment_events','processed_at','UPDATE') OR has_column_privilege('service_role','public.payment_events','legal_hold','UPDATE')), 'payment_events (F-06): no process-state column is directly updatable (billing_finish_event is the only writer)');
 SELECT ok(NOT has_column_privilege('service_role','public.payment_events','retention_until','UPDATE'), 'payment_events (N3): retention_until is no longer updatable by service_role');
-SELECT is((SELECT count(*)::INT FROM information_schema.column_privileges WHERE grantee='service_role' AND table_schema='public' AND table_name='payment_events' AND privilege_type='UPDATE'), 4, 'payment_events: exactly 4 UPDATE columns for service_role');
+SELECT is((SELECT count(*)::INT FROM information_schema.column_privileges WHERE grantee='service_role' AND table_schema='public' AND table_name='payment_events' AND privilege_type='UPDATE'), 0, 'payment_events: zero UPDATE columns for service_role');
 
 -- anon: nothing on any of the six tables
 SELECT is((SELECT count(*)::INT FROM unnest(ARRAY['audit_events','consent_records','privacy_requests','subscriptions','entitlements','payment_events']) t,
@@ -82,17 +103,17 @@ SELECT is((SELECT count(*)::INT FROM pg_trigger t WHERE NOT t.tgisinternal AND t
             AND (t.tgtype & 32) = 32 AND (t.tgtype & 1) = 0 AND (t.tgtype & 2) = 2 AND t.tgenabled = 'A'), 3, 'three BEFORE TRUNCATE statement triggers, ENABLE ALWAYS');
 SELECT throws_ok($$TRUNCATE public.audit_events$$, '42501', 'TRUNCATE is not permitted on public.audit_events', 'guard blocks TRUNCATE audit_events even for the owner');
 SELECT throws_ok($$TRUNCATE public.consent_records$$, '42501', 'TRUNCATE is not permitted on public.consent_records', 'guard blocks TRUNCATE consent_records even for the owner');
-SELECT throws_ok($$TRUNCATE public.payment_events$$, '42501', 'TRUNCATE is not permitted on public.payment_events', 'guard blocks TRUNCATE payment_events even for the owner');
+SELECT throws_ok($$TRUNCATE public.payment_events CASCADE$$, '42501', 'TRUNCATE is not permitted on public.payment_events', 'guard blocks TRUNCATE payment_events even for the owner');
 SELECT ok(NOT has_function_privilege('service_role','private.prevent_evidence_truncate()','EXECUTE') AND NOT has_function_privilege('authenticated','private.prevent_evidence_truncate()','EXECUTE')
           AND NOT has_function_privilege('anon','private.prevent_evidence_truncate()','EXECUTE'), 'guard function is not executable by API roles');
 -- defence in depth: even if TRUNCATE is re-granted to service_role (blanket GRANT, tooling), the guard still refuses it
-GRANT TRUNCATE ON public.audit_events, public.consent_records, public.payment_events TO service_role;
+GRANT TRUNCATE ON public.audit_events, public.consent_records, public.payment_events, public.billing_readbacks TO service_role;
 SET LOCAL ROLE service_role;
 SELECT throws_ok($$TRUNCATE public.audit_events$$, '42501', 'TRUNCATE is not permitted on public.audit_events', 'with TRUNCATE re-granted, the guard still blocks audit_events');
 SELECT throws_ok($$TRUNCATE public.consent_records$$, '42501', 'TRUNCATE is not permitted on public.consent_records', 'with TRUNCATE re-granted, the guard still blocks consent_records');
-SELECT throws_ok($$TRUNCATE public.payment_events$$, '42501', 'TRUNCATE is not permitted on public.payment_events', 'with TRUNCATE re-granted, the guard still blocks payment_events');
+SELECT throws_ok($$TRUNCATE public.payment_events CASCADE$$, '42501', 'TRUNCATE is not permitted on public.payment_events', 'with TRUNCATE re-granted, the guard still blocks payment_events');
 RESET ROLE;
-REVOKE TRUNCATE ON public.audit_events, public.consent_records, public.payment_events FROM service_role;
+REVOKE TRUNCATE ON public.audit_events, public.consent_records, public.payment_events, public.billing_readbacks FROM service_role;
 SELECT is((SELECT count(*)::INT FROM public.audit_events WHERE action = 'p60.seed'), 1, 'audit seed row survived the TRUNCATE attempts');
 
 -- ===== 3. behaviour AS service_role: DELETE / TRUNCATE / forbidden UPDATE are permission errors =====
@@ -146,18 +167,18 @@ SELECT lives_ok($$SELECT count(*) FROM public.consent_records$$, 'service_role S
 SELECT lives_ok($$INSERT INTO public.privacy_requests (user_id, request_type, idempotency_key) VALUES ('00000000-0000-0000-0000-000000000232','deletion','00000000-0000-0000-0000-000000000242')$$, 'service_role INSERT privacy_requests');
 SELECT lives_ok($$UPDATE public.privacy_requests SET status = 'in_progress' WHERE idempotency_key = '00000000-0000-0000-0000-000000000242'$$, 'service_role workflow UPDATE (status) on privacy_requests');
 SELECT lives_ok($$UPDATE public.privacy_requests SET status = 'completed', completion_metadata = '{"outcome":"p60"}' WHERE idempotency_key = '00000000-0000-0000-0000-000000000242'$$, 'service_role completes a privacy request');
-SELECT lives_ok($$UPDATE public.privacy_requests SET legal_hold = TRUE, retention_until = now() + interval '1 year' WHERE idempotency_key = '00000000-0000-0000-0000-000000000241'$$, 'service_role retention/legal-hold UPDATE on privacy_requests');
+SELECT throws_ok($$UPDATE public.privacy_requests SET legal_hold = TRUE, retention_until = now() + interval '1 year' WHERE idempotency_key = '00000000-0000-0000-0000-000000000241'$$, '42501', 'permission denied for table privacy_requests', 'service_role can no longer flip legal_hold/retention_until on privacy_requests (F-06)');
 SELECT lives_ok($$SELECT count(*) FROM public.subscriptions$$, 'service_role SELECT subscriptions (billingStore.latestSubscription)');
 SELECT lives_ok($$SELECT provider_subscription_id, status FROM public.subscriptions WHERE user_id = '00000000-0000-0000-0000-000000000231' AND provider = 'paypal' ORDER BY created_at DESC LIMIT 1$$, 'service_role SELECT with the exact Edge Function projection');
 SELECT lives_ok($$SELECT count(*) FROM public.entitlements$$, 'service_role SELECT entitlements');
 -- SECURITY DEFINER billing RPCs (owner postgres) still write subscriptions / entitlements / ledger / audit
 SELECT lives_ok($$SELECT public.billing_register_pending_subscription('00000000-0000-0000-0000-000000000232','premium_monthly_ph','I-P60-2','P-P60-PH','sandbox')$$, 'billing_register_pending_subscription inserts a subscription');
-SELECT is((SELECT outcome FROM public.billing_apply_readback('I-P60-1','P-P60-PH','active', now()+interval '20 days', 599.00, 'PHP', NULL)), 'granted', 'billing_apply_readback grants (writes subscriptions + entitlements + audit)');
+SELECT is((SELECT outcome FROM public.t_apply_readback('I-P60-1','P-P60-PH','active', now()+interval '20 days', 599.00, 'PHP', NULL)), 'granted', 'billing_apply_readback grants (writes subscriptions + entitlements + audit)');
 SELECT lives_ok($$SELECT * FROM public.billing_record_event('WH-P60-NEW','BILLING.SUBSCRIPTION.ACTIVATED','I-P60-1',NULL,now())$$, 'billing_record_event inserts into the ledger');
 SELECT lives_ok($$SELECT public.billing_finish_event((SELECT id FROM public.payment_events WHERE provider_event_id='WH-P60-NEW'), 'quarantined')$$, 'billing_finish_event updates the ledger');
 SELECT lives_ok($$SELECT public.billing_flag_unresolved_event((SELECT id FROM public.payment_events WHERE provider_event_id='WH-P60-NEW'), 'p60')$$, 'billing_flag_unresolved_event writes ledger + audit');
-SELECT is((SELECT outcome FROM public.billing_apply_readback('I-P60-1','P-P60-PH','refunded', NULL, NULL, NULL, NULL)), 'revoked', 'billing_apply_readback revokes (updates subscriptions + entitlements)');
-SELECT lives_ok($$UPDATE public.payment_events SET legal_hold = TRUE WHERE provider_event_id = 'WH-P60-SEED'$$, 'payment_events narrow column UPDATE (legal_hold) still works');
+SELECT is((SELECT outcome FROM public.t_apply_readback('I-P60-1','P-P60-PH','refunded', NULL, NULL, NULL, NULL)), 'revoked', 'billing_apply_readback revokes (updates subscriptions + entitlements)');
+SELECT throws_ok($$UPDATE public.payment_events SET legal_hold = TRUE WHERE provider_event_id = 'WH-P60-SEED'$$, '42501', 'permission denied for table payment_events', 'payment_events legal_hold UPDATE is a permission error (F-06)');
 RESET ROLE;
 SELECT is((SELECT status::TEXT FROM public.entitlements WHERE user_id='00000000-0000-0000-0000-000000000231'), 'revoked', 'entitlement was written by the RPC and is revoked');
 SELECT is((SELECT status::TEXT FROM public.subscriptions WHERE provider_subscription_id='I-P60-1'), 'refunded', 'subscription was updated by the RPC');

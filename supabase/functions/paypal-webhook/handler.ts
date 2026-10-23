@@ -2,7 +2,7 @@ import type { BillingStore } from '../_shared/billingStore.ts';
 import { inputFromEvent, processBillingEvent, type ProcessorPayPal } from '../_shared/billingProcessor.ts';
 import { json, type PayPalClient, saleIdFromEvent, sha256Hex, subscriptionIdFromEvent } from '../_shared/paypal.ts';
 
-export type WebhookDeps = { paypal: Pick<PayPalClient, 'verifyWebhookSignature'> & ProcessorPayPal; store: BillingStore };
+export type WebhookDeps = { paypal: Pick<PayPalClient, 'verifyWebhookSignature'> & ProcessorPayPal; store: BillingStore; environment?: 'sandbox' | 'live' };
 
 /**
  * PayPal webhook: verify signature with PayPal's verify-webhook-signature API,
