@@ -5,6 +5,7 @@ export default function PublicStackLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="quiz" />
       <Stack.Screen name="pricing" />
       <Stack.Screen name="legal/[slug]" />
     </Stack>

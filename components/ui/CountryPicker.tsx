@@ -7,9 +7,9 @@ import { countryName, countryOptions } from '@/lib/countries';
 import { Button } from './Button';
 import { TextField } from './TextField';
 
-type Props = { testID: string; label?: string; value: string | null; onChange(code: string): void; disabled?: boolean };
+type Props = { testID: string; label?: string; /** Hide the visible label when the screen title already names the field (it stays as the accessibility label). */ hideLabel?: boolean; value: string | null; onChange(code: string): void; disabled?: boolean };
 
-export function CountryPicker({ testID, label = 'Country', value, onChange, disabled }: Props) {
+export function CountryPicker({ testID, label = 'Country', hideLabel = false, value, onChange, disabled }: Props) {
   const palette = Colors[useColorScheme() ?? 'light'];
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -20,7 +20,7 @@ export function CountryPicker({ testID, label = 'Country', value, onChange, disa
   }, [options, query]);
 
   return <View style={styles.wrap}>
-    <Text style={[styles.label, { color: palette.text }]}>{label}</Text>
+    {hideLabel ? null : <Text style={[styles.label, { color: palette.text }]}>{label}</Text>}
     <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={`${label}: ${value ? countryName(value) : 'not set'}`} disabled={disabled}
       onPress={() => setOpen(true)} style={[styles.field, { borderColor: palette.border, backgroundColor: palette.surface }]}>
       <Text style={{ color: value ? palette.text : palette.textSecondary }}>{value ? countryName(value) : 'Select your country'}</Text>
