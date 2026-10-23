@@ -91,7 +91,7 @@ definer RPC. Row-level immutability triggers remain origin-only (`O`) on older t
 ### Expected catalog state after `...0090`
 Run `docs/operations/privcheck4.sql` (single read-only `SELECT`). Expect: one `table_acl` row per table x role exactly as in the matrix in `0029` (`guard=A` on
 the eleven guarded tables); six `function_acl` rows with `anon=false authenticated=false service_role=true` (the five billing RPCs plus `billing_purge_readbacks(interval)`); `old_fn` = `absent`; `default_acl` for `postgres`,
-objtype `r` = `no API-role entries`; since migration `...000100` also `postgres in all schemas objtype=f` = `no API-role entries` (four `postgres` default_acl rows; the Supabase `supabase_admin` rows are additional), `postgres in public objtype=f` = `service_role=EXECUTE`, `objtype=S` = `service_role` only (the `supabase_admin` rows stay permissive, see `default-acl-hardening.md`). Any difference means drift. Function and sequence exposure is inventoried by `privcheck6.sql`.
+objtype `r` = `no API-role entries`; since migration `...000100` also `postgres in all schemas objtype=f` = `no API-role entries` (three `postgres` default_acl rows, or four if hosted also has a `postgres in public objtype=r` row; the Supabase `supabase_admin` rows are additional), `postgres in public objtype=f` = `service_role=EXECUTE`, `objtype=S` = `service_role` only (the `supabase_admin` rows stay permissive, see `default-acl-hardening.md`). Any difference means drift. Function and sequence exposure is inventoried by `privcheck6.sql`.
 
 ## Verifying after deploy (read-only)
 `docs/operations/privcheck2.sql` is one `SELECT` returning one row per table. Expected result:
