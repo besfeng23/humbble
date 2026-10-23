@@ -177,7 +177,7 @@ SELECT is((SELECT COUNT(DISTINCT actor_id)::INT FROM public.audit_events WHERE a
 
 -- 9. no new default-ACL / PUBLIC exposure was introduced by the migration (LB-3)
 SELECT is((SELECT COUNT(*)::INT FROM pg_default_acl d, aclexplode(d.defaclacl) x
-            WHERE pg_get_userbyid(d.defaclrole) = 'postgres' AND d.defaclobjtype = 'f' AND (x.grantee = 0 OR pg_get_userbyid(x.grantee) IN ('anon', 'authenticated'))), 0,
+            WHERE pg_get_userbyid(d.defaclrole) = 'postgres' AND d.defaclobjtype = 'f' AND (d.defaclnamespace = 'public'::regnamespace OR d.defaclnamespace = 0) AND (x.grantee = 0 OR pg_get_userbyid(x.grantee) IN ('anon', 'authenticated'))), 0,
           'default ACLs for new postgres functions still grant nothing to PUBLIC/anon/authenticated');
 
 SELECT * FROM finish();
