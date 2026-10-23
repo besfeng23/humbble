@@ -43,7 +43,7 @@ RESET ROLE;
 -- DB flag switches a market off; register_pending honours plan flags
 UPDATE public.billing_markets SET is_enabled = FALSE WHERE country_code = 'SE';
 SELECT is((SELECT currency FROM private.resolve_billing_plan('SE')), 'PHP', 'disabled market falls back to PH');
-SELECT lives_ok($$SELECT public.billing_register_pending_subscription('00000000-0000-0000-0000-000000000161','premium_monthly_sek','I-LP-1','P-SEK')$$, 'SEK subscription can be registered');
+SELECT lives_ok($$SELECT public.billing_register_pending_subscription('00000000-0000-0000-0000-000000000161','premium_monthly_sek','I-LP-1','P-SEK','sandbox')$$, 'SEK subscription can be registered');
 
 SELECT * FROM finish();
 ROLLBACK;

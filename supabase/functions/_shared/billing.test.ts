@@ -57,6 +57,9 @@ function memoryStore() {
     registerPending: async () => {},
     latestSubscription: async () => ({ provider_subscription_id: 'I-1', status: 'active' }),
     resolvePlan: async () => null,
+    flagUnresolvedEvent: async () => {},
+    listReconcileSubscriptions: async () => [],
+    listReprocessableEvents: async () => [],
   };
   return { store, events, applied, grants: () => grants };
 }
@@ -67,13 +70,13 @@ const req = (body: string) => new Request('http://x', { method: 'POST', body });
 
 Deno.test('forged signature never reaches the ledger or grants', async () => {
   const m = memoryStore();
-  const res = await handleWebhook(req(event), { store: m.store, paypal: { verifyWebhookSignature: async () => false, getSubscription: async () => activeSub } });
+  const res = await handleWebhook(req(event), { store: m.store, paypal: { verifyWebhookSignature: async () => false, getSubscription: async () => activeSub, getSale: async () => null } });
   assertEquals(res.status, 401); assertEquals(m.events.size, 0); assertEquals(m.grants(), 0);
 });
 
 Deno.test('verified ACTIVE readback grants exactly once; replayed event is a no-op', async () => {
   const m = memoryStore(); let reads = 0;
-  const deps = { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSubscription: async () => { reads++; return activeSub; } } };
+  const deps = { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSale: async () => null, getSubscription: async () => { reads++; return activeSub; } } };
   assertEquals((await (await handleWebhook(req(event), deps)).json()).outcome, 'granted');
   const dup = await (await handleWebhook(req(event), deps)).json();
   assertEquals(dup.duplicate, true); assertEquals(m.grants(), 1); assertEquals(reads, 1);
@@ -81,20 +84,20 @@ Deno.test('verified ACTIVE readback grants exactly once; replayed event is a no-
 
 Deno.test('webhook claiming ACTIVE but readback APPROVAL_PENDING grants nothing', async () => {
   const m = memoryStore();
-  const res = await handleWebhook(req(event), { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSubscription: async () => ({ ...activeSub, status: 'APPROVAL_PENDING' }) } });
+  const res = await handleWebhook(req(event), { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSale: async () => null, getSubscription: async () => ({ ...activeSub, status: 'APPROVAL_PENDING' }) } });
   assertEquals((await res.json()).outcome, 'no_change'); assertEquals(m.grants(), 0);
 });
 
 Deno.test('amount mismatch is quarantined', async () => {
   const m = memoryStore();
   const bad = { ...activeSub, billing_info: { ...activeSub.billing_info, last_payment: { amount: { value: '1.00', currency_code: 'PHP' } } } };
-  await handleWebhook(req(event), { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSubscription: async () => bad } });
+  await handleWebhook(req(event), { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSale: async () => null, getSubscription: async () => bad } });
   assertEquals([...m.events.values()][0].status, 'quarantined'); assertEquals(m.grants(), 0);
 });
 
 Deno.test('transient failure leaves the event retryable', async () => {
   const m = memoryStore(); let fail = true;
-  const deps = { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSubscription: async () => { if (fail) throw new Error('down'); return activeSub; } } };
+  const deps = { store: m.store, paypal: { verifyWebhookSignature: async () => true, getSale: async () => null, getSubscription: async () => { if (fail) throw new Error('down'); return activeSub; } } };
   await handleWebhook(req(event), deps).catch(() => null);
   fail = false;
   assertEquals((await (await handleWebhook(req(event), deps)).json()).outcome, 'granted');
@@ -131,14 +134,14 @@ Deno.test('checkout uses the DB-resolved plan; client amounts are ignored', asyn
   m.store.resolvePlan = async (_uid, hint) => { hints.push(hint); return hint === 'SE' ? { countryCode: 'SE', planKey: 'premium_monthly_sek', currency: 'SEK', amount: '299.00' } : { countryCode: 'PH', planKey: 'premium_monthly_ph', currency: 'PHP', amount: '599.00' }; };
   const registered: string[] = []; m.store.registerPending = async (_u, key, _s, plan) => { registered.push(`${key}:${plan}`); };
   let planUsed = '';
-  const deps = { store: m.store, config: { planIds: { SEK: 'P-SEK', PHP: 'P-PH' } }, returnUrl: 'r', cancelUrl: 'c', authenticate: authed,
+  const deps = { store: m.store, config: { planIds: { SEK: 'P-SEK', PHP: 'P-PH' }, environment: 'sandbox' as const, liveAllowed: false }, returnUrl: 'r', cancelUrl: 'c', authenticate: authed,
     paypal: { createSubscription: async (plan: string) => { planUsed = plan; return { id: 'I-2', approvalUrl: 'https://www.sandbox.paypal.com/approve' }; } } };
   const ok = await (await handleCreate(req(JSON.stringify({ country: 'se', amount: '0.01', currency: 'USD' })), deps)).json();
   assertEquals([ok.currency, ok.amount, planUsed], ['SEK', '299.00', 'P-SEK']);
   assertEquals(registered, ['premium_monthly_sek:P-SEK']);
   await handleCreate(req(JSON.stringify({ country: 'ZZZ' })), deps);
   assertEquals(hints[1], null);
-  assertEquals((await handleCreate(req('{}'), { ...deps, config: { planIds: {} } })).status, 503);
+  assertEquals((await handleCreate(req('{}'), { ...deps, config: { planIds: {}, environment: 'sandbox' as const, liveAllowed: false } })).status, 503);
   assertEquals((await handleCreate(req('{}'), { ...deps, authenticate: async () => null })).status, 401);
 });
 
@@ -146,7 +149,7 @@ Deno.test('checkout resolves the plan for the authenticated user (profile countr
   const m = memoryStore(); m.store.latestSubscription = async () => null;
   const seen: [string, string | null][] = [];
   m.store.resolvePlan = async (uid, hint) => { seen.push([uid, hint]); return { countryCode: 'NO', planKey: 'premium_monthly_nok', currency: 'NOK', amount: '329.00' }; };
-  const deps = { store: m.store, config: { planIds: { NOK: 'P-NOK' } }, returnUrl: 'r', cancelUrl: 'c', authenticate: async () => 'user-77',
+  const deps = { store: m.store, config: { planIds: { NOK: 'P-NOK' }, environment: 'sandbox' as const, liveAllowed: false }, returnUrl: 'r', cancelUrl: 'c', authenticate: async () => 'user-77',
     paypal: { createSubscription: async () => ({ id: 'I-9', approvalUrl: 'https://www.sandbox.paypal.com/approve' }) } };
   const body = await (await handleCreate(req(JSON.stringify({ country: 'GB' })), deps)).json();
   assertEquals(seen, [['user-77', 'GB']]);

@@ -1,4 +1,4 @@
-// Thin service-role wrapper around the P4 reconciliation RPCs.
+// Thin service-role wrapper around the P4 reconciliation RPCs (server-only; no anon/authenticated EXECUTE).
 import type { DbStatus } from './paypal.ts';
 
 export type ReadbackInput = {
@@ -9,7 +9,12 @@ export type BillingStore = {
   recordEvent(e: { id: string; type: string; resourceId: string | null; sha256: string; occurredAt: string | null }): Promise<{ eventId: string; isNew: boolean; status: string }>;
   finishEvent(eventId: string, status: 'processed' | 'quarantined' | 'failed'): Promise<void>;
   applyReadback(input: ReadbackInput): Promise<{ outcome: string; granted: boolean }>;
-  registerPending(userId: string, planKey: string, providerSubscriptionId: string, providerPlanId: string): Promise<void>;
+  /** `environment` is the PayPal environment actually in use; the database refuses anything but sandbox. */
+  registerPending(userId: string, planKey: string, providerSubscriptionId: string, providerPlanId: string, environment: 'sandbox' | 'live'): Promise<void>;
+  /** Quarantines an event that cannot be tied to a subscription and writes an audit row (never marks it processed). */
+  flagUnresolvedEvent(eventId: string, reason: string): Promise<void>;
+  listReconcileSubscriptions(environment: 'sandbox' | 'live', limit: number): Promise<{ providerSubscriptionId: string; reason: string }[]>;
+  listReprocessableEvents(limit: number): Promise<{ eventId: string; providerEventId: string; eventType: string; resourceId: string; status: string }[]>;
   resolvePlan(userId: string, countryHint: string | null): Promise<{ countryCode: string; planKey: string; currency: string; amount: string } | null>;
   latestSubscription(userId: string): Promise<{ provider_subscription_id: string; status: DbStatus } | null>;
 };
@@ -38,8 +43,18 @@ export function supabaseBillingStore(db: Rpc): BillingStore {
       });
       return { outcome: rows[0].outcome, granted: rows[0].granted };
     },
-    async registerPending(userId, planKey, subId, planId) {
-      await call('billing_register_pending_subscription', { p_user_id: userId, p_plan_key: planKey, p_provider_subscription_id: subId, p_provider_plan_id: planId });
+    async registerPending(userId, planKey, subId, planId, environment) {
+      await call('billing_register_pending_subscription', { p_user_id: userId, p_plan_key: planKey, p_provider_subscription_id: subId, p_provider_plan_id: planId, p_environment: environment });
+    },
+    async flagUnresolvedEvent(eventId, reason) { await call('billing_flag_unresolved_event', { p_event_id: eventId, p_reason: reason }); },
+    async listReconcileSubscriptions(environment, limit) {
+      const rows = await call('billing_list_reconcile_subscriptions', { p_environment: environment, p_limit: limit });
+      return (rows ?? []).map((r: { provider_subscription_id: string; reason: string }) => ({ providerSubscriptionId: r.provider_subscription_id, reason: r.reason }));
+    },
+    async listReprocessableEvents(limit) {
+      const rows = await call('billing_list_reprocessable_events', { p_limit: limit });
+      return (rows ?? []).map((r: { event_id: string; provider_event_id: string; event_type: string; resource_id: string; event_status: string }) =>
+        ({ eventId: r.event_id, providerEventId: r.provider_event_id, eventType: r.event_type, resourceId: r.resource_id, status: r.event_status }));
     },
     async resolvePlan(userId, countryHint) {
       // Profile country first, then validated hint, then PH (resolved in the DB).
