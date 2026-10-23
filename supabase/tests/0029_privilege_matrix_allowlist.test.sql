@@ -35,11 +35,11 @@ INSERT INTO expected_acl VALUES
  ('notification_preferences','service_role','INSERT,SELECT,UPDATE',''),
  ('payment_events','service_role','INSERT,SELECT',''),
  ('postback_outbox','service_role','SELECT',''),
- ('quiz_events','service_role','SELECT',''),  -- PR #37: anonymous quiz funnel events; written only by the definer RPC record_quiz_event
  ('privacy_requests','authenticated','SELECT','INSERT:idempotency_key,INSERT:request_type,INSERT:user_id'),
  ('privacy_requests','service_role','INSERT,SELECT','UPDATE:completed_at,UPDATE:completion_metadata,UPDATE:failure_code,UPDATE:status'),
  ('push_tokens','authenticated','SELECT',''),
  ('push_tokens','service_role','DELETE,INSERT,SELECT,UPDATE',''),
+ ('quiz_events','service_role','SELECT',''),  -- PR #37: anonymous quiz funnel events; written only by the definer RPC record_quiz_event
  ('reports','authenticated','SELECT',''),
  ('reports','service_role','INSERT,SELECT','UPDATE:severity,UPDATE:status'),
  ('signup_attributions','authenticated','INSERT',''),

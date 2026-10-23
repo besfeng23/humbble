@@ -37,7 +37,7 @@ the database against `billing_plans` and recorded as a mismatch, not a grant. pg
 Function runtime environment, any CI/CD or secret store that received it) can grant premium to any user with **no ledger event at all and without
 PayPal being involved**, using three calls and only the public price list:
 
-1. `billing_register_pending_subscription(user, plan_key, 'I-ANYTHING', 'P-ANYTHING', 'sandbox'|'live')`
+1. `billing_register_pending_subscription(user, plan_key, 'I-ANYTHING', 'P-ANYTHING', 'sandbox')` (a `'live'` registration is refused today with `live_environment_refused`, so this path is sandbox-only until the live-billing migration lands; that refusal is a second line of defence, not a fix for the key problem)
 2. `billing_record_readback('I-ANYTHING', 'P-ANYTHING', 'ACTIVE', now() + 30 days, <amount and currency copied from public billing_plans>, NULL)`
    (the event id is optional for a status readback, so nothing in `payment_events` is needed)
 3. `billing_apply_readback(<id returned by step 2>)` -> `granted`, active `premium` entitlement. `payment_events` has 0 rows for that subscription (verified by Themis).
@@ -52,15 +52,22 @@ Edge Function's honest call from a forged one because both come from the same ro
    period end, event id) computed by the Edge Function with a secret the database verifies (Vault) inside `billing_record_readback` /
    `billing_record_event`, or (b) a narrow billing role/JWT that only the billing functions are granted to, not the general service-role key. Also make
    the event citation mandatory for grants and bind it to a database-resolved subscription (P39-02).
-2. **A detective control**: a scheduled check that alerts on any active PayPal entitlement without a provider-verified `payment_events` row for its
-   subscription (and on any revoke without a verified refund event), so a forged grant is noticed even if (1) is bypassed.
+2. **A detective control, cross-checked against PayPal itself**: a scheduled job that alerts on any active PayPal entitlement without a
+   provider-verified `payment_events` row for its subscription (and on any revoke without a verified refund event). **On its own this does NOT
+   catch a compromised key**: the same key can first write a "verified" ledger event with `billing_record_event` and then grant, and a
+   "grant with no verified event" alert sees nothing. The check is only meaningful if it is reconciled against an **independent PayPal-side source**
+   (the PayPal Subscriptions/Transactions API or the transaction report, read with credentials the database/service-role key does not hold): every
+   active entitlement must correspond to an ACTIVE PayPal subscription and a real payment there. Without that cross-check it detects mistakes and
+   unsophisticated abuse, not a key holder.
 
 Neither control exists yet. Other limits: the readback fields (status, amount, period end) come from the Edge Function after it read PayPal, so the
 database verifies consistency with the price list and plan, not that PayPal said so; a readback is replayable for 15 minutes (single use);
 `billing_register_pending_subscription` is unchanged (service_role).
 
 ### What a cited ledger event proves (P39-02)
-For a status readback the optional `event_id` is an **audit trail, not authorization**. The recorder checks that it exists, is `provider_verified`, is
+For a status readback the optional `event_id` is an **audit trail, not authorization**. The check is **event-type prefix-wide, not grants-only**:
+a `BILLING.SUBSCRIPTION.CANCELLED`, `SUSPENDED` or `EXPIRED` event can be cited by an ACTIVE readback, and so can `PAYMENT.SALE.DENIED`; only refund/reversal
+types and unrelated event families are refused. The recorder checks that it exists, is `provider_verified`, is
 for PayPal, is of type `BILLING.SUBSCRIPTION.*` or `PAYMENT.SALE.*` (never a refund/reversal; unrelated types are refused with
 `readback_event_type_not_allowed`), and, for subscription events and for any ledger row whose `resource_id` is a subscription id, refers to the same
 subscription. A `PAYMENT.SALE.*` event carries a sale id; the Edge Function resolves it to a subscription through PayPal, which the database cannot
