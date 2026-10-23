@@ -114,11 +114,13 @@ The database cannot see the caller's IP (none is stored). Put a per-IP limit in 
 `/rest/v1/rpc/record_quiz_event`, for example a rule of **30 requests per minute per IP** on that path (a legitimate
 visit sends at most 7), with a challenge or block action, using a CDN/WAF in front of a custom API domain. This
 is an infrastructure change for the owner; until it exists, the global cap is the only limiter. Also alert on a sustained
-rate of **HTTP 429 / `PT429`** responses on `/rest/v1/rpc/record_quiz_event` (PostgREST `Proxy-Status: PostgREST; error=PT429`;
-it means the minute cap is being hit), or on `n >= cap` in `private.quiz_event_rate`. This is a separate alert from the 5xx
-alert: cap hits no longer count as 5xx, so a 5xx-only alert would not see a flood. The Supabase gateway can also emit its own
-429s, so match on the path and on the PostgREST `PT429` error code. Oversize requests are never counted by the cap (they are
-400s); alert on a rising 4xx share on the same path as well.
+rate of **HTTP 429 / `PT429`** responses on `/rest/v1/rpc/record_quiz_event` (it means the minute cap is being hit). PostgREST
+reports its error code in the response body, not in the gateway log, so the signals are the `PT429` SQLSTATE in `postgres_logs`,
+gateway 429s on that path with an empty `sb_error_code` (unverified on real logs), and `n >= cap` in `private.quiz_event_rate`;
+exact queries, thresholds and the pipeline check are in `docs/operations/quiz-funnel-alerts.md`. This is a separate alert from the
+5xx alert: cap hits no longer count as 5xx, so a 5xx-only alert would not see a flood. The Supabase gateway can also emit its own
+429s, so match on the path, not on the status alone. Oversize requests are never counted by the cap (they are 400s); alert on a
+rising 4xx share on the same path as well.
 The alerts are defined as code (ids, thresholds, read-only queries, offline evaluator, tests) in `docs/operations/quiz-funnel-alerts.md`; scheduling and notification channel are not configured.
 
 ### Disk size and measured row growth

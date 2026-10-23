@@ -10,9 +10,11 @@ const defs = loadDefinitions();
 const alert = (id) => defs.alerts.find((a) => a.id === id);
 const byId = (report) => Object.fromEntries(report.results.map((r) => [r.id, r]));
 
+// A healthy, quiet window: both log sources have rows with the expected keys, no probe in the window (probe_sent 0).
 const QUIET = {
-  requests_total: 400, edge_429_total: 0, edge_429_postgrest: 0, edge_429_gateway: 0, edge_4xx_other: 0,
-  pt429_log_count: 0, pt400_log_count: 0, saturated_minutes: 0,
+  edge_logs_total: 1000, edge_logs_schema_rows: 1000, requests_total: 400, edge_429_total: 0, edge_429_postgrest: 0, edge_429_gateway: 0, edge_4xx_other: 0,
+  pg_rows_total: 5000, pg_rows_with_sqlstate: 5000, pg_rows_with_severity: 5000,
+  pt429_log_count: 0, pt429_log_rows_any: 0, pt400_log_count: 0, pt400_log_rows_any: 0, saturated_minutes: 0, probe_sent: 0,
 };
 
 /** SQL with comments, whitespace and the trailing semicolon removed, for comparing copies. */
@@ -53,12 +55,14 @@ describe('quiz-funnel alert definitions', () => {
     expect(new RegExp(defs.rpc_path_regex).test('/rest/v1/quiz_events')).toBe(false);
     const edge = read('docs/operations/alerts/quiz-funnel/edge-status-mix.sql');
     expect(edge).toContain("source = 'edge_logs'");
-    expect(edge).toContain("log_attributes['request.method'] = 'POST'");
+    expect(edge).toContain("method = 'POST'");
+    expect(edge).toContain("log_attributes['request.method']");
     expect(edge).toContain(defs.rpc_path_regex);
     expect(edge).toContain("log_attributes['response.headers.sb_error_code']");
     expect(edge).not.toMatch(/proxy_status/i); // not a supported edge_logs field per Supabase docs
     const pg = read('docs/operations/alerts/quiz-funnel/postgres-log-sqlstate.sql');
     expect(pg).toContain("source = 'postgres_logs'");
+    expect(pg).toContain("log_attributes['parsed.sql_state_code']");
     expect(pg).toContain("'PT429'");
     expect(pg).toContain("'PT400'");
 
@@ -135,6 +139,7 @@ describe('evaluate()', () => {
     const run = (v) => {
       const stats = { ...QUIET, [metric]: v };
       if (metric === 'edge_429_postgrest') { stats.edge_429_total = v; }
+      if (metric === 'pt429_log_count') { stats.pt429_log_rows_any = v; }
       return byId(evaluate(stats, defs))[id].state;
     };
     expect(run(a.warn - 1)).toBe('ok');
@@ -144,7 +149,7 @@ describe('evaluate()', () => {
   });
 
   test('a cap hit is not a 5xx and not a 4xx-share event: 429s are excluded from the 4xx share', () => {
-    const r = evaluate({ ...QUIET, requests_total: 400, edge_429_total: 300, edge_429_postgrest: 300, edge_4xx_other: 0, pt429_log_count: 300, saturated_minutes: 6 }, defs);
+    const r = evaluate({ ...QUIET, requests_total: 400, edge_429_total: 300, edge_429_postgrest: 300, edge_4xx_other: 0, pt429_log_count: 300, pt429_log_rows_any: 300, saturated_minutes: 6 }, defs);
     const s = byId(r);
     expect(s['QZ-4XX-SHARE'].state).toBe('ok');
     expect(s['QZ-4XX-SHARE'].value).toBe(0);
@@ -197,8 +202,8 @@ describe('evaluate()', () => {
 
   test('warn and critical outrank no_data in overall', () => {
     const { saturated_minutes, ...rest } = QUIET; // eslint-disable-line no-unused-vars
-    expect(evaluate({ ...rest, pt429_log_count: 10 }, defs).overall).toBe('warn');
-    expect(evaluate({ ...rest, pt429_log_count: 100 }, defs).overall).toBe('critical');
+    expect(evaluate({ ...rest, pt429_log_count: 10, pt429_log_rows_any: 10 }, defs).overall).toBe('warn');
+    expect(evaluate({ ...rest, pt429_log_count: 100, pt429_log_rows_any: 100 }, defs).overall).toBe('critical');
   });
 
   test('rejects nonsense input instead of guessing', () => {
@@ -211,6 +216,157 @@ describe('evaluate()', () => {
     expect(() => validateStats({ requests_total: 10, edge_4xx_other: 6, edge_429_total: 6 })).toThrow();
     expect(() => validateStats({ edge_429_total: 5, edge_429_postgrest: 2, edge_429_gateway: 2 })).toThrow(/must equal/);
     expect(() => evaluate({ requests_total: 'abc' }, defs)).toThrow();
+  });
+});
+
+describe('liveness: a blind pipeline is no_data, never ok (Themis N44-01)', () => {
+  const states = (stats) => byId(evaluate(stats, defs));
+  const liveState = (stats, id) => evaluate(stats, defs).liveness.find((l) => l.id === id).state;
+
+  test('QUIET is healthy: every liveness check is ok', () => {
+    const r = evaluate(QUIET, defs);
+    expect(r.liveness.length).toBe(defs.liveness.length);
+    expect(r.liveness.every((l) => l.state === 'ok')).toBe(true);
+  });
+
+  test('every alert that reads a log source declares the liveness checks that protect it; the database alert needs none', () => {
+    const ids = new Set(defs.liveness.map((l) => l.id));
+    for (const a of defs.alerts) for (const l of a.requires_liveness || []) expect(ids.has(l)).toBe(true);
+    expect(alert('QZ-CAP-SATURATED-MINUTES').requires_liveness).toBeUndefined();
+    for (const id of ['QZ-429-PT429-LOG', 'QZ-429-EDGE-POSTGREST', 'QZ-4XX-SHARE']) expect((alert(id).requires_liveness || []).length).toBeGreaterThan(0);
+    // every liveness check protects at least one alert, and its inputs are declared stats
+    const used = new Set(defs.alerts.flatMap((a) => a.requires_liveness || []));
+    for (const l of defs.liveness) {
+      expect(used.has(l.id)).toBe(true);
+      for (const k of [l.metric, l.other, l.if_metric, l.then_metric].filter(Boolean)) expect(Object.keys(defs.stats_inputs)).toContain(k);
+    }
+  });
+
+  test.each([
+    ['gateway keys wrong: rows exist, none carries method/path/status', { edge_logs_schema_rows: 0, requests_total: 0 }, 'QZ-LIVE-EDGE-FIELDS', ['QZ-429-EDGE-POSTGREST', 'QZ-4XX-SHARE']],
+    ['no gateway rows at all (ingestion gap)', { edge_logs_total: 0, edge_logs_schema_rows: 0, requests_total: 0 }, 'QZ-LIVE-EDGE-ROWS', ['QZ-429-EDGE-POSTGREST', 'QZ-4XX-SHARE']],
+    ['no postgres rows at all (ingestion gap)', { pg_rows_total: 0, pg_rows_with_sqlstate: 0, pg_rows_with_severity: 0 }, 'QZ-LIVE-PG-ROWS', ['QZ-429-PT429-LOG']],
+    ['sqlstate key wrong: rows exist, none has parsed.sql_state_code', { pg_rows_with_sqlstate: 0 }, 'QZ-LIVE-PG-SQLSTATE', ['QZ-429-PT429-LOG']],
+    ['severity key wrong', { pg_rows_with_severity: 0 }, 'QZ-LIVE-PG-SEVERITY', ['QZ-429-PT429-LOG']],
+    ['PT429 rows exist but none has severity ERROR (value differs)', { pt429_log_rows_any: 4, pt429_log_count: 0 }, 'QZ-LIVE-PG-XCHECK-429', ['QZ-429-PT429-LOG']],
+    ['PT400 rows exist but none has severity ERROR (value differs)', { pt400_log_rows_any: 2, pt400_log_count: 0 }, 'QZ-LIVE-PG-XCHECK-400', ['QZ-429-PT429-LOG']],
+    ['probe sent but no PT400 log row', { probe_sent: 1, edge_4xx_other: 1, requests_total: 400, pt400_log_count: 0 }, 'QZ-LIVE-PROBE-PG', ['QZ-429-PT429-LOG']],
+    ['probe sent but no gateway 4xx row (path or status key wrong)', { probe_sent: 1, edge_4xx_other: 0, pt400_log_count: 1, pt400_log_rows_any: 1 }, 'QZ-LIVE-PROBE-EDGE', ['QZ-429-EDGE-POSTGREST', 'QZ-4XX-SHARE']],
+  ])('%s => liveness fails, the dependent alerts are no_data and overall exits 3', (_name, patch, liveId, dependents) => {
+    const stats = { ...QUIET, ...patch };
+    expect(liveState(stats, liveId)).toBe('no_data');
+    const r = evaluate(stats, defs);
+    for (const id of dependents) {
+      expect(states(stats)[id].state).toBe('no_data');
+      expect(states(stats)[id].note).toMatch(/liveness failed/);
+    }
+    expect(states(stats)['QZ-CAP-SATURATED-MINUTES'].state).toBe('ok'); // not affected by the logs
+    expect(r.overall).toBe('no_data');
+    expect(r.exitCode).toBe(EXIT_CODE.no_data);
+  });
+
+  test('a missing liveness input is no_data too (old stats files without the new fields never read as ok)', () => {
+    const { edge_logs_total, ...noEdge } = QUIET; // eslint-disable-line no-unused-vars
+    expect(evaluate(noEdge, defs).overall).toBe('no_data');
+    const { probe_sent, ...noProbe } = QUIET; // eslint-disable-line no-unused-vars
+    const r = evaluate(noProbe, defs);
+    expect(r.overall).toBe('no_data');
+    expect(r.liveness.find((l) => l.id === 'QZ-LIVE-PROBE-PG').note).toMatch(/probe_sent/);
+    expect(evaluate({ requests_total: 400, edge_429_total: 0, edge_429_postgrest: 0, edge_429_gateway: 0, edge_4xx_other: 0, pt429_log_count: 0, pt400_log_count: 0, saturated_minutes: 0 }, defs).overall).toBe('no_data');
+  });
+
+  test('a real cap hit still alerts when liveness fails: warn/critical readings are never downgraded to no_data', () => {
+    const r = evaluate({ ...QUIET, pg_rows_with_sqlstate: 0, pt429_log_count: 150, pt429_log_rows_any: 150 }, defs);
+    expect(byId(r)['QZ-429-PT429-LOG'].state).toBe('critical');
+    expect(r.overall).toBe('critical');
+  });
+
+  test('a healthy probe: 1 probe sent, 1 PT400 row and 1 gateway 4xx row => ok, and the probe is not counted in the 4xx share', () => {
+    const probed = { ...QUIET, probe_sent: 1, pt400_log_count: 1, pt400_log_rows_any: 1, edge_4xx_other: 1, requests_total: 400 };
+    const r = evaluate(probed, defs);
+    expect(r.overall).toBe('ok');
+    expect(byId(r)['QZ-4XX-SHARE'].value).toBe(0);
+    // 1 probe + 19 real 4xx out of 100 requests: the share is (20 - 1) / (100 - 1) of the real traffic, not 20%
+    const real = byId(evaluate({ ...probed, edge_4xx_other: 20, requests_total: 100 }, defs))['QZ-4XX-SHARE'];
+    expect(real.count).toBe(19);
+    expect(real.denominator).toBe(99);
+    expect(real.state).toBe('warn');
+    // the probe alone, on a tiny window, never reaches the share thresholds
+    const tiny = byId(evaluate({ ...probed, edge_4xx_other: 1, requests_total: 50 }, defs))['QZ-4XX-SHARE'];
+    expect(tiny.state).toBe('insufficient_volume');
+  });
+
+  test('an extra PT400 row beyond the probe (real oversize traffic or a row multiplier) is reported, not alarmed', () => {
+    const r = evaluate({ ...QUIET, probe_sent: 1, pt400_log_count: 3, pt400_log_rows_any: 3, edge_4xx_other: 3 }, defs);
+    expect(r.overall).toBe('ok');
+    expect(r.info.pt400_log_count).toBe(3);
+    expect(r.info.probe_sent).toBe(1);
+  });
+
+  test('inconsistent liveness inputs are rejected (a subset can never exceed its set)', () => {
+    expect(() => validateStats({ edge_logs_total: 5, edge_logs_schema_rows: 6 })).toThrow(/exceeds/);
+    expect(() => validateStats({ edge_logs_total: 5, requests_total: 6 })).toThrow(/exceeds/);
+    expect(() => validateStats({ pg_rows_total: 5, pg_rows_with_sqlstate: 6 })).toThrow(/exceeds/);
+    expect(() => validateStats({ pt429_log_rows_any: 2, pt429_log_count: 3 })).toThrow(/exceeds/);
+    expect(() => validateStats({ pt400_log_rows_any: 2, pt400_log_count: 3 })).toThrow(/exceeds/);
+    expect(() => validateStats({ pg_rows_total: 5, pt429_log_rows_any: 6 })).toThrow(/exceeds/);
+  });
+
+  test('text output lists failing liveness checks', () => {
+    const { formatText } = require('../quiz-funnel-alerts');
+    const text = formatText(evaluate({ ...QUIET, pg_rows_with_sqlstate: 0 }, defs));
+    expect(text).toMatch(/liveness: \d+\/\d+ ok/);
+    expect(text).toContain('[NO_DATA] QZ-LIVE-PG-SQLSTATE');
+  });
+
+  test('the probe is defined but not active: no script sends it and nothing schedules it', () => {
+    expect(defs.probe.status).toMatch(/NOT ACTIVE/);
+    expect(defs.probe.needs_owner_approval).toBe(true);
+    const ops = fs.readdirSync(path.join(ROOT, 'scripts', 'ops')).filter((f) => /\.(js|py|sh)$/.test(f));
+    for (const f of ops) expect(read('scripts/ops', f)).not.toMatch(/\bfetch\(|https?:\/\/|require\('https?'\)|XMLHttpRequest|\bcurl\b/);
+  });
+});
+
+describe('runbook wording required by the Themis reviews of PR #44', () => {
+  const runbook = read('docs/operations/quiz-funnel-alerts.md');
+  const events = read('docs/operations/quiz-funnel-events.md');
+  const flat = runbook.replace(/\s+/g, ' ');
+
+  test('N44-02: least privilege for the scheduler (manual signal or a reviewed read-only role; never postgres/service_role or a broad log token)', () => {
+    expect(flat).toMatch(/manual/i);
+    expect(flat).toMatch(/dedicated read-only (database )?role/i);
+    expect(flat).toMatch(/separately reviewed migration/i);
+    expect(flat).toMatch(/never the `?postgres`? role or `?service_role`?/i);
+    expect(flat).toMatch(/no broad Supabase (log|management) token|never (an? )?(account-wide|broad)[^.]*token/i);
+    expect(flat).not.toMatch(/scheduler with a `postgres`-role connection/);
+  });
+
+  test('N44-12: raising the cap needs Mark (Owner) as approver and Themis review', () => {
+    expect(flat).toMatch(/Mark[^.]*approv/i);
+    expect(flat).toMatch(/Themis review/i);
+  });
+
+  test('N44-04: the sb_error_code gateway-429 exclusion stays labelled unverified until checked on real logs', () => {
+    expect(flat).toMatch(/sb_error_code[^.]*UNVERIFIED/i);
+    expect(alert('QZ-429-EDGE-POSTGREST').meaning).toMatch(/UNVERIFIED/);
+    expect(read('docs/operations/alerts/quiz-funnel/edge-status-mix.sql')).toMatch(/UNVERIFIED/);
+  });
+
+  test('N44-09: quiz-funnel-events.md no longer describes a Proxy-Status match', () => {
+    expect(events).not.toMatch(/Proxy-Status/i);
+    expect(events).not.toMatch(/PostgREST PT429 error code/);
+    expect(events).toContain('quiz-funnel-alerts.md');
+    expect(events).toMatch(/postgres_logs|Postgres log/);
+  });
+
+  test('N44-01 and N44-05 are in the runbook: liveness, probe, exactly-1 calibration, row multiplier, failed query = no_data', () => {
+    expect(flat).toMatch(/liveness/i);
+    expect(flat).toMatch(/synthetic probe/i);
+    expect(flat).toMatch(/exactly 1/i);
+    expect(flat).toMatch(/multiplier/i);
+    expect(flat).toMatch(/failed or empty query/i);
+    expect(flat).toMatch(/DEFINED, NOT ACTIVE/);
+    for (const l of defs.liveness) expect(runbook).toContain(l.id);
   });
 });
 
@@ -236,7 +392,7 @@ describe('CLI main()', () => {
     fs.writeFileSync(tmp, JSON.stringify(QUIET));
     expect(main(['node', 'x', tmp])).toBe(0);
     expect(out).toContain('quiz-funnel alerts (window 15 min): OK');
-    fs.writeFileSync(tmp, JSON.stringify({ ...QUIET, pt429_log_count: 12 }));
+    fs.writeFileSync(tmp, JSON.stringify({ ...QUIET, pt429_log_count: 12, pt429_log_rows_any: 12 }));
     out = '';
     expect(main(['node', 'x', tmp])).toBe(1);
     expect(out).toContain('[WARN] QZ-429-PT429-LOG');
