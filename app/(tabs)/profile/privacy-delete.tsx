@@ -1,16 +1,35 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { SettingsLayout } from "@/components/layout";
 import { FormStateView, type FormStatus } from "@/components/state";
 import { Button, Card, TextField } from "@/components/ui";
 import { Colors } from "@/constants/Colors";
+import { SUPPORT_EMAIL } from "@/constants/Support";
 import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import type { PrivacyRequestType } from "@/lib/database.contracts";
+import {
+  isOpenPrivacyRequest,
+  loadMyPrivacyRequests,
+  newPrivacyIdempotencyKey,
+  privacyRequestTypeLabel,
+  privacyStatusLabel,
+  submitPrivacyRequest,
+  type PrivacyRequestRow,
+} from "@/lib/privacy";
 
 const REQUIRED_CONFIRMATION = "DELETE MY ACCOUNT";
+
+// Launch blocker LB-1: a request is only RECORDED today. There is no export/erasure worker yet,
+// so no copy on this screen may say that data was exported or deleted. See lib/privacy.ts.
+const NOT_AUTOMATED = "Nothing is exported or deleted automatically yet.";
+
+function shortRef(id: string): string {
+  return id.slice(0, 8).toUpperCase();
+}
 
 export default function PrivacyExportAndDeleteScreen() {
   const router = useRouter();
@@ -20,46 +39,113 @@ export default function PrivacyExportAndDeleteScreen() {
   const [status, setStatus] = useState<FormStatus>("idle");
   const [statusTitle, setStatusTitle] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [requests, setRequests] = useState<PrivacyRequestRow[] | null>(null);
+  const [busyType, setBusyType] = useState<PrivacyRequestType | null>(null);
+  // One key per attempt: a retry after a network failure reuses it so it cannot create a duplicate request.
+  const keys = useRef<Partial<Record<PrivacyRequestType, string>>>({});
+  const inFlight = useRef(false);
+  const mounted = useRef(true);
+
+  const refresh = useCallback(async () => {
+    const rows = await loadMyPrivacyRequests();
+    if (mounted.current) setRequests(rows);
+  }, []);
+
+  useEffect(() => {
+    mounted.current = true;
+    void refresh();
+    return () => {
+      mounted.current = false;
+    };
+  }, [refresh]);
+
+  const hasOpen = (type: PrivacyRequestType) =>
+    (requests ?? []).some((row) => row.request_type === type && isOpenPrivacyRequest(row));
+
+  const fail = (title: string, message: string) => {
+    setStatusTitle(title);
+    setStatusMessage(message);
+    setStatus("failure");
+  };
+
+  const submit = async (type: PrivacyRequestType) => {
+    if (inFlight.current) return;
+    if (hasOpen(type)) {
+      fail(
+        "You already have an open request",
+        `Your ${privacyRequestTypeLabel(type).toLowerCase()} request is already recorded (see below). ${NOT_AUTOMATED} Contact ${SUPPORT_EMAIL} to follow up.`
+      );
+      return;
+    }
+    inFlight.current = true;
+    setBusyType(type);
+    setStatus("pending");
+    const key = (keys.current[type] ??= newPrivacyIdempotencyKey());
+    const outcome = await submitPrivacyRequest(type, key);
+    inFlight.current = false;
+    if (!mounted.current) return;
+    setBusyType(null);
+
+    if (outcome.kind === "failed" && outcome.retryable) {
+      // Keep the key: pressing the button again retries the same attempt.
+      fail("We could not record your request", "Check your connection and try again. Nothing was changed on your account.");
+      return;
+    }
+    delete keys.current[type];
+
+    if (outcome.kind === "recorded") {
+      setStatusTitle("Request recorded");
+      setStatusMessage(
+        type === "export"
+          ? `Your data export request is recorded (reference ${shortRef(outcome.requestId)}). ${NOT_AUTOMATED} Contact ${SUPPORT_EMAIL} and quote the reference to follow up.`
+          : `Your account deletion request is recorded (reference ${shortRef(outcome.requestId)}). ${NOT_AUTOMATED} Your account stays active and you stay signed in. Contact ${SUPPORT_EMAIL} and quote the reference to follow up.`
+      );
+      setConfirmationText("");
+      setStatus("success");
+      void refresh();
+    } else if (outcome.kind === "already_open") {
+      fail(
+        "You already have an open request",
+        `Your ${privacyRequestTypeLabel(type).toLowerCase()} request is already recorded. ${NOT_AUTOMATED}`
+      );
+      void refresh();
+    } else if (outcome.kind === "sign_in_required") {
+      fail("Please sign in again", "Your session has ended, so the request was not recorded. Sign in and try again.");
+    } else {
+      fail("We could not record your request", `Please contact ${SUPPORT_EMAIL}.`);
+    }
+  };
 
   const handleRequestExport = () => {
-    setStatusTitle("Data export requested");
-    setStatusMessage(
-      "Your portable JSON data export request has been queued in privacy_requests."
-    );
-    setStatus("success");
+    void submit("export");
   };
 
   const handleRequestDeletion = () => {
     if (confirmationText.trim() !== REQUIRED_CONFIRMATION) {
-      setStatusTitle("Confirmation string mismatch");
-      setStatusMessage(
-        `Please type the exact phrase "${REQUIRED_CONFIRMATION}" to confirm account deletion.`
+      fail(
+        "Confirmation string mismatch",
+        `Please type the exact phrase "${REQUIRED_CONFIRMATION}" to confirm your deletion request.`
       );
-      setStatus("failure");
       return;
     }
-    setStatusTitle("Account deletion request submitted");
-    setStatusMessage(
-      "Your account deletion workflow is queued. Sessions are revoked and profile/media cleanup is tracked."
-    );
-    setStatus("success");
+    void submit("deletion");
   };
 
   return (
     <SettingsLayout
       testID="scr-19-privacy-delete"
       title="Data Export & Account Deletion"
-      subtitle="Your privacy rights: export or delete your data"
+      subtitle="Your privacy rights: ask for a copy of your data or ask us to delete it"
       fallbackHref="/(tabs)/profile/settings"
       activeNavId="settings-privacy-delete"
     >
       <FormStateView
         testID="scr-19-form-state"
         status={status}
-        pendingTitle="Processing privacy request..."
-        successTitle={statusTitle || "Privacy request queued"}
+        pendingTitle="Recording your request..."
+        successTitle={statusTitle || "Request recorded"}
         successMessage={statusMessage}
-        failureTitle={statusTitle || "Deletion rejected"}
+        failureTitle={statusTitle || "Request not recorded"}
         failureMessage={statusMessage}
         onRetry={() => setStatus("idle")}
       >
@@ -69,15 +155,17 @@ export default function PrivacyExportAndDeleteScreen() {
               accessibilityRole="header"
               style={[styles.heading, { color: palette.text }]}
             >
-              1. Portable JSON Data Export
+              1. Data export request
             </Text>
             <Text style={[styles.body, { color: palette.textSecondary }]}>
-              Request a copy of your profile information, preferences, and consent records.
+              Ask for a copy of your profile information, preferences, and consent records. Your request is recorded here. Exports are not generated automatically yet.
             </Text>
             <Button
               testID="scr-19-export-btn"
               label="Request Data Export"
               variant="secondary"
+              loading={busyType === "export"}
+              disabled={busyType !== null}
               onPress={handleRequestExport}
             />
           </View>
@@ -89,10 +177,10 @@ export default function PrivacyExportAndDeleteScreen() {
               accessibilityRole="header"
               style={[styles.heading, { color: palette.danger }]}
             >
-              2. Permanent Account Deletion
+              2. Account deletion request
             </Text>
             <Text style={[styles.body, { color: palette.textSecondary }]}>
-              Deleting your account immediately disables discovery, revokes active sessions, and purges your profile and photos according to the retention schedule.
+              Your request is recorded here. Account and photo deletion is not automatic yet: until it is processed your account stays active and visible, and you stay signed in.
             </Text>
 
             <TextField
@@ -107,11 +195,42 @@ export default function PrivacyExportAndDeleteScreen() {
 
             <Button
               testID="scr-19-delete-btn"
-              label="Permanently Delete My Account"
+              label="Request Account Deletion"
               variant="danger"
+              loading={busyType === "deletion"}
+              disabled={busyType !== null}
               onPress={handleRequestDeletion}
             />
+          </View>
+        </Card>
 
+        <Card testID="scr-19-requests-card" variant="outlined">
+          <View style={styles.section}>
+            <Text
+              accessibilityRole="header"
+              style={[styles.heading, { color: palette.text }]}
+            >
+              Your requests
+            </Text>
+            {requests === null ? (
+              <Text testID="scr-19-requests-unavailable" style={[styles.body, { color: palette.textSecondary }]}>
+                Your earlier requests could not be loaded right now.
+              </Text>
+            ) : requests.length === 0 ? (
+              <Text testID="scr-19-requests-empty" style={[styles.body, { color: palette.textSecondary }]}>
+                You have not made a request yet.
+              </Text>
+            ) : (
+              requests.map((row) => (
+                <Text
+                  key={row.id}
+                  testID={`scr-19-request-${row.id}`}
+                  style={[styles.body, { color: palette.text }]}
+                >
+                  {`${privacyRequestTypeLabel(row.request_type)} - ${privacyStatusLabel(row.status)} (ref ${shortRef(row.id)}, ${row.created_at.slice(0, 10)})`}
+                </Text>
+              ))
+            )}
             <Button
               testID="scr-19-back-settings-btn"
               label="Back to Privacy Settings"

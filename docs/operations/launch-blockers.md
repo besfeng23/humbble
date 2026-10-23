@@ -10,6 +10,10 @@ Items that must be resolved or consciously accepted by the owner before public l
 - Required before launch: wire the screen to `request_privacy_action` (and show the real state), build the worker (erasure, export, retention, legal hold
   handling through a reviewed SECURITY DEFINER function rather than a direct `UPDATE`), and add pgTAP/Deno tests for it. Until then the screen must not claim success.
 - Do not describe account/data deletion as available in store listings or privacy copy.
+- **Client wired (this branch, PR to follow review):** `privacy-delete.tsx` now calls `request_privacy_action` (via `lib/privacy.ts`), reuses one idempotency key per attempt,
+  shows the member's own requests with a truthful status (`requested` = "Received - not processed yet") and never says data was exported or deleted. **LB-1 stays OPEN:** the worker
+  (erasure, export, retention, legal hold), its reviewed SECURITY DEFINER function and the pgTAP/Deno tests are not built, and someone must own the manual handling of recorded requests until it is. The
+  draft legal texts (`legal/drafts/terms-of-service.md` 9.1, `deletion-and-export.md`, `docs/legal/review-packet.md`) still describe immediate self-service deletion and must be reconciled by the owner/counsel before launch.
 
 ## LB-2 Billing: a service_role key can grant or revoke premium for any user, with no ledger event (Themis P39-01) - HIGH before live PayPal
 Anyone holding the service-role key can, with three calls and the public price list (`billing_register_pending_subscription` -> `billing_record_readback`
