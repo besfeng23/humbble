@@ -1312,6 +1312,27 @@ export type Database = {
         }
         Returns: undefined
       }
+      billing_flag_unresolved_event: {
+        Args: { p_event_id: string; p_reason: string }
+        Returns: undefined
+      }
+      billing_list_reconcile_subscriptions: {
+        Args: { p_environment: string; p_limit?: number }
+        Returns: {
+          provider_subscription_id: string
+          reason: string
+        }[]
+      }
+      billing_list_reprocessable_events: {
+        Args: { p_limit?: number }
+        Returns: {
+          event_id: string
+          event_status: Database["public"]["Enums"]["payment_event_status"]
+          event_type: string
+          provider_event_id: string
+          resource_id: string
+        }[]
+      }
       billing_record_event: {
         Args: {
           p_event_type: string
@@ -1328,6 +1349,7 @@ export type Database = {
       }
       billing_register_pending_subscription: {
         Args: {
+          p_environment: string
           p_plan_key: string
           p_provider_plan_id: string
           p_provider_subscription_id: string

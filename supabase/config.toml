@@ -48,3 +48,8 @@ verify_jwt = true
 
 [functions.paypal-cancel-subscription]
 verify_jwt = true
+
+# Scheduled reconciler (pg_cron + pg_net). Server-to-server only: verify_jwt stays on and the function
+# additionally requires the service-role key as Bearer (constant-time compare, same as send-push).
+[functions.paypal-reconcile]
+verify_jwt = true
