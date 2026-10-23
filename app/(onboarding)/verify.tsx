@@ -24,13 +24,16 @@ export default function OnboardingVerifyScreen() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(() => statusCopy[state]);
 
+  // Verification is optional: it never blocks completing onboarding or using discovery.
+  const goToDiscovery = () => router.replace('/(tabs)/people' as any);
   const doSignOut = async () => { try { await signOut(); } finally { router.replace('/auth/signin' as any); } };
   const providerReady = isVerificationProviderConfigured();
   if (!previewAllowed && !providerReady) {
-    return <AuthScreen testID="verification-coming-soon-screen" title="Verification" subtitle="Confirm it's really you.">
+    return <AuthScreen testID="verification-coming-soon-screen" title="Get a Verified badge" subtitle="Optional, coming soon.">
       <AuthNotice testID="verification-coming-soon">{VERIFICATION_COMING_SOON.title}</AuthNotice>
       <Text testID="verification-coming-soon-detail" accessibilityRole="text">{VERIFICATION_COMING_SOON.message}</Text>
-      <AuthPrimaryButton testID="verification-back-profile" label="Review my profile" onPress={() => router.replace('/(onboarding)/photos-prompts' as any)} />
+      <AuthPrimaryButton testID="verification-skip" label="Skip for now" onPress={goToDiscovery} />
+      <Button testID="verification-back-profile" label="Review my profile" size="lg" variant="secondary" onPress={() => router.replace('/(onboarding)/photos-prompts' as any)} />
       <Button testID="verification-signout" label="Sign out" size="lg" variant="charcoal" onPress={() => { void doSignOut(); }} />
     </AuthScreen>;
   }
@@ -44,13 +47,14 @@ export default function OnboardingVerifyScreen() {
     setBusy(false);
   };
 
-  return <AuthScreen testID="verification-unavailable-screen" title="Verification" subtitle="Confirm it's really you.">
+  return <AuthScreen testID="verification-unavailable-screen" title="Get a Verified badge" subtitle="Optional. Confirm it's really you.">
     <View accessibilityLiveRegion="polite" style={{ gap: 8 }}>
       <Text testID="verification-state" accessibilityRole="text">Status: {state.replace('_', ' ')}</Text>
       <Text testID="verification-state-detail">{notice}</Text>
     </View>
     <AuthPrimaryButton testID="verification-check-status" label={busy ? 'Checking…' : 'Check status'} loading={busy} disabled={busy} onPress={() => void checkStatus()} />
-    <AuthPrimaryButton testID="verification-back-profile" label="Review my profile" onPress={() => router.replace('/(onboarding)/photos-prompts' as any)} />
+    <AuthPrimaryButton testID="verification-skip" label="Skip for now" onPress={goToDiscovery} />
+    <Button testID="verification-back-profile" label="Review my profile" size="lg" variant="secondary" onPress={() => router.replace('/(onboarding)/photos-prompts' as any)} />
     <Button testID="verification-signout" label="Sign out" size="lg" variant="charcoal" onPress={() => { void doSignOut(); }} />
   </AuthScreen>;
 }

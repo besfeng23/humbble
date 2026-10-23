@@ -28,12 +28,20 @@ describe('development discovery previews', () => {
       renderer.unmount();
     }
   });
-  test('ineligible actor sees friendly verification copy and a verify button, never the raw RPC code', async () => {
+  test('ineligible actor sees complete-your-profile copy and a button to finish the profile, never the raw RPC code', async () => {
     const renderer = await renderPreview('ineligible');
-    expect(hasTestId(renderer.root, 'discovery-verify-btn')).toBe(true);
+    expect(hasTestId(renderer.root, 'discovery-complete-profile-btn')).toBe(true);
+    expect(hasTestId(renderer.root, 'discovery-verify-btn')).toBe(false);
     const text = renderer.root.findAll((node) => typeof node.props.children === 'string').map((node) => node.props.children).join(' ');
     expect(text).not.toContain('actor_not_eligible');
-    expect(text).toMatch(/Finish verification/);
+    expect(text).toMatch(/Complete your profile/);
+    expect(text).not.toMatch(/Finish verification/);
+    renderer.unmount();
+  });
+  test('Verified badge renders only for cards with a real verification record', async () => {
+    const renderer = await renderPreview('feed');
+    expect(hasTestId(renderer.root, 'discovery-verified-badge-preview-1')).toBe(true);
+    expect(hasTestId(renderer.root, 'discovery-verified-badge-preview-2')).toBe(false);
     renderer.unmount();
   });
 });

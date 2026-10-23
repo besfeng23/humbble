@@ -86,7 +86,7 @@ export const KNOWN_VERIFICATION_PROVIDERS: readonly string[] = [];
 
 export const VERIFICATION_COMING_SOON = {
   title: 'Verification coming soon',
-  message: 'ID verification is not open yet. We will let you know as soon as it is available. You can keep your profile ready in the meantime.',
+  message: 'ID verification is optional and is not open yet. You can use Humbble without it. We will let you know as soon as you can earn a Verified badge.',
 } as const;
 
 export function selectVerificationAdapter(isProduction: boolean, devResult: VerificationState = 'pending'): VerificationAdapter {

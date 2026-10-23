@@ -217,7 +217,7 @@ const Profile = () => {
               Profile Onboarding
             </Text>
             <Text style={{ fontWeight: "300", textAlign: "center" }}>
-              Complete your 4-step profile prompts, photos, and verification
+              Complete your profile prompts and photos. A Verified badge is optional.
             </Text>
             <Button
               style={{ backgroundColor: "#1c1c1c" }}

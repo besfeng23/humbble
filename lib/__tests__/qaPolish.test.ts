@@ -10,7 +10,7 @@ describe('friendly error mapper (D5)', () => {
   });
   test('maps known codes to specific copy', () => {
     expect(toFriendlyMessage({ message: 'target_not_found' })).toMatch(/couldn’t find that profile/);
-    expect(toFriendlyMessage('actor_not_eligible')).toMatch(/verified/);
+    expect(toFriendlyMessage('actor_not_eligible')).toMatch(/profile is complete/);
   });
   test('human copy passes through; fallback is used for raw codes', () => {
     expect(toFriendlyMessage(new Error('Notes must be 500 characters or fewer.'))).toBe('Notes must be 500 characters or fewer.');

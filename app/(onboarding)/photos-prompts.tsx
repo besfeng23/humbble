@@ -193,6 +193,9 @@ export default function OnboardingPhotosPromptsScreen() {
     setSaving(false);
     if (error) { setNotice('Could not save your profile. Your draft is preserved locally; please retry.'); return; }
     try { await clearProfileDraft(user.id); } catch { /* successful server save is durable; stale local draft can be replaced next visit */ }
+    // Belt and braces: the profile/photo triggers already derive discoverability; this re-derives it
+    // (never sets it) in case a photo upload finished after the last write.
+    try { if (typeof supabase.rpc === 'function') await supabase.rpc('refresh_my_discoverability'); } catch { /* triggers already ran; non-fatal */ }
     router.push('/(onboarding)/verify' as any);
   };
 

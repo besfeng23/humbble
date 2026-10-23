@@ -33,14 +33,26 @@ describe('auth request flows', () => {
     await act(async () => { tree.root.findByProps({ testID: 'signin-submit' }).props.onPress({}); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
     expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/basics');
   });
-  test('does not route an unverified or non-discoverable profile to discovery', async () => {
+  const signInWithProfile = async (profile: Record<string, unknown>) => {
     mockSignIn.mockResolvedValue({ error: null });
     mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'user-2' } } }, error: null });
-    mockFrom.mockReturnValue({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { id: 'user-2', verification_status: 'not_started', is_discoverable: false }, error: null }) }) }) });
+    mockFrom.mockReturnValue({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { id: 'user-2', ...profile }, error: null }) }) }) });
     const tree = renderer.create(<SigninScreen />);
     act(() => { tree.root.findByProps({ testID: 'signin-email' }).props.onChangeText('person@example.test'); tree.root.findByProps({ testID: 'signin-password' }).props.onChangeText('correct-password'); });
     await act(async () => { tree.root.findByProps({ testID: 'signin-submit' }).props.onPress({}); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
-    expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/verify');
+  };
+  test('an incomplete (non-discoverable) profile goes back to finish the profile, never to verification', async () => {
+    await signInWithProfile({ is_discoverable: false, is_paused: false });
+    expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/photos-prompts');
+    expect(mockReplace).not.toHaveBeenCalledWith('/(onboarding)/verify');
+  });
+  test('a complete, discoverable profile goes to discovery without ID verification', async () => {
+    await signInWithProfile({ is_discoverable: true, is_paused: false });
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)/people');
+  });
+  test('a paused member is not pushed back into onboarding', async () => {
+    await signInWithProfile({ is_discoverable: false, is_paused: true });
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)/people');
   });
   test('successful sign-up always goes to the neutral check-email state', async () => {
     mockSignUp.mockResolvedValue({ error: null });

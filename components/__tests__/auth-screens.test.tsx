@@ -9,7 +9,8 @@ import OnboardingVerifyScreen from '@/app/(onboarding)/verify';
 import { useAuth } from '@/lib/AuthProvider';
 import { textContent } from '../test-utils/textContent';
 
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }), useLocalSearchParams: () => ({}) }));
+const mockReplace = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), replace: mockReplace }), useLocalSearchParams: () => ({}) }));
 jest.mock('@/lib/AuthProvider', () => ({ useAuth: jest.fn() }));
 jest.mock('@/lib/supabase', () => ({ isSupabaseConfigured: false, supabase: { auth: { signInWithPassword: jest.fn(), signUp: jest.fn(), resetPasswordForEmail: jest.fn() } } }));
 
@@ -85,6 +86,16 @@ describe('enumeration-safe, unconfigured auth UI', () => {
     expect(visible).not.toMatch(/pending/i);
     expect(tree.root.findAll((node) => node.props.testID === 'verification-check-status')).toHaveLength(0);
     expect(tree.root.findAll((node) => node.props.testID === 'verification-coming-soon').length).toBeGreaterThan(0);
+  });
+  test('verification step is optional: titled as a skippable badge and skip goes to discovery', () => {
+    const tree = mount(<OnboardingVerifyScreen />);
+    const visible = tree.root.findAllByType(Text).map((node) => textContent(node.children)).join(' ');
+    expect(visible).toContain('Get a Verified badge');
+    expect(visible).toMatch(/optional/i);
+    const skip = tree.root.findAll((node) => node.props.testID === 'verification-skip' && typeof node.props.onPress === 'function')[0];
+    expect(skip).toBeDefined();
+    act(() => { skip.props.onPress({}); });
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)/people');
   });
   test('wrong credentials and unknown accounts map to the same message; unconfirmed email is distinct', () => {
     expect(getSignInError({ message: 'Invalid login credentials' })).toBe('Email or password is incorrect');

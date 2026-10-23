@@ -23,12 +23,14 @@ export default function PrivacyAndSafetySettingsScreen() {
   const { user } = useAuth();
   const [country, setCountry] = useState<string | null>(null);
   const [countryNote, setCountryNote] = useState("");
+  const [paused, setPaused] = useState(false);
+  const [pauseNote, setPauseNote] = useState("");
 
   useEffect(() => {
     if (!user?.id || !isSupabaseConfigured) return;
     let active = true;
-    void supabase.from("profiles").select("country_code").eq("id", user.id).maybeSingle()
-      .then(({ data }) => { if (active) setCountry(normalizeCountryCode(data?.country_code)); });
+    void supabase.from("profiles").select("country_code,is_paused").eq("id", user.id).maybeSingle()
+      .then(({ data }) => { if (active) { setCountry(normalizeCountryCode(data?.country_code)); setPaused(data?.is_paused === true); } });
     return () => { active = false; };
   }, [user?.id]);
 
@@ -39,6 +41,16 @@ export default function PrivacyAndSafetySettingsScreen() {
     const { error } = await supabase.from("profiles").update({ country_code: code }).eq("id", user.id);
     if (error) { setCountry(previous); setCountryNote("Could not update your country. Please retry."); }
     else setCountryNote("Country updated.");
+  };
+
+  // Member-controlled pause. The server derives is_discoverable from this (members never write it).
+  const changePaused = async (next: boolean) => {
+    if (!user?.id || !isSupabaseConfigured) return;
+    const previous = paused;
+    setPaused(next); setPauseNote("");
+    const { error } = await supabase.from("profiles").update({ is_paused: next }).eq("id", user.id);
+    if (error) { setPaused(previous); setPauseNote("Could not update your visibility. Please retry."); }
+    else setPauseNote(next ? "Your profile is paused. People can't see you and you can't browse until you resume." : "Your profile is visible again once it is complete.");
   };
 
   const handleSaveSettings = () => {
@@ -127,6 +139,27 @@ export default function PrivacyAndSafetySettingsScreen() {
               size="md"
               onPress={handleSaveSettings}
             />
+          </View>
+        </Card>
+
+        <Card testID="scr-18-pause-card" variant="outlined">
+          <View style={styles.section}>
+            <View style={styles.switchRow}>
+              <View style={styles.switchInfo}>
+                <Text style={[styles.label, { color: palette.text }]}>Pause my profile</Text>
+                <Text style={[styles.sublabel, { color: palette.textSecondary }]}>
+                  Hide me from discovery and pause browsing. Your matches and chats stay as they are.
+                </Text>
+              </View>
+              <Switch
+                testID="scr-18-pause-switch"
+                accessibilityRole="switch"
+                accessibilityLabel="Pause my profile"
+                value={paused}
+                onValueChange={(next) => void changePaused(next)}
+              />
+            </View>
+            {pauseNote ? <Text testID="scr-18-pause-note" style={[styles.sublabel, { color: palette.textSecondary }]}>{pauseNote}</Text> : null}
           </View>
         </Card>
 

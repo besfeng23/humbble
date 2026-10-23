@@ -2,15 +2,16 @@
  * Maps raw RPC error codes/messages raised by discovery and swipe functions to
  * user-facing copy. Raw database identifiers must never be rendered in the UI.
  */
-export type DiscoveryErrorAction = 'verify' | 'retry' | 'none';
+export type DiscoveryErrorAction = 'complete_profile' | 'resume_profile' | 'retry' | 'none';
 export type FriendlyDiscoveryError = { key: string; title: string; message: string; action: DiscoveryErrorAction };
 
 const KNOWN: Record<string, Omit<FriendlyDiscoveryError, 'key'>> = {
   actor_not_eligible: {
-    title: 'Finish verification to see people',
-    message: 'People becomes available once your profile is verified and complete (two photos and all three prompts). It only takes a few minutes.',
-    action: 'verify',
+    title: 'Complete your profile to see people',
+    message: 'People opens once your profile is complete: add at least two photos and answer all three prompts. It only takes a few minutes, and ID verification is not required.',
+    action: 'complete_profile',
   },
+  profile_paused: { title: 'Your profile is paused', message: 'You have hidden your profile, so discovery is paused too. Resume it in Settings to see people again.', action: 'resume_profile' },
   authentication_required: { title: 'Please sign in again', message: 'Your session has ended. Sign in again to keep discovering.', action: 'none' },
   invalid_discovery_cursor: { title: 'Discovery refreshed', message: 'Your list was out of date, so we refreshed it.', action: 'retry' },
   target_not_eligible: { title: 'Profile no longer available', message: 'This person is no longer available in discovery.', action: 'retry' },
