@@ -32,7 +32,7 @@ const MESSAGES: Record<string, string> = {
   moderation_reason_required: 'Add a reason of at least 8 characters. It is saved in the audit log.',
   invalid_moderation_action: 'That action isn’t available for this case.',
   invalid_moderation_filter: 'That filter isn’t available.',
-  moderation_self_action_not_allowed: 'You can’t suspend or restore your own account.',
+  moderation_self_action_not_allowed: 'You can’t act on a case about your own account.',
   moderation_not_suspended: 'This member isn’t suspended.',
   moderation_target_unavailable: 'The reported account is no longer available, so this action can’t be applied.',
   report_required: 'That report could not be found.',
