@@ -1,6 +1,6 @@
 -- privcheck4: READ-ONLY single SELECT. Run on dev/prod AFTER migration 20261023000090 is applied (and before, to see drift).
 -- Rows: (1) table_acl   one per public table x API role holding anything: table-level privileges | column-level privileges | TRUNCATE guard state
---       (2) function_acl one per new billing RPC: which API roles can EXECUTE (NULL if the function does not exist)
+--       (2) function_acl one per new billing RPC (six, incl. billing_purge_readbacks): which API roles can EXECUTE (NULL if the function does not exist)
 --       (3) old_fn       must read 'absent' (the 7-argument caller-trusting billing_apply_readback is dropped)
 --       (4) default_acl  default privileges for objects created by postgres in schema public (must show no anon/authenticated/service_role entry)
 -- Compare against docs/operations/privilege-hardening.md ("Expected catalog state"). Any difference means a later migration or manual GRANT changed it.
@@ -22,7 +22,7 @@ SELECT section, name, detail FROM (
                 || ' service_role=' || has_function_privilege('service_role', to_regprocedure(f.sig), 'EXECUTE')::text END
     FROM (VALUES ('public.billing_apply_readback(uuid)'), ('public.billing_record_readback(text,text,text,timestamptz,numeric,text,uuid)'),
                  ('public.billing_record_refund_readback(text,text,uuid)'), ('public.billing_list_pending_provider_cancels(text,integer)'),
-                 ('public.billing_record_provider_cancel(text,text)')) f(sig)
+                 ('public.billing_record_provider_cancel(text,text)'), ('public.billing_purge_readbacks(interval)')) f(sig)
   UNION ALL
   SELECT 3, 'old_fn', 'billing_apply_readback(7 args)',
          CASE WHEN to_regprocedure('public.billing_apply_readback(text,text,public.subscription_status,timestamptz,numeric,text,uuid)') IS NULL THEN 'absent' ELSE 'PRESENT (caller-trusting version still installed)' END

@@ -47,7 +47,7 @@ example a test-data reset on a non-production database) has to run `ALTER TABLE 
 after. Note `TRUNCATE public.profiles CASCADE` is also blocked, because the guarded tables reference it; that is intended.
 
 ## Follow-up: migration `20261023000090_security_followups_themis_pr36.sql` (Themis PR #36 F-02..F-09)
-pgTAP `0024` (billing), `0025` (per-table writers, `42501` as `service_role`, negative proof), `0026` (allowlist matrix + default privileges).
+pgTAP `0027` (billing), `0028` (per-table writers, `42501` as `service_role`, negative proof), `0029` (allowlist matrix + default privileges).
 Same pattern (`REVOKE ALL` from every API role, narrow re-grant, `ENABLE ALWAYS` `TRUNCATE` guard) applied to more tables. `service_role` after:
 
 | Table | service_role after | authenticated | Notes |
@@ -62,7 +62,8 @@ Same pattern (`REVOKE ALL` from every API role, narrow re-grant, `ENABLE ALWAYS`
 | `blocks`, `messages` (F-04) | `SELECT` | `SELECT` | writers: `block_user`/`unblock_user`, `send_message` (definer); no direct DML |
 | `payment_events` (F-06) | `SELECT`, `INSERT` | none | **all** UPDATE columns removed (nothing used them; `billing_finish_event` is owner-run) |
 | `privacy_requests` (F-06) | `SELECT`, `INSERT`, `UPDATE (status, completion_metadata, failure_code, completed_at)` | unchanged | `legal_hold`/`retention_until` no longer writable by the key |
-| `billing_readbacks` (new, F-01) | `SELECT` | none | evidence rows written only by `billing_record_*` (definer), immutable |
+| `billing_readbacks` (new, F-01) | `SELECT` | none | evidence rows written only by `billing_record_*` (definer), immutable; deletable only by `billing_purge_readbacks` (consumed rows older than 30 days) |
+| `quiz_events` (PR #37) | `SELECT` | none | in the `0029` matrix; written by `record_quiz_event` (definer) |
 
 `TRUNCATE` guards (`ENABLE ALWAYS`) now exist on: `audit_events`, `consent_records`, `payment_events`, `user_consents`, `reports`, `moderation_cases`,
 `verification_requests`, `billing_readbacks`, `privacy_requests`, `subscriptions`, `entitlements`. Tables that other tables reference reject a plain `TRUNCATE`
@@ -76,20 +77,20 @@ migration `...0030`. `postback_outbox`: nothing writes yet. `signup_attributions
 
 ### Default privileges for future tables (F-07)
 `ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated, service_role`. A table created by a migration
-(which runs as `postgres`) is now born with **no** API-role privileges (fail-closed): a new table needs an explicit `GRANT` in its migration, and `0026`
+(which runs as `postgres`) is now born with **no** API-role privileges (fail-closed): a new table needs an explicit `GRANT` in its migration, and `0029`
 fails if a table outside its matrix grants more than the conservative rule allows. **Limits:** it does not cover tables created by `supabase_admin`
 (Dashboard SQL editor / some extensions), whose own default ACL stays permissive, nor sequences and functions (unchanged). Create tables only through migrations.
-`0026` keeps an explicit matrix of every current table x role (including the still-open `service_role ALL` on eight product tables, marked DEBT).
+`0029` keeps an explicit matrix of every current table x role (including the still-open `service_role ALL` on eight product tables, marked DEBT).
 
 ### Not covered / deferred (F-04)
 `profiles` (legitimately updated by `service_role`: `is_suspended`, tested in `0020`), `conversations`, `conversation_participants`, `matches`, `swipes`,
-`profile_photos`, `user_preferences`, `daily_swipe_quotas` still carry `service_role ALL` (DEBT rows in `0026`). `blocks`/`messages` were narrowed because every writer is a
+`profile_photos`, `user_preferences`, `daily_swipe_quotas` still carry `service_role ALL` (DEBT rows in `0029`). `blocks`/`messages` were narrowed because every writer is a
 definer RPC. Row-level immutability triggers remain origin-only (`O`) on older tables (F-11, informational). The `consent_records`, `audit_events`, `payment_events`
 `INSERT` grants are kept (unused by code, cannot rewrite history).
 
 ### Expected catalog state after `...0090`
-Run `docs/operations/privcheck4.sql` (single read-only `SELECT`). Expect: one `table_acl` row per table x role exactly as in the matrix in `0026` (`guard=A` on
-the eleven guarded tables); five `function_acl` rows with `anon=false authenticated=false service_role=true`; `old_fn` = `absent`; `default_acl` for `postgres`,
+Run `docs/operations/privcheck4.sql` (single read-only `SELECT`). Expect: one `table_acl` row per table x role exactly as in the matrix in `0029` (`guard=A` on
+the eleven guarded tables); six `function_acl` rows with `anon=false authenticated=false service_role=true` (the five billing RPCs plus `billing_purge_readbacks(interval)`); `old_fn` = `absent`; `default_acl` for `postgres`,
 objtype `r` = `no API-role entries` (the `supabase_admin` rows stay permissive, see above). Any difference means drift.
 
 ## Verifying after deploy (read-only)

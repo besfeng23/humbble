@@ -1,7 +1,7 @@
 # Billing trust model: how a premium entitlement is granted
 
 Migration `20261023000090_security_followups_themis_pr36.sql` (Themis PR #36 review F-01, PR #35 re-review N1).
-pgTAP: `supabase/tests/0024_billing_readback_evidence.test.sql` (new behaviour), `0015`, `0022`, `0023` (existing flows, updated).
+pgTAP: `supabase/tests/0027_billing_readback_evidence.test.sql` (new behaviour), `0015`, `0022`, `0023` (existing flows, updated).
 Deno: `supabase/functions/_shared/billing.test.ts`, `paypalFixes.test.ts`.
 
 ## The problem that was fixed (F-01)
@@ -30,19 +30,53 @@ A grant needs a **stored readback record** that the database itself checks. Ther
    a row trigger (`ENABLE ALWAYS`) allows only the one `NULL -> value` consume transition (even the owner gets `42501`), `DELETE`/`TRUNCATE` are blocked.
 
 Result: a bare `service_role` call with arbitrary parameters now returns `unknown_readback`; a forged status, amount, currency or plan is judged by
-the database against `billing_plans` and recorded as a mismatch, not a grant. pgTAP `0024` asserts each as `service_role`.
+the database against `billing_plans` and recorded as a mismatch, not a grant. pgTAP `0027` asserts each as `service_role`.
 
-## What is still trusted (residual risk, read this before going live)
-- `billing_record_event` records `provider_verified = TRUE` on the caller's word. The Edge Function sets it only after PayPal's
-  `verify-webhook-signature` succeeds, but the database cannot check that. A holder of the service-role key can still fabricate a verified event and
-  then a readback that cites it, and obtain a grant for a correctly priced plan. This closes the "one call mints premium with any amount" path, not
-  the "service-role key compromise" path. Recommended before live money: (a) an HMAC attestation computed by the Edge Function with a secret that
-  never leaves it and verified inside `billing_record_event`, or (b) a dedicated narrow database role for the billing functions that is not the
-  general service-role key. Both are deferred (design decision for the owner).
-- The readback fields (status, amount, period end) are still supplied by the Edge Function after it read PayPal; the database verifies **consistency**
-  with the price list and the plan, not that PayPal said so. Same mitigation as above.
-- A readback stays usable for 15 minutes (replay window). It can be applied once only.
-- `billing_register_pending_subscription` is unchanged (service_role). It creates a subscription that cannot be granted without the checks above.
+## What is still trusted: the service_role key can grant or revoke premium for ANY user (Themis P39-01)
+**State this plainly: this change does not make the service-role key harmless.** A holder of the service-role key (project owners/admins, the Edge
+Function runtime environment, any CI/CD or secret store that received it) can grant premium to any user with **no ledger event at all and without
+PayPal being involved**, using three calls and only the public price list:
+
+1. `billing_register_pending_subscription(user, plan_key, 'I-ANYTHING', 'P-ANYTHING', 'sandbox'|'live')`
+2. `billing_record_readback('I-ANYTHING', 'P-ANYTHING', 'ACTIVE', now() + 30 days, <amount and currency copied from public billing_plans>, NULL)`
+   (the event id is optional for a status readback, so nothing in `payment_events` is needed)
+3. `billing_apply_readback(<id returned by step 2>)` -> `granted`, active `premium` entitlement. `payment_events` has 0 rows for that subscription (verified by Themis).
+
+The same key can **revoke** any user's premium (`billing_record_event('...PAYMENT.SALE.REFUNDED...')` + `billing_record_refund_readback` + apply), or
+fabricate a verified ledger event first so the trail looks clean. The price check does bite (wrong amount/currency/plan are rejected), but its inputs are
+public. What F-01 closed is the **single unauthenticated-parameter call**; it did not close the **compromised-key** path. The database cannot tell the
+Edge Function's honest call from a forged one because both come from the same role with the same arguments.
+
+**Severity:** sandbox/dev MEDIUM (no money). **Live PayPal: HIGH. Billing must stay sandbox-only until BOTH controls below are in place:**
+1. **A database-verified control** so a leaked general key is not enough: either (a) an HMAC attestation over (subscription, plan, status, amount, currency,
+   period end, event id) computed by the Edge Function with a secret the database verifies (Vault) inside `billing_record_readback` /
+   `billing_record_event`, or (b) a narrow billing role/JWT that only the billing functions are granted to, not the general service-role key. Also make
+   the event citation mandatory for grants and bind it to a database-resolved subscription (P39-02).
+2. **A detective control**: a scheduled check that alerts on any active PayPal entitlement without a provider-verified `payment_events` row for its
+   subscription (and on any revoke without a verified refund event), so a forged grant is noticed even if (1) is bypassed.
+
+Neither control exists yet. Other limits: the readback fields (status, amount, period end) come from the Edge Function after it read PayPal, so the
+database verifies consistency with the price list and plan, not that PayPal said so; a readback is replayable for 15 minutes (single use);
+`billing_register_pending_subscription` is unchanged (service_role).
+
+### What a cited ledger event proves (P39-02)
+For a status readback the optional `event_id` is an **audit trail, not authorization**. The recorder checks that it exists, is `provider_verified`, is
+for PayPal, is of type `BILLING.SUBSCRIPTION.*` or `PAYMENT.SALE.*` (never a refund/reversal; unrelated types are refused with
+`readback_event_type_not_allowed`), and, for subscription events and for any ledger row whose `resource_id` is a subscription id, refers to the same
+subscription. A `PAYMENT.SALE.*` event carries a sale id; the Edge Function resolves it to a subscription through PayPal, which the database cannot
+re-check, so for those the binding is not enforced. Storing a database-resolved `provider_subscription_id` on `payment_events` is a follow-up.
+
+### Retention of `billing_readbacks` (P39-03)
+The table is append-only (one row per webhook/reconciler read), so it grows. Retention policy: keep readbacks for **180 days** (they are evidence for
+disputes, mirrored by audit rows), then purge. The only deletion path is `public.billing_purge_readbacks(older_than interval default '180 days')`
+(service_role only, `SECURITY DEFINER`): it deletes rows that were already consumed and are older than the interval, **never less than 30 days**
+(`22023 retention_too_short`), leaves unconsumed rows, and writes one `billing.readbacks.purged` audit row. The immutability trigger allows the delete
+only inside that function (transaction-local flag) and only for consumed rows older than 30 days; any other DELETE, including by the table owner, still
+raises `42501`. The migration does **not** schedule it: run it deliberately or from a reviewed cron job.
+
+### Applying the migration (P39-04)
+`SET LOCAL lock_timeout = '5s'` only works inside one transaction. Apply through the Supabase CLI (`supabase db push`, `supabase db reset`) or
+`psql -1 -f`. Plain `psql -f` prints "SET LOCAL can only be used in transaction blocks" and the lock timeout is not in force.
 
 ## Deploy order (breaking change)
 The migration drops `billing_apply_readback(text,text,subscription_status,timestamptz,numeric,text,uuid)`. Deploy the migration **and** the Edge Functions

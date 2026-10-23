@@ -4,7 +4,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET search_path = public, extensions, pg_temp;
-SELECT plan(77);
+SELECT plan(95);
 
 DELETE FROM auth.users WHERE id IN ('00000000-0000-0000-0000-000000000301','00000000-0000-0000-0000-000000000302');
 INSERT INTO auth.users (id, aud, role, email, created_at, updated_at) VALUES
@@ -143,6 +143,45 @@ SELECT is(public.billing_record_provider_cancel('I-F01-2','done'), 'ignored', 'a
 SELECT throws_ok($$SELECT public.billing_record_provider_cancel('I-F01-1','maybe')$$, '22023', 'invalid_cancel_result', 'only done/failed are accepted');
 SELECT is((SELECT provider_cancel_status FROM public.subscriptions WHERE provider_subscription_id='I-F01-1'), 'done', 'final state is done');
 SELECT throws_ok($$UPDATE public.subscriptions SET provider_cancel_status = 'done'$$, '42501', 'permission denied for table subscriptions', 'service_role still cannot write subscriptions directly');
+RESET ROLE;
+
+-- ===== 5b. P39-02: what a status readback may cite =====
+-- (owner inserts verified ledger rows of various types; the recorder judges them)
+INSERT INTO public.payment_events (provider, provider_event_id, event_type, resource_id, status, provider_verified) VALUES
+ ('paypal','WH-F01-DISPUTE','CUSTOMER.DISPUTE.CREATED','I-F01-1','received',TRUE),
+ ('paypal','WH-F01-SALE','PAYMENT.SALE.COMPLETED','SALE-F01-1','received',TRUE),
+ ('paypal','WH-F01-SUBOTHER','BILLING.SUBSCRIPTION.UPDATED','I-F01-2','received',TRUE);
+SET LOCAL ROLE service_role;
+SELECT throws_ok($$SELECT public.billing_record_readback('I-F01-1','P-F01-PH','ACTIVE', now()+interval '20 days', 599.00, 'PHP', (SELECT id FROM public.payment_events WHERE provider_event_id='WH-F01-DISPUTE'))$$, '22023', 'readback_event_type_not_allowed', 'a verified event of an unrelated type cannot be cited by a status readback');
+SELECT throws_ok($$SELECT public.billing_record_readback('I-F01-1','P-F01-PH','ACTIVE', now()+interval '20 days', 599.00, 'PHP', (SELECT id FROM public.payment_events WHERE provider_event_id='WH-F01-REF'))$$, '22023', 'readback_event_type_not_allowed', 'a refund event cannot be cited by a status readback (it has its own recorder)');
+SELECT throws_ok($$SELECT public.billing_record_readback('I-F01-1','P-F01-PH','ACTIVE', now()+interval '20 days', 599.00, 'PHP', (SELECT id FROM public.payment_events WHERE provider_event_id='WH-F01-SUBOTHER'))$$, '22023', 'readback_event_subscription_mismatch', 'a subscription event for another subscription cannot be cited');
+SELECT lives_ok($$SELECT public.billing_record_readback('I-F01-1','P-F01-PH','ACTIVE', now()+interval '20 days', 599.00, 'PHP', (SELECT id FROM public.payment_events WHERE provider_event_id='WH-F01-SALE'))$$, 'a verified PAYMENT.SALE.* event (resolved to the subscription by the Edge Function) may be cited');
+SELECT lives_ok($$SELECT public.billing_record_readback('I-F01-1','P-F01-PH','ACTIVE', now()+interval '20 days', 599.00, 'PHP', (SELECT id FROM public.payment_events WHERE provider_event_id='WH-F01-ACT'))$$, 'a verified subscription event for the same subscription may be cited');
+RESET ROLE;
+
+-- ===== 5c. P39-03: retention purge is the only deletion path =====
+INSERT INTO t_rb SELECT 'unconsumed', public.billing_record_readback('I-F01-1','P-F01-PH','ACTIVE', now()+interval '20 days', 599.00, 'PHP', NULL);
+ALTER TABLE public.billing_readbacks DISABLE TRIGGER trg_billing_readbacks_immutable;
+UPDATE public.billing_readbacks SET recorded_at = now() - interval '200 days' WHERE id = (SELECT id FROM t_rb WHERE label='good');
+UPDATE public.billing_readbacks SET recorded_at = now() - interval '40 days'  WHERE id = (SELECT id FROM t_rb WHERE label='refund');
+UPDATE public.billing_readbacks SET recorded_at = now() - interval '200 days' WHERE id = (SELECT id FROM t_rb WHERE label='unconsumed');
+ALTER TABLE public.billing_readbacks ENABLE ALWAYS TRIGGER trg_billing_readbacks_immutable;
+SELECT ok(has_function_privilege('service_role','public.billing_purge_readbacks(interval)','EXECUTE') AND NOT has_function_privilege('anon','public.billing_purge_readbacks(interval)','EXECUTE') AND NOT has_function_privilege('authenticated','public.billing_purge_readbacks(interval)','EXECUTE'), 'purge: service_role only');
+SELECT throws_ok($$DELETE FROM public.billing_readbacks$$, '42501', NULL, 'owner direct DELETE of a recent/unconsumed row still blocked');
+SET LOCAL humbble.billing_readback_purge = 'on';
+SELECT throws_ok($$DELETE FROM public.billing_readbacks WHERE id = (SELECT id FROM t_rb WHERE label='late_active')$$, '42501', 'Billing readback evidence cannot be deleted', 'setting the purge flag by hand does not allow deleting a recent consumed row (30-day floor)');
+SELECT throws_ok($$DELETE FROM public.billing_readbacks WHERE id = (SELECT id FROM t_rb WHERE label='unconsumed')$$, '42501', 'Billing readback evidence cannot be deleted', 'nor an old but unconsumed row');
+RESET humbble.billing_readback_purge;
+SET LOCAL ROLE service_role;
+SELECT throws_ok($$DELETE FROM public.billing_readbacks$$, '42501', 'permission denied for table billing_readbacks', 'service_role still has no DELETE privilege');
+SELECT throws_ok($$SELECT public.billing_purge_readbacks(interval '10 days')$$, '22023', 'retention_too_short', 'purge refuses a retention shorter than 30 days');
+SELECT throws_ok($$SELECT public.billing_purge_readbacks(NULL)$$, '22023', 'retention_too_short', 'purge refuses NULL');
+SELECT is(public.billing_purge_readbacks(), 1, 'default purge (180 days) removes only the old consumed row');
+SELECT ok(EXISTS (SELECT 1 FROM public.billing_readbacks WHERE id = (SELECT id FROM t_rb WHERE label='unconsumed')) AND EXISTS (SELECT 1 FROM public.billing_readbacks WHERE id = (SELECT id FROM t_rb WHERE label='refund')), 'unconsumed and younger rows are kept');
+SELECT is(public.billing_purge_readbacks(interval '30 days'), 1, 'a 30-day purge removes the 40-day-old consumed row');
+SELECT is(public.billing_purge_readbacks(interval '30 days'), 0, 'purge is idempotent');
+SELECT is((SELECT count(*)::INT FROM public.audit_events WHERE action = 'billing.readbacks.purged'), 2, 'each effective purge writes an audit row');
+SELECT throws_ok($$DELETE FROM public.billing_readbacks$$, '42501', 'permission denied for table billing_readbacks', 'after the purge the flag is off: no residual delete path');
 RESET ROLE;
 
 -- ===== 6. status mapping parity with supabase/functions/_shared/paypal.ts mapPayPalStatus =====

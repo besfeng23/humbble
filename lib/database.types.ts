@@ -1446,6 +1446,10 @@ export type Database = {
           resource_id: string
         }[]
       }
+      billing_purge_readbacks: {
+        Args: { p_older_than?: string }
+        Returns: number
+      }
       billing_record_event: {
         Args: {
           p_event_type: string

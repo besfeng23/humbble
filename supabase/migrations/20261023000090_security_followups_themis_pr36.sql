@@ -26,6 +26,14 @@
 --   blocks                 public.block_user (INSERT), public.unblock_user (DELETE); seed.sql
 --   messages               public.send_message (INSERT)
 -- No Edge Function (supabase/functions) and no client code writes any of them as service_role.
+--
+-- APPLY NOTE (Themis P39-04): `SET LOCAL lock_timeout` only takes effect inside ONE transaction. Apply this file through the Supabase CLI
+-- (`supabase db push` / `supabase db reset`, which run each migration file in a single transaction) or `psql -1 -f`. With plain
+-- `psql -f` it prints "SET LOCAL can only be used in transaction blocks" and the 5s lock_timeout is NOT in force.
+--
+-- P39-01 reminder: this migration does NOT make a service_role key harmless. A holder can still grant or revoke premium for any user
+-- with no ledger event at all (billing_register_pending_subscription + billing_record_readback + billing_apply_readback, using the public
+-- price list). That must be closed before live PayPal; see docs/operations/billing-trust-model.md.
 
 SET LOCAL lock_timeout = '5s';
 
@@ -90,6 +98,12 @@ SET search_path = pg_catalog, pg_temp
 AS $function$
 BEGIN
   IF TG_OP = 'DELETE' THEN
+    -- Retention purge (P39-03): only inside public.billing_purge_readbacks (transaction-local flag), only rows that were consumed
+    -- and are older than the 30-day floor. Any other DELETE, including by the table owner, is refused.
+    IF pg_catalog.current_setting('humbble.billing_readback_purge', true) = 'on'
+       AND OLD.applied_at IS NOT NULL AND OLD.recorded_at < pg_catalog.now() - INTERVAL '30 days' THEN
+      RETURN OLD;
+    END IF;
     RAISE EXCEPTION 'Billing readback evidence cannot be deleted' USING ERRCODE = '42501';
   END IF;
   -- Only the single consume step (applied_at / apply_outcome NULL -> value) is allowed.
@@ -149,7 +163,15 @@ BEGIN
     IF NOT FOUND OR v_ev.provider <> 'paypal' OR NOT v_ev.provider_verified THEN
       RAISE EXCEPTION 'readback_event_not_verified' USING ERRCODE = '22023';
     END IF;
-    IF v_ev.resource_id LIKE 'I-%' AND v_ev.resource_id <> p_provider_subscription_id THEN
+    -- P39-02: a grant/status readback may only cite a subscription or sale event (never a refund/reversal, which has its own recorder).
+    IF NOT (v_ev.event_type LIKE 'BILLING.SUBSCRIPTION.%' OR v_ev.event_type LIKE 'PAYMENT.SALE.%')
+       OR v_ev.event_type IN ('PAYMENT.SALE.REFUNDED', 'PAYMENT.SALE.REVERSED') THEN
+      RAISE EXCEPTION 'readback_event_type_not_allowed' USING ERRCODE = '22023';
+    END IF;
+    -- Subscription events carry the subscription id as their resource; bind it. Sale events carry a sale id (the Edge Function resolves the
+    -- subscription from PayPal), so for them the DB can only bind when the ledger resource_id is itself a subscription id: the citation is
+    -- an audit trail, not authorization (see docs/operations/billing-trust-model.md).
+    IF (v_ev.event_type LIKE 'BILLING.SUBSCRIPTION.%' OR v_ev.resource_id LIKE 'I-%') AND v_ev.resource_id <> p_provider_subscription_id THEN
       RAISE EXCEPTION 'readback_event_subscription_mismatch' USING ERRCODE = '22023';
     END IF;
   END IF;
@@ -367,6 +389,33 @@ BEGIN
 END;
 $function$;
 
+-- 1d. Retention (P39-03). Readbacks are append-only evidence; this is the ONLY deletion path. It removes rows that were already consumed
+--     and are older than p_older_than (default 180 days, never less than 30), leaves unconsumed rows alone, and writes one audit row.
+--     Not scheduled by this migration: run it deliberately (or from a reviewed cron job) as service_role.
+CREATE OR REPLACE FUNCTION public.billing_purge_readbacks(p_older_than INTERVAL DEFAULT INTERVAL '180 days')
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $function$
+DECLARE
+  v_deleted INTEGER;
+BEGIN
+  IF p_older_than IS NULL OR p_older_than < INTERVAL '30 days' THEN
+    RAISE EXCEPTION 'retention_too_short' USING ERRCODE = '22023';
+  END IF;
+  PERFORM pg_catalog.set_config('humbble.billing_readback_purge', 'on', true);
+  DELETE FROM public.billing_readbacks r WHERE r.applied_at IS NOT NULL AND r.recorded_at < pg_catalog.now() - p_older_than;
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+  PERFORM pg_catalog.set_config('humbble.billing_readback_purge', 'off', true);
+  IF v_deleted > 0 THEN
+    INSERT INTO public.audit_events (actor_id, action, target_type, target_id, metadata)
+    VALUES (NULL, 'billing.readbacks.purged', 'billing_readbacks', NULL, pg_catalog.jsonb_build_object('deleted', v_deleted, 'older_than', p_older_than::TEXT));
+  END IF;
+  RETURN v_deleted;
+END;
+$function$;
+
 -- Candidate queries must ignore the new evidence table's effect: unchanged, but the F3 reconciler functions are re-asserted below.
 
 -- Owners and EXECUTE for every new function (service_role only).
@@ -379,7 +428,8 @@ BEGIN
     'public.billing_record_refund_readback(text,text,uuid)',
     'public.billing_apply_readback(uuid)',
     'public.billing_list_pending_provider_cancels(text,integer)',
-    'public.billing_record_provider_cancel(text,text)'
+    'public.billing_record_provider_cancel(text,text)',
+    'public.billing_purge_readbacks(interval)'
   ] LOOP
     EXECUTE pg_catalog.format('ALTER FUNCTION %s OWNER TO postgres', fn);
     EXECUTE pg_catalog.format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated', fn);
