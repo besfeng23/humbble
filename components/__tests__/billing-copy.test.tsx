@@ -94,6 +94,7 @@ describe('billing screens: member-facing copy', () => {
 
   it('pricing makes no verification or unbuilt-feature claims and carries the same notice', async () => {
     const { visible } = await render(<PricingScreen />);
+    expect(visible).toContain("Cancel anytime from Billing.");
     expect(visible).not.toMatch(/verif|incognito|advanced filters|safety shield|sandbox|plan_key/i);
     expect(visible).toContain(TEST_PAYMENTS_NOTICE);
   });

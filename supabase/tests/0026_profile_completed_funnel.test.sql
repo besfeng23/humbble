@@ -1,17 +1,18 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET search_path = public, extensions, pg_temp;
-SELECT plan(30);
+SELECT plan(43);
 
--- PROFILE-COMPLETED fixtures 0301-0304 (rolled back).
+-- PROFILE-COMPLETED fixtures 0301-0305 (rolled back).
 -- 301 member who builds the profile step by step as 'authenticated' (the real client path)
 -- 302 operator-created complete profile (privileged writer)
 -- 303 operator-created incomplete profile with a city
 -- 304 member whose photo rows exist before the storage objects (upload-order race)
+-- 305 member completing the profile while the funnel write is made to fail (best-effort analytics)
 INSERT INTO auth.users (id, aud, role, email, created_at, updated_at)
 SELECT ('00000000-0000-0000-0000-' || pg_catalog.lpad(g::TEXT, 12, '0'))::UUID,
        'authenticated', 'authenticated', 'pc-funnel-' || g || '@example.test', pg_catalog.now(), pg_catalog.now()
-  FROM pg_catalog.generate_series(301, 304) AS series(g);
+  FROM pg_catalog.generate_series(301, 305) AS series(g);
 
 -- Signup itself must not have produced a profile_completed event.
 SELECT is((SELECT count(*)::INT FROM public.funnel_events WHERE event = 'profile_completed'
@@ -20,7 +21,7 @@ SELECT is((SELECT count(*)::INT FROM public.funnel_events WHERE event = 'profile
 INSERT INTO storage.objects (bucket_id, name, owner_id, metadata)
 SELECT 'profile_photos', '00000000-0000-0000-0000-000000000' || g::TEXT || '/p' || n || '.jpg', '00000000-0000-0000-0000-000000000' || g::TEXT,
        '{"mimetype":"image/jpeg","size":2048}'::JSONB
-  FROM (VALUES (301), (302)) AS u(g) CROSS JOIN pg_catalog.generate_series(1, 3) AS photos(n);
+  FROM (VALUES (301), (302), (305)) AS u(g) CROSS JOIN pg_catalog.generate_series(1, 3) AS photos(n);
 
 -- 1. Partial profiles do not fire the event.
 SET LOCAL ROLE authenticated;
@@ -140,6 +141,50 @@ SELECT ok((SELECT bool_and(p.prosecdef AND EXISTS (SELECT 1 FROM unnest(p.procon
             WHERE n.nspname = 'private'
               AND p.proname IN ('record_profile_completed_if_complete', 'handle_profile_completed', 'handle_profile_photo_completed')),
   'new functions are SECURITY DEFINER with a pinned search_path');
+
+-- 7. Table privileges on funnel_events (a re-granted INSERT with RLS on must be caught, not only SQLSTATE 42501).
+SELECT is((SELECT bool_or(pg_catalog.has_table_privilege('anon', 'public.funnel_events', priv))
+             FROM unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE']) AS t(priv)), FALSE,
+  'anon has no privilege on funnel_events');
+SELECT is((SELECT bool_or(pg_catalog.has_table_privilege('authenticated', 'public.funnel_events', priv))
+             FROM unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE']) AS t(priv)), FALSE,
+  'authenticated has no privilege on funnel_events');
+SELECT is(pg_catalog.has_table_privilege('anon', 'public.funnel_events', 'INSERT'), FALSE, 'anon cannot INSERT funnel_events (privilege)');
+SELECT is(pg_catalog.has_table_privilege('authenticated', 'public.funnel_events', 'INSERT'), FALSE, 'authenticated cannot INSERT funnel_events (privilege)');
+SELECT is(pg_catalog.has_table_privilege('service_role', 'public.funnel_events', 'INSERT'), TRUE,
+  'service_role keeps INSERT on funnel_events (server-written table; narrowing is a tracked follow-up)');
+SELECT is((SELECT relrowsecurity FROM pg_catalog.pg_class WHERE oid = 'public.funnel_events'::regclass), TRUE, 'funnel_events keeps row level security on');
+
+-- 8. A failing funnel write never aborts the member's write (analytics is best-effort), and is retried later.
+INSERT INTO public.profiles (id, display_name, birth_date, city_region, relationship_intention, prompts)
+VALUES ('00000000-0000-0000-0000-000000000305', 'Funnel Five', DATE '1992-01-01', 'Malmo', 'long_term_dating',
+  '[{"key":"weekend","question":"q","answer":"a"},{"key":"values","question":"q","answer":"b"},{"key":"relationship_goal","question":"q","answer":"c"}]'::JSONB);
+INSERT INTO public.profile_photos (user_id, storage_path, position)
+VALUES ('00000000-0000-0000-0000-000000000305', '00000000-0000-0000-0000-000000000305/p1.jpg', 0);
+-- Make every profile_completed insert fail (NOT VALID still checks new rows). Removed again below.
+ALTER TABLE public.funnel_events ADD CONSTRAINT zz_test_block_profile_completed CHECK (event <> 'profile_completed') NOT VALID;
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000305","role":"authenticated"}';
+SELECT lives_ok($$INSERT INTO public.profile_photos (user_id, storage_path, position)
+  VALUES ('00000000-0000-0000-0000-000000000305', '00000000-0000-0000-0000-000000000305/p2.jpg', 1)$$,
+  'member photo write survives a failing funnel insert');
+RESET ROLE;
+SELECT is(private.is_profile_complete('00000000-0000-0000-0000-000000000305'), TRUE, 'the profile write really landed (profile is complete)');
+SELECT is((SELECT count(*)::INT FROM public.profile_photos WHERE user_id = '00000000-0000-0000-0000-000000000305'), 2, 'both photo rows persisted');
+SELECT is((SELECT count(*)::INT FROM public.funnel_events WHERE user_id = '00000000-0000-0000-0000-000000000305' AND event = 'profile_completed'), 0,
+  'no event was recorded while the funnel insert failed');
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000305","role":"authenticated"}';
+SELECT lives_ok($$UPDATE public.profiles SET city_region = 'Lund' WHERE id = '00000000-0000-0000-0000-000000000305'$$,
+  'member profile write survives a failing funnel insert');
+RESET ROLE;
+ALTER TABLE public.funnel_events DROP CONSTRAINT zz_test_block_profile_completed;
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000305","role":"authenticated"}';
+SELECT is((SELECT public.refresh_my_discoverability()), TRUE, 'member refresh after the funnel recovers');
+RESET ROLE;
+SELECT is((SELECT count(*)::INT FROM public.funnel_events WHERE user_id = '00000000-0000-0000-0000-000000000305' AND event = 'profile_completed'), 1,
+  'the event is recorded exactly once on the next write (retry)');
 
 SELECT * FROM finish();
 ROLLBACK;

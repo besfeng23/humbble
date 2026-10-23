@@ -106,7 +106,7 @@ export default function PricingScreen() {
             <Text
               style={[styles.planSummary, { color: palette.textSecondary }]}
             >
-              Renews monthly until cancelled. Cancel anytime.
+              Renews monthly until cancelled. Cancel anytime from Billing.
             </Text>
             {PAYMENTS_ARE_TEST_ONLY ? (
               <Text

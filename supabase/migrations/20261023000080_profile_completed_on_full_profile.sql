@@ -31,12 +31,25 @@
 -- (premature) event. Rows recorded early for still-incomplete profiles are NOT deleted here; that is an
 -- analytics-data decision for the owner (see PR description for the query).
 --
--- ROLLBACK (manual; forward-fix preferred):
---   DROP TRIGGER trg_profiles_funnel_completed ON public.profiles;
---   DROP TRIGGER trg_profile_photos_funnel_completed ON public.profile_photos;
---   DROP FUNCTION private.handle_profile_photo_completed(), private.record_profile_completed_if_complete(UUID);
---   restore private.handle_profile_completed() and its AFTER INSERT OR UPDATE OF city_region trigger from
---   20261023000030; restore sync_profile_discoverability from 20261023000041.
+-- ROLLBACK (manual; forward-fix preferred). Order matters and it must be ONE transaction: the restored
+-- sync_profile_discoverability must be in place BEFORE the recorder is dropped, because the version in this
+-- migration calls private.record_profile_completed_if_complete and every member profile write goes through it.
+--   BEGIN;
+--   SET LOCAL lock_timeout = '5s';
+--   1. restore private.sync_profile_discoverability(UUID) from 20261023000041 (body without the recorder call);
+--   2. DROP TRIGGER trg_profiles_funnel_completed ON public.profiles;
+--      DROP TRIGGER trg_profile_photos_funnel_completed ON public.profile_photos;
+--   3. restore private.handle_profile_completed() and its AFTER INSERT OR UPDATE OF city_region trigger from
+--      20261023000030;
+--   4. DROP FUNCTION private.handle_profile_photo_completed(), private.record_profile_completed_if_complete(UUID);
+--   COMMIT;
+-- (record_funnel_event stays owner-only: nothing outside SECURITY DEFINER code needs to call it.)
+--
+-- Apply in a quiet window: the DROP TRIGGER / CREATE TRIGGER statements below take ACCESS EXCLUSIVE locks on
+-- public.profiles and public.profile_photos until the migration commits. The lock_timeout makes the migration
+-- fail fast (and roll back, nothing applied) instead of queueing behind a long transaction and blocking reads.
+
+SET LOCAL lock_timeout = '5s';
 
 -- Tighten the existing writer: it is only called from SECURITY DEFINER code.
 REVOKE ALL ON FUNCTION private.record_funnel_event(UUID, TEXT) FROM PUBLIC;
@@ -57,7 +70,14 @@ BEGIN
     RETURN;
   END IF;
   IF private.is_profile_complete(p_user_id) THEN
-    PERFORM private.record_funnel_event(p_user_id, 'profile_completed');
+    -- Analytics is best-effort: a failing funnel write must never abort the member's profile / photo write.
+    -- Only this call is guarded. The write is idempotent, and any later profile write or
+    -- refresh_my_discoverability retries it.
+    BEGIN
+      PERFORM private.record_funnel_event(p_user_id, 'profile_completed');
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'profile_completed funnel write failed for %: % (%)', p_user_id, SQLERRM, SQLSTATE;
+    END;
   END IF;
 END;
 $function$;

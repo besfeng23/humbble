@@ -30,3 +30,25 @@ describe('billing client boundary', () => {
     await expect(getLikedYou(true)).resolves.toEqual({ count: 0, people: [] });
   });
 });
+
+describe('paymentsAreTestOnly (fails closed, mirrors the server live gate)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { paymentsAreTestOnly, PAYMENTS_ARE_TEST_ONLY } = require('@/lib/billing');
+  it('is test-only by default and when the environment is unset', () => {
+    expect(paymentsAreTestOnly(undefined, undefined)).toBe(true);
+    expect(paymentsAreTestOnly('', '')).toBe(true);
+    expect(PAYMENTS_ARE_TEST_ONLY).toBe(true);
+  });
+  it('is test-only for sandbox, typos, and a half-configured live gate', () => {
+    expect(paymentsAreTestOnly('sandbox', 'true')).toBe(true);
+    expect(paymentsAreTestOnly('production', 'true')).toBe(true);
+    expect(paymentsAreTestOnly('live', undefined)).toBe(true);
+    expect(paymentsAreTestOnly('live', 'false')).toBe(true);
+    expect(paymentsAreTestOnly('live', 'TRUE')).toBe(true);
+    expect(paymentsAreTestOnly(undefined, 'true')).toBe(true);
+  });
+  it('is live only when BOTH are explicitly set, like the server', () => {
+    expect(paymentsAreTestOnly('live', 'true')).toBe(false);
+    expect(paymentsAreTestOnly(' LIVE ', 'true')).toBe(false);
+  });
+});
