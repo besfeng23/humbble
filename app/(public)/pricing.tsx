@@ -9,39 +9,12 @@ import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/lib/AuthProvider";
-import { type BillingPlan, countryHintFromLocale, deviceLocale, formatPrice, getBillingPlan } from "@/lib/billing";
+import { type BillingPlan, PAYMENTS_ARE_TEST_ONLY, TEST_PAYMENTS_NOTICE, countryHintFromLocale, deviceLocale, formatPrice, getBillingPlan } from "@/lib/billing";
 
 const TIER_ROWS = [
-  {
-    feature: "Create profile, upload 2–6 photos & complete 3 prompts",
-    free: "Included (Free)",
-    reserve: "Included",
-  },
-  {
-    feature: "Mutual match real-time text messaging",
-    free: "Included (Always Free)",
-    reserve: "Included (Always Free)",
-  },
-  {
-    feature: "One-tap Block, Report & Safety Shield",
-    free: "Included (Always Free)",
-    reserve: "Included (Always Free)",
-  },
-  {
-    feature: "Daily discovery likes",
-    free: "Up to 15 likes / day",
-    reserve: "Unlimited likes",
-  },
-  {
-    feature: "See who liked you",
-    free: "Exact verified count",
-    reserve: "Full likes grid",
-  },
-  {
-    feature: "Incognito mode & advanced filters",
-    free: "Core filters",
-    reserve: "Included",
-  },
+  { feature: "Daily likes", free: "Up to 15", reserve: "Unlimited" },
+  { feature: "See who liked you", free: "Count only", reserve: "Full list" },
+  { feature: "Messaging after a match", free: "Included", reserve: "Included" },
 ] as const;
 
 export default function PricingScreen() {
@@ -98,7 +71,7 @@ export default function PricingScreen() {
             <Text
               style={[styles.planSummary, { color: palette.textSecondary }]}
             >
-              Discover verified profiles, send up to 15 likes per day, and message mutual matches for free.
+              Discover profiles, send up to 15 likes a day, and message your matches for free.
             </Text>
             <Button
               testID="scr-02-free-cta"
@@ -135,6 +108,14 @@ export default function PricingScreen() {
             >
               Renews monthly until cancelled. Cancel anytime from Billing.
             </Text>
+            {PAYMENTS_ARE_TEST_ONLY ? (
+              <Text
+                testID="scr-02-test-payments-note"
+                style={[styles.planSummary, { color: palette.textSecondary }]}
+              >
+                {TEST_PAYMENTS_NOTICE}
+              </Text>
+            ) : null}
             <Button
               testID="scr-02-reserve-cta"
               label={
@@ -154,7 +135,7 @@ export default function PricingScreen() {
             accessibilityRole="header"
             style={[styles.sectionTitle, { color: palette.text }]}
           >
-            Feature Comparison
+            Free vs Premium
           </Text>
           {TIER_ROWS.map((row) => (
             <View
@@ -170,10 +151,10 @@ export default function PricingScreen() {
               <Text
                 style={[styles.tierCell, { color: palette.textSecondary }]}
               >
-                Free: ✓ {row.free}
+                Free: {row.free}
               </Text>
               <Text style={[styles.tierCell, { color: palette.text }]}>
-                Premium: ★ {row.reserve}
+                Premium: {row.reserve}
               </Text>
             </View>
           ))}

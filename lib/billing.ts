@@ -7,6 +7,23 @@ import { isSupabaseConfigured, supabase } from './supabase';
 
 export { countryHintFromLocale, deviceLocale } from '@/lib/locale';
 
+/**
+ * Whether the member-facing "test payments" notice applies. Mirrors the server gate in
+ * supabase/functions/_shared/paypal.ts: payments are LIVE only when the environment is explicitly 'live' AND live
+ * is explicitly allowed ('true'). Anything else (unset, 'sandbox', a typo, only one of the two set) is test-only,
+ * so this fails closed and a misconfiguration keeps the honest "no real money" notice rather than hiding it.
+ * It is a display flag only: the checkout function and the database independently refuse live PayPal
+ * (live_paypal_refused). Set EXPO_PUBLIC_PAYPAL_ENV=live and EXPO_PUBLIC_PAYPAL_ALLOW_LIVE=true together with the
+ * server's PAYPAL_ENV / PAYPAL_ALLOW_LIVE, in the change that enables live billing.
+ */
+export function paymentsAreTestOnly(paypalEnv: string | undefined, allowLive: string | undefined): boolean {
+  const live = (paypalEnv ?? '').trim().toLowerCase() === 'live' && (allowLive ?? '').trim() === 'true';
+  return !live;
+}
+// Literal process.env.EXPO_PUBLIC_* reads so the bundler can inline them.
+export const PAYMENTS_ARE_TEST_ONLY = paymentsAreTestOnly(process.env.EXPO_PUBLIC_PAYPAL_ENV, process.env.EXPO_PUBLIC_PAYPAL_ALLOW_LIVE);
+export const TEST_PAYMENTS_NOTICE = 'Test payments only. No real money is charged.';
+
 export type BillingPlan = { countryCode: string; planKey: string; currency: string; amount: number };
 
 /** Local currency formatting; whole amounts drop the decimals (299 kr, ₱599, £23.99). */

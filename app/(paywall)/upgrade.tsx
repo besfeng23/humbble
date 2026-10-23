@@ -9,8 +9,10 @@ import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { usePremium } from "@/hooks/usePremium";
-import { type BillingPlan, countryHintFromLocale, deviceLocale, formatPrice, getBillingPlan, startCheckout } from "@/lib/billing";
+import { type BillingPlan, PAYMENTS_ARE_TEST_ONLY, TEST_PAYMENTS_NOTICE, countryHintFromLocale, deviceLocale, formatPrice, getBillingPlan, startCheckout } from "@/lib/billing";
+import { toFriendlyMessage } from "@/lib/friendlyErrors";
 
+const CHECKOUT_UNAVAILABLE = "Checkout is unavailable right now. Please try again.";
 const BENEFITS = ["See who liked you", "Unlimited likes"];
 
 export default function ReserveUpgradePaywallScreen() {
@@ -41,7 +43,7 @@ function UpgradeContent() {
     setBusy(true); setMessage(null);
     const result = await startCheckout(hint);
     setBusy(false);
-    if ("error" in result) { setMessage("Checkout is unavailable right now. Please try again."); return; }
+    if ("error" in result) { setMessage(toFriendlyMessage(result.error, CHECKOUT_UNAVAILABLE)); return; }
     await Linking.openURL(result.approvalUrl);
     // Returning from PayPal never grants access by itself; Premium appears once the server confirms payment.
     setMessage("Finish in PayPal. Premium turns on once payment is confirmed.");
@@ -74,10 +76,10 @@ function UpgradeContent() {
             <Text style={[styles.small, { color: palette.text }]}>{consent ? "☑" : "☐"}  Renews monthly until cancelled</Text>
           </Pressable>
           <Button testID="scr-20-checkout-btn" label={busy ? "Opening PayPal…" : "Continue with PayPal"} variant="primary" size="lg" disabled={busy || !plan} onPress={checkout} />
+          {PAYMENTS_ARE_TEST_ONLY ? <Text testID="scr-20-test-payments-note" style={[styles.note, { color: palette.textSecondary }]}>{TEST_PAYMENTS_NOTICE}</Text> : null}
         </>
       )}
       {message ? <Text testID="scr-20-message" style={[styles.small, { color: palette.textSecondary }]}>{message}</Text> : null}
-      {__DEV__ ? <Text style={[styles.note, { color: palette.textSecondary }]}>Dev build · PayPal Sandbox</Text> : null}
     </View>
   );
 }
@@ -90,5 +92,5 @@ const styles = StyleSheet.create({
   benefit: { ...Typography.body },
   consent: { paddingVertical: Spacing.sm },
   small: { ...Typography.bodySmall, textAlign: "center" },
-  note: { ...Typography.bodySmall, opacity: 0.7, marginTop: Spacing.lg },
+  note: { ...Typography.bodySmall, textAlign: "center" },
 });

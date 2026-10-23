@@ -20,7 +20,7 @@ const MESSAGES: Record<string, string> = {
   message_length_invalid: 'Messages must be between 1 and 2000 characters.',
   client_message_id_conflict: 'This message was already sent.',
   client_message_id_required: 'Your message could not be sent. Please try again.',
-  premium_required: 'This feature is part of Humbble Reserve.',
+  premium_required: 'This feature is part of Humbble Premium.',
   privacy_request_already_open: 'You already have an open privacy request. We’ll update you when it’s done.',
   profile_photo_path_must_be_user_scoped: 'That photo could not be saved. Please try again.',
   invalid_push_token: 'Notifications could not be enabled on this device.',
