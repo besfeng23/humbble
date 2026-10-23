@@ -159,9 +159,9 @@ export const SETTINGS_NAV_ITEMS: readonly NavItem[] = [
   },
   {
     id: "settings-privacy-delete",
-    label: "Data & Delete",
+    label: "Data requests",
     href: "/(tabs)/profile/privacy-delete",
-    accessibilityLabel: "Self-service data export and account deletion",
+    accessibilityLabel: "Request a data export or account deletion",
   },
   {
     id: "settings-upgrade",

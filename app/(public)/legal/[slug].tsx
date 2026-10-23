@@ -68,8 +68,8 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
         body: "Verification records only whether a check is not started, in progress, verified, unsuccessful, or under review, without retaining raw selfie images or biometric templates.",
       },
       {
-        heading: "3. Self-Service Export & Account Deletion",
-        body: "Authenticated users can request a portable data export or permanent account deletion from Privacy Settings at any time.",
+        heading: "3. Data Export & Account Deletion Requests",
+        body: "Signed-in users can ask for a copy of their data or ask us to delete their account from Privacy Settings. Requests are recorded in the app and handled manually by us; export and deletion are not automatic yet, and your account stays active until a request has been processed. We cannot promise a completion time here. Use the support contact in the app to follow up.",
       },
     ],
   },

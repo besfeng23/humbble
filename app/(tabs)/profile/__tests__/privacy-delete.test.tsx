@@ -5,6 +5,9 @@ import PrivacyScreen from '../privacy-delete';
 const mockRequest = jest.fn();
 const mockLoad = jest.fn();
 let mockKeyCounter = 0;
+let mockKeyFactory: (() => string) | null = null;
+let mockAuth: { user: { id: string } | null; loading: boolean } = { user: { id: 'user-1' }, loading: false };
+jest.mock('@/lib/AuthProvider', () => ({ useAuth: () => mockAuth }));
 jest.mock('@/lib/rpc', () => ({ requestPrivacyAction: (...a: unknown[]) => mockRequest(...a) }));
 jest.mock('@/lib/supabase', () => ({ supabase: {} }));
 jest.mock('@/lib/privacy', () => {
@@ -12,7 +15,7 @@ jest.mock('@/lib/privacy', () => {
   return {
     ...actual,
     loadMyPrivacyRequests: (...a: unknown[]) => mockLoad(...a),
-    newPrivacyIdempotencyKey: () => `key-${++mockKeyCounter}`,
+    newPrivacyIdempotencyKey: () => (mockKeyFactory ? mockKeyFactory() : `key-${++mockKeyCounter}`),
   };
 });
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn(), push: jest.fn() }) }));
@@ -62,6 +65,8 @@ const typeConfirm = (tree: renderer.ReactTestRenderer, v: string) =>
 beforeEach(() => {
   jest.clearAllMocks();
   mockKeyCounter = 0;
+  mockKeyFactory = null;
+  mockAuth = { user: { id: 'user-1' }, loading: false };
   mockLoad.mockResolvedValue([]);
   mockRequest.mockResolvedValue({ data: REF, error: null });
 });
@@ -150,5 +155,106 @@ describe('SCR-19 privacy request screen (LB-1)', () => {
     const all = flat(tree.toJSON() as any);
     expect(all).not.toMatch(/Permanently Delete|immediately disables|revokes active sessions|purges your profile/i);
     expect(all).toMatch(/not automatic yet/i);
+  });
+});
+
+// Themis PR #45 review extra tests (N45-05): kill the log-the-key/log-the-error, double-tap, 42501 and auto-retry mutants and guard the copy.
+describe('Themis PR #45 extra tests (N45-05)', () => {
+  const spies = () => ['log','info','warn','error','debug'].map((m) => jest.spyOn(console, m as any).mockImplementation(() => {}));
+  test('concurrent double tap -> one RPC call', async () => {
+    let resolve!: (v: any) => void;
+    mockRequest.mockReturnValueOnce(new Promise((r) => { resolve = r; }));
+    const tree = await mount();
+    const btn = tree.root.findByProps({ testID: 'scr-19-export-btn' });
+    await act(async () => { btn.props.onPress(); btn.props.onPress(); });
+    await act(async () => { resolve({ data: REF, error: null }); });
+    expect(mockRequest).toHaveBeenCalledTimes(1);
+  });
+  test('raw server error text/SQLSTATE/key never reach UI nor console, for every outcome', async () => {
+    const s = spies();
+    const errs = [
+      { code: '08006', message: 'SQLSTATE 08006 connection failure at db.internal.example:5432', details: 'password=hunter2', hint: 'x' },
+      { code: '42501', message: 'permission denied for function request_privacy_action', details: '', hint: '' },
+      { code: 'PGRST301', message: 'JWT expired eyJhbGciOi.secret.token', details: '', hint: '' },
+      { code: '22023', message: 'request_type_and_idempotency_key_required', details: '', hint: '' },
+      { code: '23505', message: 'duplicate key value violates unique constraint uq_privacy_requests_user_idempotency', details: 'Key (user_id, idempotency_key)=(u, k) already exists.', hint: '' },
+    ];
+    for (const e of errs) {
+      mockRequest.mockResolvedValue({ data: null, error: e });
+      const tree = await mount();
+      await press(tree, 'scr-19-export-btn');
+      expect(flat(tree.toJSON() as any)).not.toMatch(/SQLSTATE|hunter2|eyJ|permission denied|uq_privacy|duplicate key|db\.internal|idempotency|request_privacy_action|key-\d/i);
+    }
+    for (const sp of s) expect(sp).not.toHaveBeenCalled();
+    s.forEach((sp) => sp.mockRestore());
+  });
+  test('rpc error object keeps key for retry; no automatic retry', async () => {
+    mockRequest.mockResolvedValue({ data: null, error: { code: '08006', message: 'x', details: '', hint: '' } });
+    const tree = await mount();
+    await press(tree, 'scr-19-export-btn');
+    await act(async () => { await new Promise((r) => setTimeout(r, 300)); });
+    expect(mockRequest).toHaveBeenCalledTimes(1);
+    await press(tree, 'scr-19-export-btn');
+    expect(mockRequest.mock.calls.map((c) => c[1])).toEqual(['key-1', 'key-1']);
+  });
+  test('42501 without recognisable message still asks to sign in', async () => {
+    mockRequest.mockResolvedValue({ data: null, error: { code: '42501', message: 'permission denied for function request_privacy_action', details: '', hint: '' } });
+    const tree = await mount();
+    await press(tree, 'scr-19-export-btn');
+    expect(text(tree, 'state-text')).toMatch(/sign in again/i);
+  });
+  test('no timeline / legal commitment wording on any success copy', async () => {
+    const tree = await mount();
+    await press(tree, 'scr-19-export-btn');
+    await typeConfirm(tree, 'DELETE MY ACCOUNT');
+    await press(tree, 'scr-19-delete-btn');
+    expect(flat(tree.toJSON() as any)).not.toMatch(/within \d+|\d+ (days|hours)|guarantee|will be (deleted|exported|emailed)/i);
+  });
+});
+
+describe('SCR-19 hardening (Themis N45-04 / N45-06)', () => {
+  test('signed out: no RPC call, no key minted, no list load, and the member is told to sign in', async () => {
+    mockAuth = { user: null, loading: false };
+    mockKeyFactory = jest.fn(() => 'should-not-be-called');
+    const tree = await mount();
+    expect(mockLoad).not.toHaveBeenCalled();
+    await press(tree, 'scr-19-export-btn');
+    await typeConfirm(tree, 'DELETE MY ACCOUNT');
+    await press(tree, 'scr-19-delete-btn');
+    expect(mockRequest).not.toHaveBeenCalled();
+    expect(mockKeyFactory).not.toHaveBeenCalled();
+    expect(text(tree, 'state-status')).toBe('failure');
+    expect(text(tree, 'state-text')).toMatch(/Please sign in/);
+    expect(text(tree, 'state-text')).toMatch(/Nothing was recorded/);
+  });
+
+  test('session still resolving: no RPC call and a "try again in a moment" message', async () => {
+    mockAuth = { user: null, loading: true };
+    const tree = await mount();
+    await press(tree, 'scr-19-export-btn');
+    expect(mockRequest).not.toHaveBeenCalled();
+    expect(text(tree, 'state-text')).toMatch(/try again in a moment/i);
+  });
+
+  test('foreign-key error (no profiles row) is NOT reported as a connection problem and is not retried with the same key', async () => {
+    mockRequest.mockResolvedValue({ data: null, error: { code: '23503', message: 'insert or update on table "privacy_requests" violates foreign key constraint "privacy_requests_user_id_fkey"', details: 'Key (user_id)=(u) is not present in table "profiles".', hint: '' } });
+    const tree = await mount();
+    await press(tree, 'scr-19-export-btn');
+    const msg = text(tree, 'state-text');
+    expect(msg).toMatch(/profile is not set up yet/i);
+    expect(msg).not.toMatch(/connection/i);
+    expect(msg).not.toMatch(/foreign key|privacy_requests|profiles"|user_id/i);
+    await press(tree, 'scr-19-export-btn');
+    expect(mockRequest.mock.calls.map((c) => c[1])).toEqual(['key-1', 'key-2']);
+  });
+
+  test('no secure random source: fails closed (RPC never called) with a non-retryable message', async () => {
+    mockKeyFactory = () => { throw new Error('secure_random_unavailable'); };
+    const tree = await mount();
+    await press(tree, 'scr-19-export-btn');
+    expect(mockRequest).not.toHaveBeenCalled();
+    expect(text(tree, 'state-status')).toBe('failure');
+    expect(text(tree, 'state-text')).toMatch(/cannot create a secure request reference/i);
+    expect(text(tree, 'state-text')).toMatch(/nothing was recorded/i);
   });
 });
