@@ -26,7 +26,9 @@ Refund/reversal revokes; suspended/expired deactivate.
 ### Ledger privileges (F1) and terminal state (F3)
 - `public.payment_events` is write-protected by **privileges**, not only by the update trigger: migration `...0051` revokes everything
   from `PUBLIC`, `anon`, `authenticated` and `service_role`, then grants `service_role` only `SELECT`, `INSERT` and column-level
-  `UPDATE (status, provider_verified, processed_at, retention_until, legal_hold)`. `DELETE`, `TRUNCATE`, table-level `UPDATE`,
+  `UPDATE (status, provider_verified, processed_at, legal_hold)` (`retention_until` removed from the list by migration `...0060`, see
+  `docs/operations/privilege-hardening.md`, which also applies this pattern to `audit_events`, `consent_records`, `privacy_requests`,
+  `subscriptions` and `entitlements`). `DELETE`, `TRUNCATE`, table-level `UPDATE`,
   `REFERENCES` and `TRIGGER` are gone (Supabase default privileges had granted them). The Edge Functions only use the
   SECURITY DEFINER `billing_*` RPCs, which run as `postgres`. pgTAP `0022` asserts this **as `service_role`** and checks the error is a
   permission error, not the trigger. After deploying, confirm on the project:
