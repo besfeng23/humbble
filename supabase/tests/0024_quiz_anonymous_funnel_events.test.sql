@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET search_path = public, extensions, pg_temp;
-SELECT plan(165);
+SELECT plan(186);
 
 -- Test fixtures (rolled back). Session ids are valid random-style v4 UUIDs.
 INSERT INTO public.attribution_networks (slug, display_name) VALUES ('qtestnet', 'Quiz Test Net');
@@ -189,6 +189,31 @@ EXCEPTION WHEN OTHERS THEN
   PERFORM pg_catalog.set_config('rqe.detail_nw', COALESCE(v_detail, ''), true);
   PERFORM pg_catalog.set_config('rqe.hint_nw', COALESCE(v_hint, ''), true);
 END $$;
+-- Themis N42-01: the same probe for the four remaining guarded arguments (answer, country, utm_medium, utm_campaign), each with its own marker.
+DO $$
+DECLARE v_sfx TEXT[] := ARRAY['an', 'co', 'um', 'uc']; v_i INTEGER; v_state TEXT; v_msg TEXT; v_detail TEXT; v_hint TEXT;
+BEGIN
+  FOR v_i IN 1..4 LOOP
+    BEGIN
+      PERFORM public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4',
+        CASE WHEN v_i IN (1, 2) THEN 'quiz_step' ELSE 'quiz_started' END,
+        CASE v_i WHEN 1 THEN 1 WHEN 2 THEN 4 ELSE 0 END,
+        CASE WHEN v_i = 1 THEN pg_catalog.repeat('v', 40) END,
+        CASE WHEN v_i = 2 THEN pg_catalog.repeat('k', 5) END,
+        NULL,
+        NULL,
+        CASE WHEN v_i = 3 THEN pg_catalog.repeat('m', 70) END,
+        CASE WHEN v_i = 4 THEN pg_catalog.repeat('c', 70) END);
+      PERFORM pg_catalog.set_config('rqe.state_' || v_sfx[v_i], 'NO ERROR', true);
+    EXCEPTION WHEN OTHERS THEN
+      GET STACKED DIAGNOSTICS v_state = RETURNED_SQLSTATE, v_msg = MESSAGE_TEXT, v_detail = PG_EXCEPTION_DETAIL, v_hint = PG_EXCEPTION_HINT;
+      PERFORM pg_catalog.set_config('rqe.state_' || v_sfx[v_i], v_state, true);
+      PERFORM pg_catalog.set_config('rqe.msg_' || v_sfx[v_i], v_msg, true);
+      PERFORM pg_catalog.set_config('rqe.detail_' || v_sfx[v_i], COALESCE(v_detail, ''), true);
+      PERFORM pg_catalog.set_config('rqe.hint_' || v_sfx[v_i], COALESCE(v_hint, ''), true);
+    END;
+  END LOOP;
+END $$;
 SELECT is(current_setting('rqe.state'), 'PT400', 'oversize raises SQLSTATE PT400 (PostgREST maps PTxyz to HTTP xyz = 400), no longer 54000 (HTTP 500)');
 SELECT is(current_setting('rqe.msg'), 'payload_too_large', 'oversize message text is unchanged');
 SELECT is(current_setting('rqe.detail'), 'An argument exceeds its maximum length (event, answer 32; country 2; network, utm 64).', 'oversize DETAIL is the fixed rule text');
@@ -202,6 +227,22 @@ SELECT is(current_setting('rqe.state_nw'), 'PT400', 'oversize network raises PT4
 SELECT is(current_setting('rqe.detail_nw'), 'An argument exceeds its maximum length (event, answer 32; country 2; network, utm 64).', 'oversize network: DETAIL is the fixed rule text');
 SELECT is(current_setting('rqe.hint_nw'), '', 'oversize network: HINT is empty');
 SELECT ok(current_setting('rqe.msg_nw') || current_setting('rqe.detail_nw') || current_setting('rqe.hint_nw') NOT LIKE '%xxxx%', 'the oversize error does not echo the caller-supplied network value (message, detail, hint)');
+SELECT is(current_setting('rqe.state_an'), 'PT400', 'oversize answer raises PT400');
+SELECT is(current_setting('rqe.detail_an'), 'An argument exceeds its maximum length (event, answer 32; country 2; network, utm 64).', 'oversize answer: DETAIL is the fixed rule text');
+SELECT is(current_setting('rqe.hint_an'), '', 'oversize answer: HINT is empty');
+SELECT ok(current_setting('rqe.msg_an') || current_setting('rqe.detail_an') || current_setting('rqe.hint_an') NOT LIKE '%vvvv%', 'the oversize error does not echo the caller-supplied answer value (message, detail, hint)');
+SELECT is(current_setting('rqe.state_co'), 'PT400', 'oversize country raises PT400');
+SELECT is(current_setting('rqe.detail_co'), 'An argument exceeds its maximum length (event, answer 32; country 2; network, utm 64).', 'oversize country: DETAIL is the fixed rule text');
+SELECT is(current_setting('rqe.hint_co'), '', 'oversize country: HINT is empty');
+SELECT ok(current_setting('rqe.msg_co') || current_setting('rqe.detail_co') || current_setting('rqe.hint_co') NOT LIKE '%kkkk%', 'the oversize error does not echo the caller-supplied country value (message, detail, hint)');
+SELECT is(current_setting('rqe.state_um'), 'PT400', 'oversize utm_medium raises PT400');
+SELECT is(current_setting('rqe.detail_um'), 'An argument exceeds its maximum length (event, answer 32; country 2; network, utm 64).', 'oversize utm_medium: DETAIL is the fixed rule text');
+SELECT is(current_setting('rqe.hint_um'), '', 'oversize utm_medium: HINT is empty');
+SELECT ok(current_setting('rqe.msg_um') || current_setting('rqe.detail_um') || current_setting('rqe.hint_um') NOT LIKE '%mmmm%', 'the oversize error does not echo the caller-supplied utm_medium value (message, detail, hint)');
+SELECT is(current_setting('rqe.state_uc'), 'PT400', 'oversize utm_campaign raises PT400');
+SELECT is(current_setting('rqe.detail_uc'), 'An argument exceeds its maximum length (event, answer 32; country 2; network, utm 64).', 'oversize utm_campaign: DETAIL is the fixed rule text');
+SELECT is(current_setting('rqe.hint_uc'), '', 'oversize utm_campaign: HINT is empty');
+SELECT ok(current_setting('rqe.msg_uc') || current_setting('rqe.detail_uc') || current_setting('rqe.hint_uc') NOT LIKE '%cccc%', 'the oversize error does not echo the caller-supplied utm_campaign value (message, detail, hint)');
 -- No side effect (Themis N41-02): oversize calls on every guarded argument leave quiz_events and the rate counter exactly as they were.
 RESET ROLE;
 SELECT pg_catalog.set_config('rqe.rows_before', (SELECT pg_catalog.count(*)::TEXT FROM public.quiz_events), true);
@@ -231,6 +272,32 @@ RESET ROLE;
 SELECT is(current_setting('rqe.oversize_hits'), '7', 'oversize on each of the 7 guarded arguments raises PT400');
 SELECT is((SELECT pg_catalog.count(*)::TEXT FROM public.quiz_events), current_setting('rqe.rows_before'), 'oversize calls wrote no quiz_events row (row count before = after)');
 SELECT is((SELECT COALESCE(pg_catalog.sum(n), 0)::TEXT || '/' || pg_catalog.count(*)::TEXT FROM private.quiz_event_rate), current_setting('rqe.rate_before'), 'oversize calls did not move the rate counter (sum of n / bucket rows before = after)');
+-- Themis N42-02: the length guard precedes ANY table access. With BOTH tables renamed away an oversize call still raises PT400, while a valid call
+-- needs them (42P01), and transaction-level stats show an oversize call does no scan / insert / update / delete on either table.
+ALTER TABLE private.quiz_event_rate RENAME TO qer_renamed;
+ALTER TABLE public.quiz_events RENAME TO qe_renamed;
+SET LOCAL ROLE anon;
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started', 0, NULL, NULL, pg_catalog.repeat('a', 65))$$, 'PT400', 'payload_too_large', 'oversize raises PT400 before touching any table (both tables renamed away)');
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started')$$, '42P01', NULL, 'sanity: a valid call does need the tables (42P01 while they are renamed)');
+RESET ROLE;
+ALTER TABLE private.qer_renamed RENAME TO quiz_event_rate;
+ALTER TABLE public.qe_renamed RENAME TO quiz_events;
+CREATE TEMP TABLE rqe_stat0 AS SELECT relname, seq_scan, idx_scan, n_tup_ins, n_tup_upd, n_tup_del FROM pg_stat_xact_user_tables WHERE relname IN ('quiz_events', 'quiz_event_rate');
+SET LOCAL ROLE anon;
+DO $$ BEGIN BEGIN PERFORM public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started', 0, NULL, NULL, pg_catalog.repeat('a', 65)); EXCEPTION WHEN SQLSTATE 'PT400' THEN NULL; END; END $$;
+RESET ROLE;
+SELECT is((SELECT count(*)::INT FROM (SELECT relname, seq_scan, idx_scan, n_tup_ins, n_tup_upd, n_tup_del FROM pg_stat_xact_user_tables WHERE relname IN ('quiz_events', 'quiz_event_rate') EXCEPT SELECT * FROM rqe_stat0) d), 0, 'an oversize call performs no scan/insert/update/delete on quiz_events or quiz_event_rate (pg_stat_xact_user_tables unchanged)');
+DROP TABLE rqe_stat0;
+-- Themis N42-03: the second PT429 raise site (atomic-counter loser) behaviourally. A BEFORE INSERT trigger that skips the counter upsert makes the
+-- upsert return no row, which is the loser path. Dropped straight after, so later tests are unaffected.
+CREATE FUNCTION pg_temp.rqe_skip_ins() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN RETURN NULL; END $f$;
+CREATE TRIGGER rqe_t_site2 BEFORE INSERT ON private.quiz_event_rate FOR EACH ROW EXECUTE FUNCTION pg_temp.rqe_skip_ins();
+SET LOCAL ROLE anon;
+SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd6', 'quiz_started')$$, 'PT429', 'rate_limited', 'rate limit site 2 (atomic-counter loser) raises PT429');
+RESET ROLE;
+DROP TRIGGER rqe_t_site2 ON private.quiz_event_rate;
+DROP FUNCTION pg_temp.rqe_skip_ins();
+SELECT is((SELECT count(*)::INT FROM public.quiz_events WHERE session_id = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd6'), 0, 'rate limit site 2 loser stored nothing');
 SET LOCAL ROLE anon;
 SELECT throws_ok($$SELECT public.record_quiz_event(p_session_id => 'dddddddd-dddd-4ddd-8ddd-ddddddddddd4', p_event => 'quiz_started', p_click_id => 'abc')$$, '42883', NULL, 'the function no longer accepts a click id (or any attribution JSON)');
 SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'quiz_started', 0, NULL, NULL, NULL, NULL, NULL, NULL, '{"click_id":"x"}'::JSONB)$$, '42883', NULL, 'a JSON attribution argument is not accepted');
