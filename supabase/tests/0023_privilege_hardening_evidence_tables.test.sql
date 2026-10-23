@@ -88,7 +88,7 @@ SELECT is((SELECT string_agg(t||':'||p, ',' ORDER BY t, p) FROM unnest(ARRAY['au
             WHERE has_table_privilege('authenticated','public.'||t,p)),
           'consent_records:SELECT,entitlements:SELECT,privacy_requests:SELECT,subscriptions:SELECT', 'authenticated keeps exactly SELECT on consent/privacy/subscriptions/entitlements and nothing on audit_events/payment_events');
 SELECT ok(has_column_privilege('authenticated','public.consent_records','consent_key','INSERT') AND has_column_privilege('authenticated','public.consent_records','choice','INSERT')
-          AND has_column_privilege('authenticated','public.privacy_requests','request_type','INSERT') AND has_column_privilege('authenticated','public.privacy_requests','idempotency_key','INSERT'), 'authenticated keeps column-level INSERT on consent_records and privacy_requests');
+          AND NOT has_any_column_privilege('authenticated','public.privacy_requests','INSERT'), 'authenticated keeps column-level INSERT on consent_records but has NO INSERT on privacy_requests (N45-01; RPC is the only writer)');
 SELECT ok(NOT (has_column_privilege('authenticated','public.consent_records','recorded_at','INSERT') OR has_column_privilege('authenticated','public.privacy_requests','status','INSERT')
             OR has_column_privilege('authenticated','public.privacy_requests','status','UPDATE') OR has_column_privilege('authenticated','public.consent_records','choice','UPDATE')), 'authenticated has no extra column privileges');
 SELECT is((SELECT count(*)::INT FROM pg_class c, LATERAL aclexplode(c.relacl) a
@@ -190,8 +190,8 @@ SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000231",
 SELECT lives_ok($$INSERT INTO public.consent_records (user_id, consent_key, version, choice, source, metadata) VALUES ('00000000-0000-0000-0000-000000000231','p60-client-consent','v1','granted','app','{}')$$, 'authenticated can still record own consent');
 SELECT is((SELECT count(*)::INT FROM public.consent_records WHERE consent_key IN ('p60-consent','p60-client-consent')), 2, 'authenticated reads only own consent rows');
 SELECT lives_ok($$SELECT public.request_privacy_action('deletion','00000000-0000-0000-0000-000000000243')$$, 'authenticated request_privacy_action still works (writes privacy_requests + audit_events as definer)');
-SELECT lives_ok($$INSERT INTO public.privacy_requests (user_id, request_type, idempotency_key) VALUES ('00000000-0000-0000-0000-000000000231','export','00000000-0000-0000-0000-000000000244')$$, 'authenticated can still insert own privacy request directly');
-SELECT is((SELECT count(*)::INT FROM public.privacy_requests), 3, 'authenticated reads only own privacy requests');
+SELECT throws_ok($$INSERT INTO public.privacy_requests (user_id, request_type, idempotency_key) VALUES ('00000000-0000-0000-0000-000000000231','export','00000000-0000-0000-0000-000000000244')$$, '42501', 'permission denied for table privacy_requests', 'authenticated can no longer insert a privacy request directly (N45-01)');
+SELECT is((SELECT count(*)::INT FROM public.privacy_requests), 2, 'authenticated reads only own privacy requests (seed + RPC-created; the direct insert is refused)');
 SELECT is((SELECT count(*)::INT FROM public.subscriptions), 1, 'authenticated reads only own subscription');
 SELECT is((SELECT count(*)::INT FROM public.entitlements), 1, 'authenticated reads only own entitlement');
 SELECT lives_ok($$SELECT public.get_my_premium_status()$$, 'get_my_premium_status still works');
