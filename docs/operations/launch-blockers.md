@@ -57,3 +57,6 @@ and only a TRUNCATE guard protects it. There is therefore **no API path to recor
 exists, do not tell members in the app, store listings or privacy copy that they can withdraw marketing consent in-app. Fix (product/legal + engineering):
 add a definer RPC that appends a consent change to `public.consent_records` (it already has `choice`, `consent_key`, `version`) and derives the effective state
 from the latest row, or document where withdrawal is handled (support/privacy request). Tracked here because the draft privacy notice promises instant revocation.
+
+## Moderation console follow-ups (P5-01)
+See `docs/operations/moderation-console.md`. Biggest open item: `is_suspended` is not enforced in `send_message`/`can_send_message`, so suspension does not yet stop messaging in existing matches.

@@ -3,7 +3,7 @@ import { Pressable, Text } from "react-native";
 import renderer, { act } from "react-test-renderer";
 
 import AdminLayout from "@/app/(admin)/_layout";
-import ModerationCaseDetailScreen from "@/app/(admin)/moderation/[caseId]";
+import ModerationCaseDetailScreen from "@/app/(admin)/moderation/[reportId]";
 import ModerationQueueScreen from "@/app/(admin)/moderation/index";
 import OnboardingStackLayout from "@/app/(onboarding)/_layout";
 import OnboardingBasicsScreen from "@/app/(onboarding)/basics";
@@ -131,6 +131,9 @@ jest.mock("expo-router", () => {
       canGoBack: () => mockCanGoBack,
     }),
     useSegments: () => [],
+    useFocusEffect: (cb: () => void | (() => void)) => {
+      ReactActual.useEffect(cb, [cb]);
+    },
     useLocalSearchParams: () => mockLocalSearchParams,
     useGlobalSearchParams: () => mockLocalSearchParams,
   };
@@ -191,6 +194,13 @@ jest.mock("@/lib/supabase", () => ({
   },
   registerSupabaseAppStateListener: jest.fn(),
   cleanupSupabaseAppStateListener: jest.fn(),
+}));
+
+// The moderation console reads the database through RPC wrappers; this suite exercises navigation only.
+jest.mock("@/lib/rpc", () => ({
+  ...jest.requireActual("@/lib/rpc"),
+  moderationListQueue: jest.fn(async () => ({ data: [], error: null })),
+  moderationGetCase: jest.fn(async () => ({ data: [], error: null })),
 }));
 
 jest.mock("@/lib/AuthProvider", () => ({
@@ -791,7 +801,7 @@ describe("PR P1-03 — Route Smoke Tests & No Dead Buttons Verification (SCR-01.
   beforeEach(() => {
     jest.clearAllMocks();
     mockCanGoBack = false;
-    mockLocalSearchParams = { slug: "terms-of-service", id: "1", caseId: "case-101" };
+    mockLocalSearchParams = { slug: "terms-of-service", id: "1", reportId: "00000000-0000-0000-0000-00000000c001" };
   });
 
   it("verifies ChatsStackLayout registers chatScreen (Amendment A4 casing fix) and [conversationId]", () => {

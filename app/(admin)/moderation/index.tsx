@@ -1,98 +1,129 @@
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { ModerationLayout } from "@/components/layout";
-import { EmptyState, FormStateView, type FormStatus } from "@/components/state";
+import { FormStateView, type FormStatus } from "@/components/state";
 import { Button, Card } from "@/components/ui";
 import { Colors } from "@/constants/Colors";
 import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import {
+  MODERATION_FILTERS,
+  MODERATION_PAGE_SIZE,
+  ageLabel,
+  categoryLabel,
+  isForbiddenError,
+  moderationErrorMessage,
+  severityLabel,
+  statusLabel,
+  triageClock,
+  type ModerationFilterId,
+} from "@/lib/moderation";
+import { moderationListQueue, type ModerationQueueRow } from "@/lib/rpc";
 
-interface ModerationCaseSummary {
-  id: string;
-  category: string;
-  severity: "critical" | "high" | "standard";
-  status: "open" | "in_review" | "actioned";
-  ageLabel: string;
-}
-
-const SYNTHETIC_CASES: readonly ModerationCaseSummary[] = [
-  {
-    id: "case-101",
-    category: "underage_concern",
-    severity: "critical",
-    status: "open",
-    ageLabel: "18m ago (4h SLA priority)",
-  },
-  {
-    id: "case-102",
-    category: "romance_scam_or_money_request",
-    severity: "high",
-    status: "in_review",
-    ageLabel: "1h ago (24h SLA)",
-  },
-] as const;
-
-export default function ModerationQueueScreen() {
+/** Body is a child of ModerationLayout so nothing is fetched unless AuthGuard has admitted a moderator. */
+function QueueBody() {
   const router = useRouter();
   const scheme = useColorScheme() ?? "light";
   const palette = Colors[scheme];
-  const [filterStatus, setFilterStatus] = useState<
-    "all" | "open" | "in_review" | "actioned"
-  >("all");
-  const [status, setStatus] = useState<FormStatus>("idle");
+  const [filter, setFilter] = useState<ModerationFilterId>("active");
+  const [rows, setRows] = useState<ModerationQueueRow[]>([]);
+  const [status, setStatus] = useState<FormStatus>("pending");
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  // Ignore responses that arrive after a newer request (filter change / refresh).
+  const requestId = useRef(0);
 
-  const visibleCases =
-    filterStatus === "all"
-      ? SYNTHETIC_CASES
-      : SYNTHETIC_CASES.filter((item) => item.status === filterStatus);
+  const load = useCallback(async (nextFilter: ModerationFilterId, append: boolean, offset: number) => {
+    const mine = ++requestId.current;
+    if (append) setLoadingMore(true);
+    else setStatus("pending");
+    const { data, error } = await moderationListQueue({
+      filter: nextFilter,
+      limit: MODERATION_PAGE_SIZE,
+      offset,
+    });
+    if (mine !== requestId.current) return;
+    setLoadingMore(false);
+    if (error) {
+      setErrorMessage(
+        isForbiddenError(error)
+          ? "Your account does not have moderator access."
+          : moderationErrorMessage(error),
+      );
+      setStatus("failure");
+      return;
+    }
+    const page = data ?? [];
+    setRows((prev) => (append ? [...prev, ...page] : page));
+    setHasMore(page.length === MODERATION_PAGE_SIZE);
+    setStatus(!append && page.length === 0 ? "empty" : "idle");
+  }, []);
+
+  // Reload whenever the screen regains focus (e.g. coming back from a case after an action) and when the filter changes.
+  useFocusEffect(
+    useCallback(() => {
+      void load(filter, false, 0);
+      return () => {
+        requestId.current += 1;
+      };
+    }, [filter, load]),
+  );
 
   return (
-    <ModerationLayout
-      testID="scr-23-moderation-queue"
-      title="Trust & Safety Moderation Queue"
-      subtitle="Cases ordered by severity"
-      fallbackHref="/(tabs)/profile"
-      activeNavId="moderation-queue"
-    >
+    <>
+      <View style={styles.filterRow} accessibilityRole="tablist">
+        {MODERATION_FILTERS.map((item) => (
+          <Button
+            key={item.id}
+            testID={`scr-23-filter-${item.id}`}
+            label={item.label}
+            variant={filter === item.id ? "primary" : "secondary"}
+            size="sm"
+            shape="pill"
+            accessibilityRole="tab"
+            accessibilityState={{ selected: filter === item.id }}
+            onPress={() => setFilter(item.id)}
+          />
+        ))}
+        <Button
+          testID="scr-23-refresh"
+          label="Refresh"
+          variant="secondary"
+          size="sm"
+          shape="pill"
+          onPress={() => void load(filter, false, 0)}
+        />
+      </View>
+
       <FormStateView
         testID="scr-23-form-state"
         status={status}
-        pendingTitle="Refreshing moderation queue..."
-        successTitle="Queue refreshed"
-        successMessage="Loaded active synthetic triage queue."
-        onRetry={() => setStatus("idle")}
+        preserveChildren={false}
+        pendingTitle="Loading reports..."
+        failureTitle="Couldn’t load the queue"
+        failureMessage={errorMessage || "Something went wrong. Please try again."}
+        retryLabel="Try again"
+        onRetry={() => void load(filter, false, 0)}
+        emptyTitle={
+          filter === "active" || filter === "unopened"
+            ? "No reports need attention"
+            : "No cases in this view"
+        }
+        emptyMessage="Nothing matches this filter right now."
+        emptyActionLabel={filter === "all" ? undefined : "Show all"}
+        onEmptyAction={filter === "all" ? undefined : () => setFilter("all")}
       >
-        <View style={styles.filterRow}>
-          {(["all", "open", "in_review", "actioned"] as const).map((key) => (
-            <Button
-              key={key}
-              testID={`scr-23-filter-${key}`}
-              label={`Filter: ${key}`}
-              variant={filterStatus === key ? "primary" : "secondary"}
-              size="sm"
-              shape="pill"
-              onPress={() => setFilterStatus(key)}
-            />
-          ))}
-        </View>
-
-        {visibleCases.length === 0 ? (
-          <EmptyState
-            testID="scr-23-empty-queue"
-            title="Zero open cases in this filter"
-            message="All matching Trust & Safety reports have been triaged."
-            actionLabel="Show All Cases"
-            onAction={() => setFilterStatus("all")}
-          />
-        ) : (
-          <View style={styles.caseList}>
-            {visibleCases.map((item) => (
+        <View style={styles.caseList}>
+          {rows.map((item) => {
+            const clock = triageClock(item);
+            return (
               <Card
-                key={item.id}
-                testID={`scr-23-case-${item.id}`}
+                key={item.report_id}
+                testID={`scr-23-case-${item.report_id}`}
                 variant="elevated"
               >
                 <View style={styles.caseRow}>
@@ -101,33 +132,65 @@ export default function ModerationQueueScreen() {
                       accessibilityRole="header"
                       style={[styles.caseTitle, { color: palette.text }]}
                     >
-                      {item.id.toUpperCase()} • {item.category}
+                      {categoryLabel(item.category)} • {item.reported_display_name || "Removed account"}
                     </Text>
-                    <Text
-                      style={[
-                        styles.caseMeta,
-                        { color: palette.textSecondary },
-                      ]}
-                    >
-                      Severity: {item.severity.toUpperCase()} • Status:{" "}
-                      {item.status} • {item.ageLabel}
+                    <Text style={[styles.caseMeta, { color: palette.textSecondary }]}>
+                      {severityLabel(item.severity)} severity • {statusLabel(item.case_status)} • reported{" "}
+                      {ageLabel(item.reported_at)}
+                      {item.reports_against_count > 1
+                        ? ` • ${item.reports_against_count} reports on this member`
+                        : ""}
+                      {item.reported_is_suspended ? " • member suspended" : ""}
                     </Text>
+                    {clock ? (
+                      <Text
+                        style={[
+                          styles.caseMeta,
+                          { color: clock.includes("overdue") ? palette.errorText : palette.textMuted },
+                        ]}
+                      >
+                        {clock}
+                      </Text>
+                    ) : null}
                   </View>
                   <Button
-                    testID={`scr-23-inspect-${item.id}`}
-                    label="Inspect Case"
+                    testID={`scr-23-inspect-${item.report_id}`}
+                    label="Inspect case"
                     variant="charcoal"
                     size="sm"
                     onPress={() =>
-                      router.push(`/(admin)/moderation/${item.id}` as any)
+                      router.push(`/(admin)/moderation/${item.report_id}` as any)
                     }
                   />
                 </View>
               </Card>
-            ))}
-          </View>
-        )}
+            );
+          })}
+          {hasMore ? (
+            <Button
+              testID="scr-23-load-more"
+              label="Load more"
+              variant="secondary"
+              loading={loadingMore}
+              onPress={() => void load(filter, true, rows.length)}
+            />
+          ) : null}
+        </View>
       </FormStateView>
+    </>
+  );
+}
+
+export default function ModerationQueueScreen() {
+  return (
+    <ModerationLayout
+      testID="scr-23-moderation-queue"
+      title="Trust & Safety Moderation Queue"
+      subtitle="Reports ordered by severity, oldest first"
+      fallbackHref="/(tabs)/profile"
+      activeNavId="moderation-queue"
+    >
+      <QueueBody />
     </ModerationLayout>
   );
 }

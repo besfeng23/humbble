@@ -29,6 +29,13 @@ const MESSAGES: Record<string, string> = {
   moderation_note_too_long: 'That note is too long.',
   invalid_moderation_transition: 'That status change isn’t allowed for this case.',
   invalid_final_status: 'That status change isn’t allowed for this case.',
+  moderation_reason_required: 'Add a reason of at least 8 characters. It is saved in the audit log.',
+  invalid_moderation_action: 'That action isn’t available for this case.',
+  invalid_moderation_filter: 'That filter isn’t available.',
+  moderation_self_action_not_allowed: 'You can’t suspend or restore your own account.',
+  moderation_not_suspended: 'This member isn’t suspended.',
+  moderation_target_unavailable: 'The reported account is no longer available, so this action can’t be applied.',
+  report_required: 'That report could not be found.',
   user_id_required: 'Please sign in again.',
   duplicate_swipe: 'You already made a decision on this profile.',
 };

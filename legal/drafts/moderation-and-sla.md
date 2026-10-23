@@ -60,7 +60,7 @@ DRAFT—COUNSEL REVIEW REQUIRED
 ## 4. Trust & Safety Console (`SCR-23` / `SCR-24`) & Audit Controls (`PR P5-01`)
 
 1. **Strict Server-Side RBAC:**
-   - Access to `SCR-23` (`app/(admin)/moderation/index.tsx`), `SCR-24` (`app/(admin)/moderation/[caseId].tsx`), and `moderation_transition` RPC requires a trusted server-assigned moderator/admin role claim.
+   - Access to `SCR-23` (`app/(admin)/moderation/index.tsx`), `SCR-24` (`app/(admin)/moderation/[reportId].tsx`), and `moderation_transition` RPC requires a trusted server-assigned moderator/admin role claim.
    - No moderator role may ever be granted via a client-editable profile column (`TEST-RLS-08`).
 2. **Case-Scoped Least Privilege:**
    - Moderators may view reported profile content or the specific reported message context **only** within an active `moderation_cases` record. General browsing of private user conversations is prohibited.

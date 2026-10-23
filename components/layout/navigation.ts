@@ -36,21 +36,16 @@ export function navigateBackOrFallback(
 }
 
 /**
- * Checks whether a Supabase user holds a trusted `moderator` or `admin` role claim.
+ * Checks whether a Supabase user holds the trusted `app_metadata.role = "moderator"` claim.
  * Fails closed (`false`) for unauthenticated or standard authenticated accounts.
  */
 export function isModeratorRole(user: User | null | undefined): boolean {
   if (!user) {
     return false;
   }
-  const appRole = user.app_metadata?.role;
-  const userRole = user.user_metadata?.role;
-  return (
-    appRole === "moderator" ||
-    appRole === "admin" ||
-    userRole === "moderator" ||
-    userRole === "admin"
-  );
+  // Mirrors private.is_trusted_moderator(): only the server-assigned app_metadata claim counts. user_metadata is
+  // member-editable and "admin" is not a moderation role. This is a UX gate only; every RPC re-checks in the database.
+  return user.app_metadata?.role === "moderator";
 }
 
 export const PUBLIC_NAV_ITEMS: readonly NavItem[] = [
@@ -189,11 +184,5 @@ export const MODERATION_NAV_ITEMS: readonly NavItem[] = [
     label: "Moderation queue",
     href: "/(admin)/moderation",
     accessibilityLabel: "Trust and Safety moderation queue",
-  },
-  {
-    id: "moderation-sample-case",
-    label: "Case Inspector",
-    href: "/(admin)/moderation/case-101",
-    accessibilityLabel: "Moderation case detail inspector",
   },
 ] as const;
