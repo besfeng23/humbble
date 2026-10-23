@@ -5,13 +5,22 @@
   "window_minutes": 15,
   "threshold_note": "Starting values chosen from the documented cap (120 events/min) and per-visit volume (at most 7 events), NOT from measured production baselines. The web client stops sending for the rest of the session after the first failure, so one real visitor produces at most one 429/4xx. Re-tune after the first week of real traffic.",
   "stats_inputs": {
+    "edge_logs_total": "edge-status-mix.sql (liveness)",
+    "edge_logs_schema_rows": "edge-status-mix.sql (liveness)",
     "requests_total": "edge-status-mix.sql",
+    "edge_429_total": "edge-status-mix.sql (consistency check)",
     "edge_429_postgrest": "edge-status-mix.sql",
-    "edge_429_gateway": "edge-status-mix.sql (informational, not alerting)",
+    "edge_429_gateway": "edge-status-mix.sql (informational, not alerting; sb_error_code split UNVERIFIED on real logs)",
     "edge_4xx_other": "edge-status-mix.sql",
-    "pt429_log_count": "postgres-log-sqlstate.sql",
-    "pt400_log_count": "postgres-log-sqlstate.sql (informational and pipeline self-test)",
-    "saturated_minutes": "cap-saturation.sql"
+    "pg_rows_total": "postgres-log-sqlstate.sql (liveness)",
+    "pg_rows_with_sqlstate": "postgres-log-sqlstate.sql (liveness)",
+    "pg_rows_with_severity": "postgres-log-sqlstate.sql (liveness)",
+    "pt429_log_count": "postgres-log-sqlstate.sql (severity ERROR only, one row per error)",
+    "pt429_log_rows_any": "postgres-log-sqlstate.sql (cross-check and multiplier)",
+    "pt400_log_count": "postgres-log-sqlstate.sql (informational and synthetic probe target)",
+    "pt400_log_rows_any": "postgres-log-sqlstate.sql (cross-check and multiplier)",
+    "saturated_minutes": "cap-saturation.sql",
+    "probe_sent": "provided by the scheduler that sends the synthetic probe: probes sent in the window, excluding the newest 3 minutes (log ingestion lag); 0 when no probe runs"
   },
   "alerts": [
     {
@@ -23,7 +32,15 @@
       "kind": "count",
       "warn": 10,
       "critical": 100,
-      "meaning": "The global 120/min cap is being hit and real visitors' events are being dropped (flood, ad burst above the cap, or an attack). Not a 5xx: the 5xx alert cannot see this."
+      "meaning": "The global 120/min cap is being hit and real visitors' events are being dropped (flood, ad burst above the cap, or an attack). Not a 5xx: the 5xx alert cannot see this. Counts severity ERROR rows only (one per raised error).",
+      "requires_liveness": [
+        "QZ-LIVE-PG-ROWS",
+        "QZ-LIVE-PG-SQLSTATE",
+        "QZ-LIVE-PG-SEVERITY",
+        "QZ-LIVE-PG-XCHECK-429",
+        "QZ-LIVE-PG-XCHECK-400",
+        "QZ-LIVE-PROBE-PG"
+      ]
     },
     {
       "id": "QZ-429-EDGE-POSTGREST",
@@ -34,7 +51,12 @@
       "kind": "count",
       "warn": 10,
       "critical": 100,
-      "meaning": "Same event as QZ-429-PT429-LOG seen from the gateway log; kept because the log-pipeline fields are not verified on hosted. Gateway-originated 429s (edge_429_gateway) are excluded."
+      "meaning": "Same event as QZ-429-PT429-LOG seen from the gateway; kept because the log-pipeline fields are not verified on hosted. Gateway-originated 429s (edge_429_gateway) are excluded, but that split rests on response.headers.sb_error_code, which is UNVERIFIED on real logs: if the header is not captured every 429 counts here (a platform 429 would then fire this alert, the safe direction).",
+      "requires_liveness": [
+        "QZ-LIVE-EDGE-ROWS",
+        "QZ-LIVE-EDGE-FIELDS",
+        "QZ-LIVE-PROBE-EDGE"
+      ]
     },
     {
       "id": "QZ-CAP-SATURATED-MINUTES",
@@ -45,7 +67,7 @@
       "kind": "count",
       "warn": 1,
       "critical": 5,
-      "meaning": "private.quiz_event_rate has minutes where n >= cap. Does not depend on the log pipeline; needs a postgres-role runner."
+      "meaning": "private.quiz_event_rate has minutes where n >= cap. Does not depend on the log pipeline. Needs a manual run as postgres, or a dedicated read-only role added by a separately reviewed migration (never the postgres or service_role credential in a scheduler); see the runbook."
     },
     {
       "id": "QZ-4XX-SHARE",
@@ -58,7 +80,96 @@
       "min_denominator": 50,
       "warn": 0.05,
       "critical": 0.2,
-      "meaning": "Oversize or malformed payloads (400), a rotated or wrong public key (401/403), or a client regression. Oversize requests are never counted by the cap, so this is the only alert that sees an oversize flood."
+      "meaning": "Oversize or malformed payloads (400), a rotated or wrong public key (401/403), or a client regression. Oversize requests are never counted by the cap, so this is the only alert that sees an oversize flood.",
+      "requires_liveness": [
+        "QZ-LIVE-EDGE-ROWS",
+        "QZ-LIVE-EDGE-FIELDS",
+        "QZ-LIVE-PROBE-EDGE"
+      ],
+      "exclude_probe": true
+    }
+  ],
+  "probe": {
+    "status": "DEFINED, NOT ACTIVE. Nothing in this repository sends it or schedules it.",
+    "purpose": "Proves end to end that the PT400 log row, the gateway 4xx row and the RPC path regex are all visible, so a wrong field key, a path format change or an ingestion gap cannot read as a quiet system (Themis N44-01).",
+    "request": "POST /rest/v1/rpc/record_quiz_event with the project's PUBLIC anon key and one oversize argument (for example a 65-character p_network). The function raises PT400 before any table access (pgTAP 0024), so nothing is written and the cap counter is not touched.",
+    "expected": "HTTP 400, one postgres_logs row with SQLSTATE PT400 and severity ERROR per probe, one edge_logs 4xx row per probe",
+    "cadence_minutes": 10,
+    "evaluation": "edge_4xx_other >= probe_sent and pt400_log_count >= probe_sent (liveness QZ-LIVE-PROBE-*); probes are subtracted from the 4xx share; recurring checks use >=, the one-time dev calibration in the runbook requires exactly 1 row per probe on an otherwise quiet project",
+    "needs_owner_approval": true
+  },
+  "liveness": [
+    {
+      "id": "QZ-LIVE-EDGE-ROWS",
+      "title": "edge_logs has rows in the window",
+      "rule": "min",
+      "metric": "edge_logs_total",
+      "min": 1,
+      "failure": "no edge_logs rows in the window: ingestion gap, retention or an idle project without probe; the gateway readings are not evidence of a quiet system"
+    },
+    {
+      "id": "QZ-LIVE-EDGE-FIELDS",
+      "title": "edge_logs rows carry request.method, request.path and response.status_code",
+      "rule": "implies",
+      "if_metric": "edge_logs_total",
+      "then_metric": "edge_logs_schema_rows",
+      "failure": "edge_logs has rows but none carries the field keys the queries use: the keys are wrong on this project"
+    },
+    {
+      "id": "QZ-LIVE-PG-ROWS",
+      "title": "postgres_logs has rows in the window",
+      "rule": "min",
+      "metric": "pg_rows_total",
+      "min": 1,
+      "failure": "no postgres_logs rows in the window: ingestion gap or retention; the PT429 reading is not evidence of a quiet system"
+    },
+    {
+      "id": "QZ-LIVE-PG-SQLSTATE",
+      "title": "postgres_logs rows carry parsed.sql_state_code",
+      "rule": "implies",
+      "if_metric": "pg_rows_total",
+      "then_metric": "pg_rows_with_sqlstate",
+      "failure": "postgres_logs has rows but none carries parsed.sql_state_code: the key is wrong on this project"
+    },
+    {
+      "id": "QZ-LIVE-PG-SEVERITY",
+      "title": "postgres_logs rows carry parsed.error_severity",
+      "rule": "implies",
+      "if_metric": "pg_rows_total",
+      "then_metric": "pg_rows_with_severity",
+      "failure": "postgres_logs has rows but none carries parsed.error_severity: the key is wrong on this project"
+    },
+    {
+      "id": "QZ-LIVE-PG-XCHECK-429",
+      "title": "PT429 rows of any severity imply PT429 rows with severity ERROR",
+      "rule": "implies",
+      "if_metric": "pt429_log_rows_any",
+      "then_metric": "pt429_log_count",
+      "failure": "PT429 rows exist but none has severity ERROR: the severity value differs on this project, so pt429_log_count is blind"
+    },
+    {
+      "id": "QZ-LIVE-PG-XCHECK-400",
+      "title": "PT400 rows of any severity imply PT400 rows with severity ERROR",
+      "rule": "implies",
+      "if_metric": "pt400_log_rows_any",
+      "then_metric": "pt400_log_count",
+      "failure": "PT400 rows exist but none has severity ERROR: the severity value differs on this project, so the severity filter is blind"
+    },
+    {
+      "id": "QZ-LIVE-PROBE-PG",
+      "title": "every synthetic probe produced a PT400 log row",
+      "rule": "at_least",
+      "metric": "pt400_log_count",
+      "other": "probe_sent",
+      "failure": "fewer PT400 log rows than probes sent: the Postgres log path (or its SQLSTATE or severity key) is blind"
+    },
+    {
+      "id": "QZ-LIVE-PROBE-EDGE",
+      "title": "every synthetic probe produced a gateway 4xx row on the RPC path",
+      "rule": "at_least",
+      "metric": "edge_4xx_other",
+      "other": "probe_sent",
+      "failure": "fewer gateway 4xx rows on the RPC path than probes sent: the gateway log path (or its method, path or status key) is blind"
     }
   ]
 }

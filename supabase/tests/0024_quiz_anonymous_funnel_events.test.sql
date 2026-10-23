@@ -1,7 +1,8 @@
+-- WARNING: run ONLY on an ephemeral CI/local database (supabase test db or a throwaway cluster), never a shared or live one: it renames quiz tables and creates a trigger (ACCESS EXCLUSIVE / SHARE ROW EXCLUSIVE locks held until ROLLBACK) (Themis N43-02).
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET search_path = public, extensions, pg_temp;
-SELECT plan(186);
+SELECT plan(189);
 
 -- Test fixtures (rolled back). Session ids are valid random-style v4 UUIDs.
 INSERT INTO public.attribution_networks (slug, display_name) VALUES ('qtestnet', 'Quiz Test Net');
@@ -294,7 +295,23 @@ CREATE FUNCTION pg_temp.rqe_skip_ins() RETURNS trigger LANGUAGE plpgsql AS $f$ B
 CREATE TRIGGER rqe_t_site2 BEFORE INSERT ON private.quiz_event_rate FOR EACH ROW EXECUTE FUNCTION pg_temp.rqe_skip_ins();
 SET LOCAL ROLE anon;
 SELECT throws_ok($$SELECT public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd6', 'quiz_started')$$, 'PT429', 'rate_limited', 'rate limit site 2 (atomic-counter loser) raises PT429');
+-- Themis N43-01: diagnostics at site 2 (the throws_ok above checks only SQLSTATE and message): fixed DETAIL, empty HINT, no echo of the caller's session id.
+DO $$
+DECLARE v_state TEXT; v_msg TEXT; v_detail TEXT; v_hint TEXT;
+BEGIN
+  PERFORM public.record_quiz_event('dddddddd-dddd-4ddd-8ddd-ddddddddddd6', 'quiz_started');
+  PERFORM pg_catalog.set_config('rqe.state_s2', 'NO ERROR', true);
+EXCEPTION WHEN OTHERS THEN
+  GET STACKED DIAGNOSTICS v_state = RETURNED_SQLSTATE, v_msg = MESSAGE_TEXT, v_detail = PG_EXCEPTION_DETAIL, v_hint = PG_EXCEPTION_HINT;
+  PERFORM pg_catalog.set_config('rqe.state_s2', v_state, true);
+  PERFORM pg_catalog.set_config('rqe.msg_s2', v_msg, true);
+  PERFORM pg_catalog.set_config('rqe.detail_s2', COALESCE(v_detail, ''), true);
+  PERFORM pg_catalog.set_config('rqe.hint_s2', COALESCE(v_hint, ''), true);
+END $$;
 RESET ROLE;
+SELECT is(current_setting('rqe.state_s2') || '/' || current_setting('rqe.msg_s2'), 'PT429/rate_limited', 'rate limit site 2: SQLSTATE PT429 and message rate_limited (diagnostics)');
+SELECT is(current_setting('rqe.detail_s2'), 'The global per-minute event limit is reached; events are not recorded until the next minute.', 'rate limit site 2: DETAIL is the fixed text');
+SELECT ok(current_setting('rqe.hint_s2') = '' AND (current_setting('rqe.msg_s2') || current_setting('rqe.detail_s2') || current_setting('rqe.hint_s2')) NOT LIKE '%dddddddd-dddd-4ddd-8ddd-ddddddddddd6%', 'rate limit site 2: HINT is empty and neither MESSAGE, DETAIL nor HINT echoes the caller session id');
 DROP TRIGGER rqe_t_site2 ON private.quiz_event_rate;
 DROP FUNCTION pg_temp.rqe_skip_ins();
 SELECT is((SELECT count(*)::INT FROM public.quiz_events WHERE session_id = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd6'), 0, 'rate limit site 2 loser stored nothing');
