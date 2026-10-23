@@ -12,16 +12,21 @@ function nativeStore(): KeyValueStore {
 /**
  * Prelander quiz state.
  *
- * Answers are NOT sent anywhere while the visitor answers. They are kept on the device
+ * Answers are NOT sent with an identity while the visitor answers. They are kept on the device
  * (localStorage on web, AsyncStorage on native) for 30 days and handed to signup, which
  * (a) reads them from `q_*` query params or the local copy and (b) puts them in
- * supabase.auth.signUp user metadata under `quiz`. No table or migration is involved.
+ * supabase.auth.signUp user metadata under `quiz`. (Separately, anonymous enum-only step events
+ * go to public.quiz_events via lib/quizAnalytics.ts; see below.)
  *
  * Funnel events: public.funnel_events is server-written, one row per (user_id, event),
- * and its CHECK allow-list is only signup_completed / doi_confirmed / profile_completed.
- * Anonymous visitors have no user_id, so quiz_started / quiz_step / quiz_completed are
- * NOT recorded server-side. The local progress below (started_at, completed_at) travels
- * with signup metadata so signups can be segmented by quiz answers after the fact.
+ * and stays signup_completed / doi_confirmed / profile_completed only. Anonymous quiz
+ * steps are measured separately by lib/quizAnalytics.ts into public.quiz_events (random
+ * session id, enum answers, network/utm slugs, hour-rounded time; no click id, IP or user
+ * id; 90-day retention). That feature is OFF unless EXPO_PUBLIC_QUIZ_ANALYTICS=1 and the
+ * visitor has not opted out. The session id is never carried into signup and is not linked
+ * to the account. The local progress below
+ * (started_at, completed_at) travels with signup metadata so signups can be segmented by
+ * quiz answers after the fact. See docs/operations/quiz-funnel-events.md.
  */
 export const QUIZ_STORAGE_KEY = 'humbble.quiz.v1';
 export const QUIZ_TTL_MS = 30 * 24 * 60 * 60 * 1000;

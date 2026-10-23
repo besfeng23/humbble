@@ -40,6 +40,7 @@ Humbble enforces a strict separation between **client-exposed public variables**
 | `EXPO_PUBLIC_SUPABASE_URL` | Yes | Client (`EXPO_PUBLIC_*`) | Base URL of the local Supabase CLI stack (`http://127.0.0.1:54321`) or isolated development/staging/production Supabase project (`https://<project-ref>.supabase.co`). |
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes (or `ANON_KEY`) | Client (`EXPO_PUBLIC_*`) | Supabase publishable client key (`sb_publishable_...`). Checked first by `lib/supabase.ts`. |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Fallback if `PUBLISHABLE_KEY` unset | Client (`EXPO_PUBLIC_*`) | Legacy/standard Supabase anonymous JWT public key (`eyJ...`). Used when `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is blank or unset. |
+| `EXPO_PUBLIC_QUIZ_ANALYTICS` | No (opt-in, default OFF) | Client (`EXPO_PUBLIC_*`) | Set to `1` / `true` / `on` to enable anonymous pre-signup quiz funnel events and the quiz notice with Privacy link and Opt out. Unset = nothing is sent or stored. A feature flag, not a secret. Do not enable in production before counsel sign-off. See `docs/operations/quiz-funnel-events.md`. |
 
 ### 2.2 Future Server-Only Variables (Phase 4 & Phase 5 — Server Runtime Only)
 
