@@ -75,7 +75,7 @@ is `SECURITY DEFINER`, `search_path=''`, executable by `anon` and `authenticated
 1. argument **lengths** (before any regex or parse): over-long text raises `PT400` `payload_too_large` (PostgREST answers **HTTP 400**; it was SQLSTATE 54000 / HTTP 500 until migration `20261023000110`, which changed only this error code);
 2. session id v4 and shape (22023);
 3. duplicate `(session, event, step)` returns `false` (idempotent, never consumes the limit);
-4. lock-free peek at the current minute's counter: at the cap raises 53400 `rate_limited` without touching the counter row;
+4. lock-free peek at the current minute's counter: at the cap raises `PT429` `rate_limited` (PostgREST answers **HTTP 429**; it was SQLSTATE 53400 / HTTP 500 until migration `20261023000120`, which changed only this error code) without touching the counter row;
 5. network lookup (only allow-listed slugs), then an **atomic** counter bump
    (`INSERT ... ON CONFLICT DO UPDATE SET n = n + 1 WHERE n < cap`) and the insert.
 It returns `true` only when a row is inserted. The old `p_click_id` / `p_attribution` arguments no longer exist
@@ -88,10 +88,12 @@ Error contract as seen through PostgREST (`POST /rest/v1/rpc/record_quiz_event`;
 | argument longer than its limit (event/answer 32, country 2, network/utm 64) | `PT400` (PostgREST custom status; `details` is a fixed rule text, the value is never echoed) | `payload_too_large` | 400 |
 | bad session id | `22023` | `invalid_session_id` | 400 |
 | unknown event / step / answer / country | `22023` | `invalid_quiz_event` | 400 |
-| global per-minute cap reached | `53400` | `rate_limited` | 500 (PostgREST maps `53400`; unchanged, not a client error) |
+| global per-minute cap reached | `PT429` (PostgREST custom status; `details` is a fixed text, no caller value is echoed, no `Retry-After` header) | `rate_limited` | 429 |
 
 The web client only checks `res.ok` and stops sending for the rest of the session on any failure, so the status split has no
-client behaviour change; it keeps oversize probes out of 5xx error-rate alerts.
+client behaviour change; it keeps oversize probes and cap hits out of 5xx error-rate alerts (a caller who can spend the
+120/min cap must not be able to turn every later request into a 5xx). Cap hits are now **429s**, so the cap-hit alert is a
+429 rate, not a 5xx rate (see "Edge / WAF rate limiting").
 
 ## Rate limit (global, documented config)
 - **Cap: 120 events per minute, all callers combined** (`private.quiz_event_global_rate_per_minute()`).
@@ -112,7 +114,11 @@ The database cannot see the caller's IP (none is stored). Put a per-IP limit in 
 `/rest/v1/rpc/record_quiz_event`, for example a rule of **30 requests per minute per IP** on that path (a legitimate
 visit sends at most 7), with a challenge or block action, using a CDN/WAF in front of a custom API domain. This
 is an infrastructure change for the owner; until it exists, the global cap is the only limiter. Also alert on a sustained
-rate of 53400 responses in the API logs (it means the minute cap is being hit).
+rate of **HTTP 429 / `PT429`** responses on `/rest/v1/rpc/record_quiz_event` (PostgREST `Proxy-Status: PostgREST; error=PT429`;
+it means the minute cap is being hit), or on `n >= cap` in `private.quiz_event_rate`. This is a separate alert from the 5xx
+alert: cap hits no longer count as 5xx, so a 5xx-only alert would not see a flood. The Supabase gateway can also emit its own
+429s, so match on the path and on the PostgREST `PT429` error code. Oversize requests are never counted by the cap (they are
+400s); alert on a rising 4xx share on the same path as well.
 
 ### Disk size and measured row growth
 Measured locally (Postgres 17, 1,001,000 rows via `generate_series`, realistic event mix, random uuids, hour-spread over 90 days):
