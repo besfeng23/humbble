@@ -267,7 +267,7 @@ SELECT is((SELECT count(*)::INTEGER FROM public.privacy_requests WHERE idempoten
 SELECT is_empty($$SELECT id FROM public.privacy_requests WHERE idempotency_key = '00000000-0000-0000-0000-000000000035'$$, 'privacy request owner cannot read another account request');
 SELECT throws_ok(
  $$INSERT INTO public.privacy_requests (user_id, request_type, idempotency_key) VALUES ('00000000-0000-0000-0000-000000000021', 'export', '00000000-0000-0000-0000-000000000031')$$,
- '23505', NULL, 'privacy request idempotency key rejects duplicate submission'
+ '42501', NULL, 'privacy request direct INSERT by the client is refused (N45-01); idempotency is enforced through request_privacy_action, see 0033'
 );
 SELECT throws_ok(
  $$UPDATE public.privacy_requests SET status = 'in_progress' WHERE idempotency_key = '00000000-0000-0000-0000-000000000031'$$,

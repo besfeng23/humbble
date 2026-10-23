@@ -128,3 +128,12 @@ Client (`authenticated`/`anon`) grants are unchanged, so no client-side rollback
 ## Not covered
 (Superseded by the follow-up section above for `reports`/`moderation_cases`.) `privacy_requests` UPDATE and the four append-only
 `INSERT` grants are kept by design; the hosted project's default ACLs and any ad-hoc grants made outside migrations are not verified by this change.
+
+## Addendum (N45-01, migration 20261024000010): `privacy_requests` has no client INSERT
+`authenticated` could `INSERT (user_id, request_type, idempotency_key)` directly, bypassing `request_privacy_action()` (one-open-request-per-type rule,
+audit event): one `generate_series(1,500)` statement created 501 pending rows. The migration revokes INSERT (table + column level) and the other write
+privileges from `PUBLIC`, `anon`, `authenticated`; `authenticated` keeps `SELECT` (RLS: own rows). `request_privacy_action()` (SECURITY DEFINER, owner
+`postgres`) is the only member write path and needs no table privilege. `service_role` and `pg_default_acl` are untouched (asserted inside the
+migration). The `privacy_requests_insert_owner` policy is kept as defence in depth. Tests: new `0033`, updated `0003`/`0023`/`0029`.
+Rollback (reopens the bypass): `GRANT INSERT (user_id, request_type, idempotency_key) ON TABLE public.privacy_requests TO authenticated;`
+(restores the exact previous ACL; verified), then revert the 0033/0003/0023/0029 expectations. Apply on dev first (Themis), then prod (Mark).

@@ -35,7 +35,7 @@ INSERT INTO expected_acl VALUES
  ('notification_preferences','service_role','INSERT,SELECT,UPDATE',''),
  ('payment_events','service_role','INSERT,SELECT',''),
  ('postback_outbox','service_role','SELECT',''),
- ('privacy_requests','authenticated','SELECT','INSERT:idempotency_key,INSERT:request_type,INSERT:user_id'),
+ ('privacy_requests','authenticated','SELECT',''),  -- N45-01: no direct INSERT; request_privacy_action() is the only member write path
  ('privacy_requests','service_role','INSERT,SELECT','UPDATE:completed_at,UPDATE:completion_metadata,UPDATE:failure_code,UPDATE:status'),
  ('push_tokens','authenticated','SELECT',''),
  ('push_tokens','service_role','DELETE,INSERT,SELECT,UPDATE',''),
