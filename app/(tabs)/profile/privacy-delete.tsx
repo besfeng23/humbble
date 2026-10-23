@@ -10,6 +10,7 @@ import { SUPPORT_EMAIL } from "@/constants/Support";
 import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useAuth } from "@/lib/AuthProvider";
 import type { PrivacyRequestType } from "@/lib/database.contracts";
 import {
   isOpenPrivacyRequest,
@@ -33,6 +34,8 @@ function shortRef(id: string): string {
 
 export default function PrivacyExportAndDeleteScreen() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id ?? null;
   const scheme = useColorScheme() ?? "light";
   const palette = Colors[scheme];
   const [confirmationText, setConfirmationText] = useState("");
@@ -53,11 +56,12 @@ export default function PrivacyExportAndDeleteScreen() {
 
   useEffect(() => {
     mounted.current = true;
-    void refresh();
+    // Signed out (or still resolving the session): nothing to list and no point calling the server.
+    if (userId) void refresh();
     return () => {
       mounted.current = false;
     };
-  }, [refresh]);
+  }, [refresh, userId]);
 
   const hasOpen = (type: PrivacyRequestType) =>
     (requests ?? []).some((row) => row.request_type === type && isOpenPrivacyRequest(row));
@@ -70,6 +74,15 @@ export default function PrivacyExportAndDeleteScreen() {
 
   const submit = async (type: PrivacyRequestType) => {
     if (inFlight.current) return;
+    // Defence in depth: the route is behind AuthGuard, but never call the server (or mint a key) without a session.
+    if (!userId) {
+      if (authLoading) {
+        fail("Checking your session", "We are still confirming you are signed in. Try again in a moment. Nothing was recorded.");
+      } else {
+        fail("Please sign in", "You need to be signed in to make a data request. Sign in and try again. Nothing was recorded.");
+      }
+      return;
+    }
     if (hasOpen(type)) {
       fail(
         "You already have an open request",
@@ -77,10 +90,17 @@ export default function PrivacyExportAndDeleteScreen() {
       );
       return;
     }
+    let key: string;
+    try {
+      key = keys.current[type] ??= newPrivacyIdempotencyKey();
+    } catch {
+      // No cryptographically secure random source on this device: fail closed instead of sending a guessable key.
+      fail("We could not record your request", `This device cannot create a secure request reference, so nothing was recorded. Please contact ${SUPPORT_EMAIL}.`);
+      return;
+    }
     inFlight.current = true;
     setBusyType(type);
     setStatus("pending");
-    const key = (keys.current[type] ??= newPrivacyIdempotencyKey());
     const outcome = await submitPrivacyRequest(type, key);
     inFlight.current = false;
     if (!mounted.current) return;
@@ -109,6 +129,11 @@ export default function PrivacyExportAndDeleteScreen() {
         `Your ${privacyRequestTypeLabel(type).toLowerCase()} request is already recorded. ${NOT_AUTOMATED}`
       );
       void refresh();
+    } else if (outcome.kind === "profile_missing") {
+      fail(
+        "Finish setting up your profile first",
+        `We could not record your request because your profile is not set up yet. Complete your profile, then try again, or contact ${SUPPORT_EMAIL}. Nothing was changed on your account.`
+      );
     } else if (outcome.kind === "sign_in_required") {
       fail("Please sign in again", "Your session has ended, so the request was not recorded. Sign in and try again.");
     } else {

@@ -7,7 +7,7 @@
  * "deleted" or "exported". Remove that restriction only when the worker ships (see
  * docs/operations/launch-blockers.md LB-1).
  */
-import { generateSessionId } from './quizAnalytics';
+import { secureRandomUuid } from './secureUuid';
 import { requestPrivacyAction, type RpcError } from './rpc';
 import { supabase } from './supabase';
 import type { PrivacyRequestType } from './database.contracts';
@@ -26,11 +26,16 @@ export type SubmitPrivacyOutcome =
   | { kind: 'recorded'; requestId: string }
   | { kind: 'already_open' }
   | { kind: 'sign_in_required' }
+  | { kind: 'profile_missing' }
   | { kind: 'failed'; retryable: boolean };
 
-/** Opaque, random per-attempt key. Reuse it for a retry of the SAME attempt so a timed-out commit cannot create a duplicate. */
+/**
+ * Opaque, cryptographically random per-attempt key (v4 UUID from the platform CSPRNG; never Math.random, never the quiz session id).
+ * Reuse it for a retry of the SAME attempt so a timed-out commit cannot create a duplicate.
+ * Throws SecureRandomUnavailableError when the runtime has no CSPRNG: the caller must fail the request closed.
+ */
 export function newPrivacyIdempotencyKey(): string {
-  return generateSessionId();
+  return secureRandomUuid();
 }
 
 /** Maps the RPC error to a member-facing outcome. Never exposes database wording. */
@@ -39,6 +44,9 @@ export function classifyPrivacyError(error: RpcError | null | undefined): Submit
   const text = `${error?.message ?? ''} ${error?.details ?? ''}`;
   if (/privacy_request_already_open/.test(text)) return { kind: 'already_open' };
   if (code === '42501' || /authentication_required|JWT|not authenticated/i.test(text)) return { kind: 'sign_in_required' };
+  // 23503 = foreign key violation: the member has an auth user but no `profiles` row yet, so a request can never be recorded
+  // until the profile exists. Not a connectivity problem and retrying cannot help.
+  if (code === '23503' || /violates foreign key constraint/i.test(text)) return { kind: 'profile_missing' };
   // 22023 = a client bug (missing argument): retrying the same call cannot succeed.
   if (code === '22023') return { kind: 'failed', retryable: false };
   return { kind: 'failed', retryable: true };

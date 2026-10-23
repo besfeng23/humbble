@@ -47,6 +47,40 @@ describe('privacy request client (LB-1)', () => {
     expect(classifyPrivacyError(null)).toEqual({ kind: 'failed', retryable: true });
   });
 
+  test('a foreign-key error (member has no profiles row) is not a connectivity problem (Themis N45-04)', () => {
+    expect(classifyPrivacyError(err('23503', 'insert or update on table "privacy_requests" violates foreign key constraint "privacy_requests_user_id_fkey"'))).toEqual({ kind: 'profile_missing' });
+    expect(classifyPrivacyError(err('', 'violates foreign key constraint'))).toEqual({ kind: 'profile_missing' });
+  });
+
+  test('the idempotency key comes from the secure generator and never uses Math.random', () => {
+    const rnd = jest.spyOn(Math, 'random');
+    const ids = new Set(Array.from({ length: 20 }, () => newPrivacyIdempotencyKey()));
+    expect(ids.size).toBe(20);
+    ids.forEach((id) => expect(isUuidV4(id)).toBe(true));
+    expect(rnd).not.toHaveBeenCalled();
+    rnd.mockRestore();
+  });
+
+  test('with no secure random source the key generator throws instead of falling back to Math.random', () => {
+    const g = globalThis as any;
+    const realCrypto = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+    const rnd = jest.spyOn(Math, 'random');
+    Object.defineProperty(globalThis, 'crypto', { value: undefined, configurable: true, writable: true });
+    Object.defineProperty(globalThis, 'expo', { value: undefined, configurable: true, writable: true });
+    try {
+      let threw: unknown = null;
+      rnd.mockClear();
+      try { newPrivacyIdempotencyKey(); } catch (e) { threw = e; }
+      const randomCalls = rnd.mock.calls.length;
+      expect(randomCalls).toBe(0);
+      expect((threw as Error)?.message).toBe('secure_random_unavailable');
+    } finally {
+      if (realCrypto) Object.defineProperty(globalThis, 'crypto', realCrypto); else delete g.crypto;
+      delete g.expo;
+      rnd.mockRestore();
+    }
+  });
+
   test('a thrown network error is a retryable failure, an empty success is never reported as recorded', async () => {
     mockRpc.mockRejectedValueOnce(new Error('Network request failed'));
     expect(await submitPrivacyRequest('export', 'k')).toEqual({ kind: 'failed', retryable: true });
