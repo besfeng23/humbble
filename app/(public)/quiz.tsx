@@ -22,6 +22,7 @@ import {
   quizReducer,
   saveQuiz,
 } from "@/lib/quiz";
+import { collectQuizAttribution, initQuizAnalytics, setQuizAnalyticsOptOut, trackQuizEvent } from "@/lib/quizAnalytics";
 
 /** Mobile-first prelander quiz: one question per screen, one tap to answer, then a single signup CTA. */
 export default function QuizScreen() {
@@ -31,12 +32,24 @@ export default function QuizScreen() {
   const palette = Colors[useColorScheme() ?? "light"];
   const [state, dispatch] = useReducer(quizReducer, INITIAL_QUIZ_STATE);
   const [pickingCountry, setPickingCountry] = useState(false);
+  const [analyticsNotice, setAnalyticsNotice] = useState(false);
   const detectedCountry = useMemo(() => defaultCountryFromLocale(), []);
 
   useEffect(() => {
     // The ad click may land straight on the quiz: keep first-touch attribution (30 days).
     void captureAttribution(params as Record<string, unknown>, "/quiz");
+    // Anonymous funnel measurement: OFF unless the build opts in (EXPO_PUBLIC_QUIZ_ANALYTICS=1) and the visitor has not opted out.
+    // The notice below is shown first (state is set before the first event), and every failure is silent.
+    let cancelled = false;
+    void (async () => {
+      const { active } = await initQuizAnalytics();
+      if (cancelled || !active) return;
+      setAnalyticsNotice(true);
+      const attribution = await collectQuizAttribution(params as Record<string, unknown>);
+      if (!cancelled) trackQuizEvent({ event: "quiz_started", attribution });
+    })().catch(() => {});
     // Capture once per visit.
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -54,9 +67,24 @@ export default function QuizScreen() {
     if (state.step === 0) router.replace("/" as any);
     else { setPickingCountry(false); dispatch({ type: "back" }); }
   };
-  const answer = (value: string) => { setPickingCountry(false); dispatch({ type: "answer", stepId, value }); };
+  const answer = (value: string) => {
+    setPickingCountry(false);
+    dispatch({ type: "answer", stepId, value });
+    // Only a value the reducer accepts counts as an answer. Analytics never blocks or delays the UI.
+    const next = quizReducer(state, { type: "answer", stepId, value });
+    if (next.step > state.step) {
+      trackQuizEvent({ event: "quiz_step", step: state.step + 1, value });
+      if (next.step >= QUIZ_TOTAL_STEPS) trackQuizEvent({ event: "quiz_completed" });
+    }
+  };
+
+  const optOutOfAnalytics = () => {
+    setAnalyticsNotice(false);
+    void setQuizAnalyticsOptOut(true).catch(() => {});
+  };
 
   const goSignup = async () => {
+    trackQuizEvent({ event: "quiz_cta_clicked" });
     const stored = await loadStoredAttributionParams();
     router.push({ pathname: "/auth/signup", params: buildSignupParams(state.answers, params as Record<string, unknown>, stored) } as any);
   };
@@ -133,6 +161,14 @@ export default function QuizScreen() {
               </View>
             </>
           )}
+          {analyticsNotice ? (
+            <Text testID="quiz-analytics-notice" style={[Typography.bodySmall, styles.center, { color: palette.textSecondary }]}>
+              We count anonymous quiz steps, with no account or personal details.{" "}
+              <Text testID="quiz-analytics-privacy" accessibilityRole="link" style={{ color: palette.link, textDecorationLine: "underline" }} onPress={() => router.push("/(public)/legal/privacy-notice" as any)}>Privacy</Text>
+              {" \u00b7 "}
+              <Text testID="quiz-analytics-optout" accessibilityRole="button" accessibilityLabel="Opt out of anonymous quiz counts" style={{ color: palette.link, textDecorationLine: "underline" }} onPress={optOutOfAnalytics}>Opt out</Text>
+            </Text>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
