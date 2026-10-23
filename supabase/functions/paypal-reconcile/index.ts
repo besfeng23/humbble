@@ -8,7 +8,10 @@ import { handleReconcile } from './handler.ts';
 Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const url = Deno.env.get('SUPABASE_URL');
-  // Authenticate before anything else so unauthenticated callers learn nothing about configuration.
+  // Order: method (405) -> service-role key present (500; the platform always injects it, so this only fires on a
+  // broken deployment and reveals nothing an unauthenticated caller can use) -> Bearer match (401) -> PayPal config
+  // (503). PayPal config is only loaded after the caller is authenticated, so unauthenticated callers never learn
+  // which PayPal settings are missing. handleReconcile re-checks the Bearer (defence in depth).
   if (req.method !== 'POST') return json(405, { error: 'method_not_allowed' });
   if (!serviceRoleKey) return json(500, { error: 'server_not_configured' });
   if (!bearerMatches(req.headers.get('authorization'), serviceRoleKey)) return json(401, { error: 'unauthorized' });

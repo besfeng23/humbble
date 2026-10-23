@@ -57,7 +57,8 @@ export async function processBillingEvent(deps: ProcessDeps, input: ProcessInput
   // G1: refund/payment events may carry only a sale id. Resolve the subscription from PayPal itself.
   if (!subscriptionId && input.saleId && input.eventType.startsWith('PAYMENT.SALE.')) {
     const sale = await deps.paypal.getSale(input.saleId); // transient failures throw -> retry
-    const agreement = sale && (sale.id === undefined || sale.id === input.saleId) ? sale.billing_agreement_id : undefined;
+    // F10: the sale PayPal returns must be the one we asked for; a missing/other id never counts as a match.
+    const agreement = sale && sale.id === input.saleId ? sale.billing_agreement_id : undefined;
     if (typeof agreement === 'string' && agreement) subscriptionId = agreement;
   }
 

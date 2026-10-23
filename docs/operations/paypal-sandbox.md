@@ -2,27 +2,39 @@
 
 Sandbox only. Two independent guards keep live billing off (they are different layers; do not conflate them):
 
-1. **Edge function guard (env-aware).** `paypal-create-subscription` refuses to run (`503 live_paypal_refused`, before any PayPal call)
-   unless `PAYPAL_ENV=live` **and** `PAYPAL_ALLOW_LIVE=true`. `PAYPAL_ENV` defaults to `sandbox`. The database cannot read
-   function environment variables, so this pair is enforced only in the function.
+1. **Edge function guard (fail closed).** `paypal-create-subscription` refuses every non-sandbox environment
+   (`503 live_paypal_refused`) **before plan resolution and before any PayPal call**, even when `PAYPAL_ENV=live` and
+   `PAYPAL_ALLOW_LIVE=true` (`loadPayPalConfig` itself already refuses `live` unless both are set). `PAYPAL_ENV` defaults to
+   `sandbox`. Enabling live later needs a reviewed code change to this check *and* the database guard below.
 2. **Database guard (unconditional).** `billing_register_pending_subscription(..., p_environment)` records the *real*
    environment (`sandbox`|`live`) and raises `live_environment_refused` for anything but `sandbox`; the
    `subscriptions.environment` CHECK also rejects `live`. Even with both env vars set, a live launch still needs a separate,
-   owner-approved migration that relaxes these two DB checks. (Known limitation: with live fully enabled in env but the DB not
-   yet relaxed, PayPal would create a subscription that the DB then refuses to record, leaving an orphaned approval that is never
-   granted premium. Do not set `PAYPAL_ALLOW_LIVE` until the migration exists.)
+   owner-approved migration that relaxes these two DB checks. Because the function now refuses before calling PayPal, no orphaned live subscription can be created.
 
 ## Edge Functions
 | Function | Auth | Purpose |
 |---|---|---|
 | `paypal-create-subscription` | Supabase JWT | Body `{country?: "<ISO 3166-1 alpha-2>"}` (advisory hint only; empty body allowed); market, plan and price are resolved server-side (profile country, then validated hint, then PH); returns PayPal approval URL; records `approval_pending` row. |
 | `paypal-webhook` | PayPal signature (`verify_jwt=false`) | Raw body verified via `POST /v1/notifications/verify-webhook-signature` with `PAYPAL_WEBHOOK_ID`; any error → 401 (fail closed). Event stored by unique `provider_event_id` before side effects; duplicates are no-ops. State is always taken from a fresh `GET /v1/billing/subscriptions/{id}` readback. |
-| `paypal-reconcile` | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` (constant-time compare; `verify_jwt = true`; 401/500 before any config or PayPal call) | Scheduled safety net. Re-processes quarantined/stuck ledger events, then re-reads PayPal for pending/active/stale subscriptions through the same apply path as the webhook. Never grants on its own; premium still needs readback ACTIVE + matching last payment. |
+| `paypal-reconcile` | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` (constant-time compare; `verify_jwt = true` in `config.toml`, which applies to CLI deploys only — a deploy through the MCP/API/dashboard must pass `verify_jwt=true` explicitly; 401/500 before any config or PayPal call) | Scheduled safety net. Re-processes quarantined/stuck ledger events, then re-reads PayPal for pending/active/stale subscriptions through the same apply path as the webhook. Never grants on its own; premium still needs readback ACTIVE + matching last payment. |
 | `paypal-cancel-subscription` | Supabase JWT | Cancels only when readback is `ACTIVE` (never `APPROVAL_PENDING`); premium lasts until period end. |
 
 Entitlement (`public.entitlements`, key `premium`) is granted only by `billing_apply_readback` when readback is ACTIVE **and**
 `billing_info.last_payment` exactly matches plan amount/currency and the stored plan ID. Mismatches are quarantined.
 Refund/reversal revokes; suspended/expired deactivate.
+
+### Ledger privileges (F1) and terminal state (F3)
+- `public.payment_events` is write-protected by **privileges**, not only by the update trigger: migration `...0051` revokes everything
+  from `PUBLIC`, `anon`, `authenticated` and `service_role`, then grants `service_role` only `SELECT`, `INSERT` and column-level
+  `UPDATE (status, provider_verified, processed_at, retention_until, legal_hold)`. `DELETE`, `TRUNCATE`, table-level `UPDATE`,
+  `REFERENCES` and `TRIGGER` are gone (Supabase default privileges had granted them). The Edge Functions only use the
+  SECURITY DEFINER `billing_*` RPCs, which run as `postgres`. pgTAP `0022` asserts this **as `service_role`** and checks the error is a
+  permission error, not the trigger. After deploying, confirm on the project:
+  `select has_table_privilege('service_role','public.payment_events', p) from unnest(array['DELETE','TRUNCATE','UPDATE']) p;` → all false.
+- A `refunded`/`revoked` subscription is terminal: `billing_apply_readback` returns `terminal_state` (no change, audited once per event) for any
+  non-terminal readback, so a stale ACTIVATED event or a still-ACTIVE PayPal subscription cannot re-grant premium. The reconciler does not
+  re-read events or subscriptions of terminal subscriptions (refund/reversal events are still retried). A new purchase is a new
+  subscription and grants normally. Note PayPal may keep billing a refunded subscription that is still ACTIVE there; cancelling it at PayPal is a follow-up.
 
 ### Sale-only events (G1) and retryable quarantine (G2)
 `PAYMENT.SALE.REFUNDED` carries `resource.sale_id` and no `billing_agreement_id` (and `PAYMENT.SALE.REVERSED` carries the sale as
@@ -75,7 +87,7 @@ It does **not** yet list PayPal transactions to detect refunds that never produc
 
 ## Remaining before sandbox is usable
 1. Create sandbox app + nine monthly plans (one per `billing_plans` currency) in the PayPal developer dashboard.
-2. Apply migrations through `20261023000050` to staging **and deploy `paypal-create-subscription` and `paypal-webhook` together with
+2. Apply migrations through `20261023000051` to staging **and deploy `paypal-create-subscription` and `paypal-webhook` together with
    it** (the 4-argument `billing_register_pending_subscription` is dropped); deploy `paypal-reconcile`.
 3. Register webhook URL `<functions-url>/paypal-webhook` for `BILLING.SUBSCRIPTION.*`, `PAYMENT.SALE.COMPLETED|REFUNDED|REVERSED`; set `PAYPAL_WEBHOOK_ID`.
 4. Owner-approved schedule for the reconciler (above); counsel review of copy.

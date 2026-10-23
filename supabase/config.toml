@@ -51,5 +51,9 @@ verify_jwt = true
 
 # Scheduled reconciler (pg_cron + pg_net). Server-to-server only: verify_jwt stays on and the function
 # additionally requires the service-role key as Bearer (constant-time compare, same as send-push).
+# NOTE: this block only applies to `supabase functions deploy` (CLI). Any other deploy path (MCP/API/dashboard)
+# must pass verify_jwt=true explicitly; the Bearer check protects the function either way. If the project moves to
+# new-style `sb_secret_...` keys, the gateway JWT check rejects them: switch to verify_jwt=false only together with a
+# review of the Bearer comparison.
 [functions.paypal-reconcile]
 verify_jwt = true

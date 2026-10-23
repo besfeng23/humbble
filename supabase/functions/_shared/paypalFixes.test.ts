@@ -39,6 +39,8 @@ function fakeStore(subs: Record<string, { status: string; plan: string; createdM
     applyReadback: async (i) => {
       const s = state.subs[i.providerSubscriptionId];
       if (!s) return { outcome: 'unknown_subscription', granted: false };
+      // F3 terminal-state guard (mirrors SQL): refunded/revoked is never moved by a non-terminal readback.
+      if (['refunded', 'revoked'].includes(s.status) && !['refunded', 'revoked'].includes(i.status)) return { outcome: 'terminal_state', granted: false };
       if (i.providerPlanId !== s.plan) return { outcome: 'plan_mismatch', granted: false };
       if (i.status === 'active') {
         if (i.lastPaymentAmount !== '599.00' || i.lastPaymentCurrency !== 'PHP' || !i.periodEnd || Date.parse(i.periodEnd) <= Date.now()) return { outcome: 'settlement_mismatch', granted: false };
@@ -53,7 +55,9 @@ function fakeStore(subs: Record<string, { status: string; plan: string; createdM
     latestSubscription: async () => null,
     listReconcileSubscriptions: async () => Object.entries(state.subs)
       .filter(([, v]) => ['approval_pending', 'active', 'past_due'].includes(v.status)).map(([id, v]) => ({ providerSubscriptionId: id, reason: v.status })),
+    // F3 (mirrors SQL): non-refund events for a refunded/revoked subscription are not reprocessed.
     listReprocessableEvents: async () => [...events.values()].filter((e) => e.resourceId && ['quarantined', 'verified'].includes(e.status))
+      .filter((e) => ['PAYMENT.SALE.REFUNDED', 'PAYMENT.SALE.REVERSED'].includes(e.type) || !['refunded', 'revoked'].includes(state.subs[e.resourceId!]?.status))
       .map((e) => ({ eventId: e.eventId, providerEventId: e.providerEventId, eventType: e.type, resourceId: e.resourceId!, status: e.status })),
   };
   return { store, events, premium, flagged, registered, state };
@@ -356,4 +360,91 @@ Deno.test('store maps reconciler RPC rows and fails closed on RPC errors', async
   // deno-lint-ignore no-explicit-any
   const bad: any = { rpc: async () => ({ data: null, error: { message: 'x' } }), from: () => ({}) };
   await assertRejects(() => supabaseBillingStore(bad).flagUnresolvedEvent('e', 'r'));
+});
+
+// ---------------------------------------------------------------- F2 (review): fail closed on any non-sandbox environment
+Deno.test('F2: PAYPAL_ENV=live + PAYPAL_ALLOW_LIVE=true is still refused before any PayPal call or DB write', async () => {
+  const m = fakeStore(); const { deps, created } = createDeps(m, { ...sandboxCfg, environment: 'live', liveAllowed: true });
+  const res = await handleCreate(post({}), deps);
+  assertEquals(res.status, 503); assertEquals((await res.json()).error, 'live_paypal_refused');
+  assertEquals(created, [], 'no PayPal subscription is created'); assertEquals(m.registered, [], 'nothing is registered');
+});
+
+Deno.test('F2: any unexpected environment value is refused (fail closed); sandbox still checks out', async () => {
+  for (const environment of ['staging', '', undefined, 'LIVE'] as unknown as ('sandbox' | 'live')[]) {
+    const m = fakeStore(); const { deps, created } = createDeps(m, { ...sandboxCfg, environment, liveAllowed: true });
+    const res = await handleCreate(post({}), deps);
+    assertEquals(res.status, 503, `environment=${String(environment)}`); assertEquals(created, []); assertEquals(m.registered, []);
+  }
+  const m = fakeStore(); const { deps, created } = createDeps(m, sandboxCfg);
+  assertEquals((await handleCreate(post({}), deps)).status, 200); assertEquals(created, ['P-PH']);
+});
+
+Deno.test('F2: the live refusal happens before plan resolution', async () => {
+  const m = fakeStore(); let resolved = 0; m.store.resolvePlan = async () => { resolved++; return null; };
+  const { deps } = createDeps(m, { ...sandboxCfg, environment: 'live', liveAllowed: true });
+  assertEquals((await handleCreate(post({}), deps)).status, 503); assertEquals(resolved, 0);
+});
+
+// ---------------------------------------------------------------- F3 (review): terminal-state guard
+async function quarantineStaleActivated(m: ReturnType<typeof fakeStore>) {
+  const rec = await m.store.recordEvent({ id: 'WH-STALE', type: 'BILLING.SUBSCRIPTION.ACTIVATED', resourceId: 'I-1', sha256: 'x', occurredAt: null });
+  await m.store.finishEvent(rec.eventId, 'quarantined'); // an older ACTIVATED event that was quarantined before the refund
+}
+const staleActivated = { id: 'WH-STALE', event_type: 'BILLING.SUBSCRIPTION.ACTIVATED', resource: { id: 'I-1' } };
+
+Deno.test('F3: refund, then a stale quarantined ACTIVATED event, is NOT re-granted by the reconciler', async () => {
+  const m = fakeStore(); await grantFirst(m); await quarantineStaleActivated(m);
+  const pp0 = fakePayPal({ sale: () => ({ id: 'SALE-7', billing_agreement_id: 'I-1' }) });
+  assertEquals((await handleWebhook(post(refundEvent()), { store: m.store, paypal: pp0.paypal })).status, 200);
+  assert(!m.premium.has('I-1')); assertEquals(m.state.subs['I-1'].status, 'refunded');
+  const pp = fakePayPal({ sub: () => activeSub() }); // PayPal still says ACTIVE with a matching last payment
+  const body = await (await handleReconcile(reconReq(KEY), reconDeps(m, pp))).json();
+  assertEquals(pp.calls.getSubscription, [], 'neither the stale event nor the refunded subscription is re-read');
+  assertEquals(body.events, {}); assertEquals(body.subscriptions, {});
+  assert(!m.premium.has('I-1'), 'premium stays revoked'); assertEquals(m.state.subs['I-1'].status, 'refunded');
+  assertEquals(m.events.get('WH-STALE')!.status, 'quarantined');
+});
+
+Deno.test('F3: refund, then PayPal redelivers the stale ACTIVATED event: terminal_state, no grant, event closed', async () => {
+  const m = fakeStore(); await grantFirst(m); await quarantineStaleActivated(m);
+  const pp = fakePayPal({ sub: () => activeSub(), sale: () => ({ id: 'SALE-7', billing_agreement_id: 'I-1' }) });
+  await handleWebhook(post(refundEvent()), { store: m.store, paypal: pp.paypal });
+  const res = await handleWebhook(post(staleActivated), { store: m.store, paypal: pp.paypal });
+  assertEquals(res.status, 200); const body = await res.json(); assertEquals(body.outcome, 'terminal_state');
+  assert(!m.premium.has('I-1'), 'no re-grant'); assertEquals(m.state.subs['I-1'].status, 'refunded');
+  assertEquals(m.events.get('WH-STALE')!.status, 'processed', 'terminal_state is a final outcome, not a retry loop');
+});
+
+Deno.test('F3: non-terminal readbacks (cancelled/suspended/pending) cannot move a refunded subscription either', async () => {
+  const m = fakeStore(); await grantFirst(m);
+  await m.store.applyReadback({ providerSubscriptionId: 'I-1', providerPlanId: 'P-PH', status: 'refunded', periodEnd: null, lastPaymentAmount: null, lastPaymentCurrency: null, eventId: null });
+  for (const status of ['cancelled', 'suspended', 'approval_pending', 'past_due', 'active'] as const) {
+    const r = await m.store.applyReadback({ providerSubscriptionId: 'I-1', providerPlanId: 'P-PH', status, periodEnd: FUTURE, lastPaymentAmount: '599.00', lastPaymentCurrency: 'PHP', eventId: null });
+    assertEquals(r.outcome, 'terminal_state', status); assertEquals(m.state.subs['I-1'].status, 'refunded');
+  }
+  assert(!m.premium.has('I-1'));
+});
+
+Deno.test('F3: a repeated refund stays an idempotent revoke; a NEW subscription after a refund is unaffected', async () => {
+  const m = fakeStore({ 'I-1': { status: 'approval_pending', plan: 'P-PH' }, 'I-2': { status: 'approval_pending', plan: 'P-PH' } });
+  await grantFirst(m);
+  const refund = { id: 'WH-R-A', event_type: 'PAYMENT.SALE.REFUNDED', resource: { id: 'R', sale_id: 'S', billing_agreement_id: 'I-1' } };
+  const pp = fakePayPal({ sub: () => activeSub() });
+  assertEquals((await (await handleWebhook(post(refund), { store: m.store, paypal: pp.paypal })).json()).outcome, 'revoked');
+  assertEquals((await (await handleWebhook(post({ ...refund, id: 'WH-R-B' }), { store: m.store, paypal: pp.paypal })).json()).outcome, 'revoked');
+  const ppNew = fakePayPal({ sub: () => activeSub({ id: 'I-2' }) });
+  const res = await handleWebhook(post({ id: 'WH-ACT-2', event_type: 'BILLING.SUBSCRIPTION.ACTIVATED', resource: { id: 'I-2' } }), { store: m.store, paypal: ppNew.paypal });
+  assertEquals((await res.json()).outcome, 'granted'); assert(m.premium.has('I-2'));
+});
+
+// ---------------------------------------------------------------- F10 (review): sale id must match
+Deno.test('F10: a sale object without an id (or with another id) never counts as a match; the refund stays unresolved', async () => {
+  for (const sale of [() => ({ billing_agreement_id: 'I-1' }), () => ({ id: undefined, billing_agreement_id: 'I-1' }), () => ({ id: 'SALE-OTHER', billing_agreement_id: 'I-1' })] as PayPalFake['sale'][]) {
+    const m = fakeStore(); await grantFirst(m);
+    const pp = fakePayPal({ sale });
+    const res = await handleWebhook(post(refundEvent()), { store: m.store, paypal: pp.paypal });
+    assertEquals(res.status, 503); assertEquals((await res.json()).error, 'refund_unresolved');
+    assert(m.premium.has('I-1'), 'no revoke from a sale PayPal did not confirm'); assertEquals(m.flagged.length, 1);
+  }
 });

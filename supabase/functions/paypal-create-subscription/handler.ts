@@ -16,9 +16,10 @@ export async function handleCreate(req: Request, deps: CreateDeps): Promise<Resp
   if (!userId) return json(401, { error: 'authentication_required' });
   let body: { country?: unknown } = {};
   try { body = await req.json(); } catch { /* empty body -> server default market */ }
-  // G4: defence in depth behind loadPayPalConfig. Live needs PAYPAL_ENV=live AND PAYPAL_ALLOW_LIVE=true; this
-  // check runs before any PayPal call. The database independently refuses any non-sandbox row.
-  if (deps.config.environment !== 'sandbox' && !(deps.config.environment === 'live' && deps.config.liveAllowed === true)) return json(503, { error: 'live_paypal_refused' });
+  // F2 (fail closed): the database refuses every non-sandbox subscription, so a live PayPal call could only
+  // create an approvable live subscription with no DB row. Refuse ANY non-sandbox environment here, before
+  // plan resolution and before any PayPal call. (Live later needs a reviewed change to this line AND the DB guards.)
+  if (deps.config.environment !== 'sandbox') return json(503, { error: 'live_paypal_refused' });
   const plan = await deps.store.resolvePlan(userId, parseCountryHint(body.country));
   if (!plan) return json(503, { error: 'no_enabled_plan' });
   const planId = deps.config.planIds[plan.currency as Currency];

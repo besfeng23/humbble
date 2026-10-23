@@ -8,8 +8,8 @@
 -- checkout fails closed (502) rather than recording an environment-less row.
 
 -- 1. G4: environment is an explicit, validated argument (no default, so callers cannot omit it).
-DROP FUNCTION public.billing_register_pending_subscription(UUID, TEXT, TEXT, TEXT);
-CREATE FUNCTION public.billing_register_pending_subscription(
+DROP FUNCTION IF EXISTS public.billing_register_pending_subscription(UUID, TEXT, TEXT, TEXT);
+CREATE OR REPLACE FUNCTION public.billing_register_pending_subscription(
   p_user_id UUID, p_plan_key TEXT, p_provider_subscription_id TEXT, p_provider_plan_id TEXT, p_environment TEXT
 )
 RETURNS UUID
@@ -134,7 +134,7 @@ $function$;
 
 -- 3. G1: an event that cannot be tied to a subscription (e.g. a refund whose sale PayPal could not
 --    resolve) is quarantined and audited so it is visible to operators; it is never marked processed.
-CREATE FUNCTION public.billing_flag_unresolved_event(p_event_id UUID, p_reason TEXT)
+CREATE OR REPLACE FUNCTION public.billing_flag_unresolved_event(p_event_id UUID, p_reason TEXT)
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -165,7 +165,7 @@ $function$;
 --    * approval_pending, created between 2 minutes and 48 hours ago (approved but webhook missed/late);
 --    * active / past_due that were never verified, not verified for 6 hours, or renew within a day;
 --    * any subscription referenced by a quarantined (72 h) or stuck (verified/processing > 10 min) event.
-CREATE FUNCTION public.billing_list_reconcile_subscriptions(p_environment TEXT, p_limit INTEGER DEFAULT 50)
+CREATE OR REPLACE FUNCTION public.billing_list_reconcile_subscriptions(p_environment TEXT, p_limit INTEGER DEFAULT 50)
 RETURNS TABLE (provider_subscription_id TEXT, reason TEXT)
 LANGUAGE sql
 STABLE
@@ -203,7 +203,7 @@ AS $function$
 $function$;
 
 -- Events to re-process: quarantined (72 h window) or stuck in verified/processing for > 10 minutes.
-CREATE FUNCTION public.billing_list_reprocessable_events(p_limit INTEGER DEFAULT 50)
+CREATE OR REPLACE FUNCTION public.billing_list_reprocessable_events(p_limit INTEGER DEFAULT 50)
 RETURNS TABLE (event_id UUID, provider_event_id TEXT, event_type TEXT, resource_id TEXT, event_status public.payment_event_status)
 LANGUAGE sql
 STABLE
@@ -243,3 +243,6 @@ $grants$;
 --     public.billing_flag_unresolved_event(UUID, TEXT), public.billing_register_pending_subscription(UUID, TEXT, TEXT, TEXT, TEXT);
 --   Recreate the 4-argument billing_register_pending_subscription and the earlier billing_finish_event body from
 --   20261023000020_paypal_sandbox_entitlements.sql, then redeploy the previous Edge Functions.
+--   Restore the previous ledger guard: re-run `CREATE OR REPLACE FUNCTION private.guard_payment_event_update()` with the body from
+--   20261020000003_safety_billing_privacy_audit.sql (it lacks the `quarantined -> processing` transition added in section 2a).
+--   Quarantined events then become terminal again; move any in-flight quarantined events to 'failed' first if they must be retried.
