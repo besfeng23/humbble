@@ -10,6 +10,7 @@ import { buildAuthRedirectUrl } from '@/lib/auth/redirects';
 import { useAuth } from '@/lib/AuthProvider';
 import { MIN_PASSWORD_LENGTH } from '@/lib/auth/password';
 import { captureAttribution, loadAttribution } from '@/lib/attribution';
+import { buildQuizMetadata, loadQuiz } from '@/lib/quiz';
 
 export const TERMS_VERSION = '2026-10';
 
@@ -53,6 +54,9 @@ export default function SignupScreen() {
       // server timestamps and binds attribution to the account exactly once.
       const data: Record<string, unknown> = { consent: { terms_privacy: true, terms_version: TERMS_VERSION, marketing: marketingOptIn } };
       if (attribution) data.attribution = attribution;
+      // Prelander quiz answers (fixed option values only) ride along in metadata; no extra table.
+      const quiz = buildQuizMetadata(params as Record<string, unknown>, await loadQuiz());
+      if (quiz) data.quiz = quiz;
       const { error: authError } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: redirectTo, data } });
       // Never distinguish an existing address from a new one in user-visible output.
       if (authError && ((authError.status ?? 0) >= 500 || /network|fetch|timeout/i.test(authError.message ?? ''))) {

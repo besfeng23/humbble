@@ -9,7 +9,7 @@ import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/lib/AuthProvider";
-import { captureAttribution } from "@/lib/attribution";
+import { captureAttribution, extractAttributionParams } from "@/lib/attribution";
 
 /**
  * Truthful trust points only. Identity/liveness verification is NOT live yet, so the
@@ -65,6 +65,16 @@ export default function ConversionLandingScreen() {
         shape="pill"
         onPress={() => router.push("/auth/signup" as any)}
       />
+      <Pressable
+        testID="scr-01-quiz-link"
+        accessibilityRole="link"
+        onPress={() => router.push({ pathname: "/quiz", params: extractAttributionParams(params as Record<string, unknown>) } as any)}
+        style={styles.signinLink}
+      >
+        <Text style={{ color: palette.link, textDecorationLine: "underline" }}>
+          Not sure yet? Take the 1-minute quiz
+        </Text>
+      </Pressable>
       <Pressable
         testID="scr-01-signin-link"
         accessibilityRole="link"
