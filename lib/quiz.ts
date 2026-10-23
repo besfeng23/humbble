@@ -21,8 +21,10 @@ function nativeStore(): KeyValueStore {
  * Funnel events: public.funnel_events is server-written, one row per (user_id, event),
  * and stays signup_completed / doi_confirmed / profile_completed only. Anonymous quiz
  * steps are measured separately by lib/quizAnalytics.ts into public.quiz_events (random
- * session id, allow-listed enums, no IP or user id, 90-day retention). That session id
- * is never carried into signup and is not linked to the account. The local progress below
+ * session id, enum answers, network/utm slugs, hour-rounded time; no click id, IP or user
+ * id; 90-day retention). That feature is OFF unless EXPO_PUBLIC_QUIZ_ANALYTICS=1 and the
+ * visitor has not opted out. The session id is never carried into signup and is not linked
+ * to the account. The local progress below
  * (started_at, completed_at) travels with signup metadata so signups can be segmented by
  * quiz answers after the fact. See docs/operations/quiz-funnel-events.md.
  */

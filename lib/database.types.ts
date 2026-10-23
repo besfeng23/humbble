@@ -973,39 +973,39 @@ export type Database = {
       quiz_events: {
         Row: {
           answer: string | null
-          attribution: Json
-          click_id: string | null
           country_code: string | null
           created_at: string
           event: string
-          id: number
           network: string | null
           session_id: string
           step: number
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
           answer?: string | null
-          attribution?: Json
-          click_id?: string | null
           country_code?: string | null
           created_at?: string
           event: string
-          id?: never
           network?: string | null
           session_id: string
           step?: number
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
           answer?: string | null
-          attribution?: Json
-          click_id?: string | null
           country_code?: string | null
           created_at?: string
           event?: string
-          id?: never
           network?: string | null
           session_id?: string
           step?: number
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: []
       }
@@ -1487,7 +1487,12 @@ export type Database = {
         Returns: undefined
       }
       purge_quiz_events: {
-        Args: { p_limit?: number; p_retention_days?: number }
+        Args: {
+          p_batch_size?: number
+          p_max_rows?: number
+          p_retention_days?: number
+          p_time_budget_seconds?: number
+        }
         Returns: number
       }
       quiz_funnel_summary: {
@@ -1498,16 +1503,21 @@ export type Database = {
           network: string
           sessions: number
           step: number
+          utm_campaign: string
+          utm_source: string
         }[]
       }
       record_quiz_event: {
         Args: {
           p_answer?: string
-          p_attribution?: Json
           p_country_code?: string
           p_event: string
+          p_network?: string
           p_session_id: string
           p_step?: number
+          p_utm_campaign?: string
+          p_utm_medium?: string
+          p_utm_source?: string
         }
         Returns: boolean
       }

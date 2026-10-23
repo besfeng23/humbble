@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import QuizScreen from '@/app/(public)/quiz';
 import { LANDING_TRUST_POINTS } from '@/app/(public)/index';
 import { textContent } from '../test-utils/textContent';
-import { __resetQuizAnalytics, __setQuizAnalyticsFlag, __setQuizEventTransport, isUuidV4, type QuizEventArgs } from '@/lib/quizAnalytics';
+import { QUIZ_OPTOUT_STORAGE_KEY, QUIZ_SESSION_STORAGE_KEY, __resetQuizAnalytics, __setQuizAnalyticsFlag, __setQuizEventTransport, isUuidV4, type QuizEventArgs } from '@/lib/quizAnalytics';
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
@@ -98,11 +98,13 @@ describe('quiz prelander screen', () => {
 
   describe('anonymous funnel events', () => {
     const settle = async () => { await act(async () => { for (let i = 0; i < 10; i += 1) await Promise.resolve(); await new Promise((r) => setImmediate(r)); }); };
+    const noticeNodes = (tree: renderer.ReactTestRenderer) => tree.root.findAll((n) => n.props.testID === 'quiz-analytics-notice');
+    beforeEach(() => { __setQuizAnalyticsFlag('1'); }); // analytics are OFF by default; this block opts in like a build with EXPO_PUBLIC_QUIZ_ANALYTICS=1
 
     it('fires started, four steps, completed and cta once each, with enums only and no signup/account data', async () => {
       const calls: QuizEventArgs[] = [];
       __setQuizEventTransport(async (a) => { calls.push(a); });
-      mockParams = { click_id: 'abc123', utm_source: 'fb', q_intent: 'marriage', email: 'a@b.co' };
+      mockParams = { click_id: 'abc123', sub1: 'zzz', utm_source: 'FB', utm_campaign: 'Spring_26', q_intent: 'marriage', email: 'a@b.co' };
       const tree = await mount();
       await settle();
       for (const id of ['quiz-option-intent-marriage', 'quiz-option-age-40_49', 'quiz-option-timing-now', 'quiz-option-country-SE']) await tap(tree, id);
@@ -117,7 +119,10 @@ describe('quiz prelander screen', () => {
         ['quiz_completed', 0, null, null],
         ['quiz_cta_clicked', 0, null, null],
       ]);
-      expect(calls[0].p_attribution).toEqual({ click_id: 'abc123', utm_source: 'fb' });
+      // Slugs only: the click id and sub id never leave the device (F-01); a click id just marks the network as 'unknown'.
+      expect([calls[0].p_network, calls[0].p_utm_source, calls[0].p_utm_medium, calls[0].p_utm_campaign]).toEqual(['unknown', 'fb', null, 'spring_26']);
+      expect(JSON.stringify(calls)).not.toMatch(/abc123|zzz|a@b\.co/);
+      expect(calls.slice(1).every((c) => c.p_network === null && c.p_utm_source === null && c.p_utm_campaign === null)).toBe(true);
       expect(new Set(calls.map((c) => c.p_session_id)).size).toBe(1);
       expect(isUuidV4(calls[0].p_session_id)).toBe(true);
       // The anonymous session id is NOT linked to the account: it is not passed to signup.
@@ -133,15 +138,74 @@ describe('quiz prelander screen', () => {
       expect(mockPush).toHaveBeenCalledTimes(1);
     });
 
-    it('sends nothing when analytics are disabled', async () => {
-      __setQuizAnalyticsFlag('off');
+    it('is OFF by default: no events, no stored id, no notice, and the quiz is unchanged (F-05)', async () => {
+      __setQuizAnalyticsFlag(null);
       const transport = jest.fn(async () => undefined);
       __setQuizEventTransport(transport);
       const tree = await mount();
       await tap(tree, 'quiz-option-intent-serious');
       await settle();
       expect(transport).not.toHaveBeenCalled();
+      expect(await AsyncStorage.getItem(QUIZ_SESSION_STORAGE_KEY)).toBeNull();
+      expect(noticeNodes(tree)).toHaveLength(0);
+      expect(visible(tree)).not.toMatch(/Opt out|anonymous quiz/i);
       expect(visible(tree)).toContain('2 of 4');
+    });
+
+    it('shows a small notice with a Privacy link and an Opt out control ONLY when analytics are enabled', async () => {
+      __setQuizEventTransport(async () => undefined);
+      const tree = await mount();
+      await settle();
+      expect(noticeNodes(tree).length).toBeGreaterThan(0);
+      expect(visible(tree)).toMatch(/anonymous quiz steps/i);
+      await tap(tree, 'quiz-analytics-privacy');
+      expect(mockPush).toHaveBeenCalledWith('/(public)/legal/privacy-notice');
+    });
+
+    it('does not show the notice (and sends nothing) when the visitor already opted out', async () => {
+      await AsyncStorage.setItem(QUIZ_OPTOUT_STORAGE_KEY, '1');
+      const transport = jest.fn(async () => undefined);
+      __setQuizEventTransport(transport);
+      const tree = await mount();
+      await tap(tree, 'quiz-option-intent-serious');
+      await settle();
+      expect(noticeNodes(tree)).toHaveLength(0);
+      expect(transport).not.toHaveBeenCalled();
+      expect(await AsyncStorage.getItem(QUIZ_SESSION_STORAGE_KEY)).toBeNull();
+    });
+
+    it('Opt out hides the notice, stores the opt-out, deletes the id and stops further events', async () => {
+      const calls: QuizEventArgs[] = [];
+      __setQuizEventTransport(async (a) => { calls.push(a); });
+      const tree = await mount();
+      await settle();
+      expect(calls.map((c) => c.p_event)).toEqual(['quiz_started']);
+      expect(await AsyncStorage.getItem(QUIZ_SESSION_STORAGE_KEY)).not.toBeNull();
+      await tap(tree, 'quiz-analytics-optout');
+      await settle();
+      expect(noticeNodes(tree)).toHaveLength(0);
+      expect(await AsyncStorage.getItem(QUIZ_OPTOUT_STORAGE_KEY)).toBe('1');
+      expect(await AsyncStorage.getItem(QUIZ_SESSION_STORAGE_KEY)).toBeNull();
+      await tap(tree, 'quiz-option-intent-serious');
+      await settle();
+      expect(calls).toHaveLength(1);
+      expect(visible(tree)).toContain('2 of 4'); // the quiz itself is unaffected
+      // and it is remembered on the next visit
+      await act(async () => { mounted.splice(0).forEach((t) => t.unmount()); await Promise.resolve(); });
+      __resetQuizAnalytics(); __setQuizAnalyticsFlag('1'); __setQuizEventTransport(async (a) => { calls.push(a); });
+      const again = await mount();
+      await settle();
+      expect(noticeNodes(again)).toHaveLength(0);
+      expect(calls).toHaveLength(1);
+    });
+
+    it('removes an expired local session id when the quiz opens', async () => {
+      await AsyncStorage.setItem(QUIZ_SESSION_STORAGE_KEY, JSON.stringify({ id: '3f2b8c1e-7a4d-4e9b-9c1a-5d6e7f8a9b0c', created_at: new Date(Date.now() - 31 * 24 * 3600 * 1000).toISOString() }));
+      const calls: QuizEventArgs[] = [];
+      __setQuizEventTransport(async (a) => { calls.push(a); });
+      await mount();
+      await settle();
+      expect(calls[0].p_session_id).not.toBe('3f2b8c1e-7a4d-4e9b-9c1a-5d6e7f8a9b0c');
     });
 
     it('a re-answer after Back does not duplicate the step event', async () => {
