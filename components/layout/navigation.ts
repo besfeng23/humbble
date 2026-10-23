@@ -165,9 +165,9 @@ export const SETTINGS_NAV_ITEMS: readonly NavItem[] = [
   },
   {
     id: "settings-upgrade",
-    label: "Reserve Upgrade",
+    label: "Premium",
     href: "/(paywall)/upgrade",
-    accessibilityLabel: "Humbble Reserve upgrade paywall",
+    accessibilityLabel: "Upgrade to Humbble Premium",
   },
   {
     id: "settings-billing",

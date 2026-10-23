@@ -33,7 +33,7 @@ SELECT is((SELECT count(*)::INT FROM public.funnel_events WHERE user_id='0000000
 
 INSERT INTO public.profiles (id, display_name, birth_date, city_region, relationship_intention)
 VALUES ('00000000-0000-0000-0000-000000000501','Funnel','1990-01-01','Toronto','long_term_dating');
-SELECT is((SELECT count(*)::INT FROM public.funnel_events WHERE user_id='00000000-0000-0000-0000-000000000501' AND event='profile_completed'),1,'profile_completed recorded');
+SELECT is((SELECT count(*)::INT FROM public.funnel_events WHERE user_id='00000000-0000-0000-0000-000000000501' AND event='profile_completed'),0,'entering a city alone does not record profile_completed (full-profile coverage: 0023)');
 SELECT is((SELECT count(*)::INT FROM public.postback_outbox),0,'postback outbox stays empty');
 
 SET LOCAL ROLE authenticated;

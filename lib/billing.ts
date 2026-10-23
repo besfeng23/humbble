@@ -7,6 +7,14 @@ import { isSupabaseConfigured, supabase } from './supabase';
 
 export { countryHintFromLocale, deviceLocale } from '@/lib/locale';
 
+/**
+ * Billing is PayPal Sandbox only today: the checkout function and the database both refuse live PayPal
+ * (live_paypal_refused). Screens that take or manage a payment show this plain notice while it is true.
+ * Flip the flag, and remove the notice, in the same change that enables live billing.
+ */
+export const PAYMENTS_ARE_TEST_ONLY = true;
+export const TEST_PAYMENTS_NOTICE = 'Test payments only. No real money is charged.';
+
 export type BillingPlan = { countryCode: string; planKey: string; currency: string; amount: number };
 
 /** Local currency formatting; whole amounts drop the decimals (299 kr, ₱599, £23.99). */

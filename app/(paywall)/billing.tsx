@@ -10,7 +10,8 @@ import { Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { usePremium } from "@/hooks/usePremium";
-import { cancelSubscription } from "@/lib/billing";
+import { PAYMENTS_ARE_TEST_ONLY, TEST_PAYMENTS_NOTICE, cancelSubscription } from "@/lib/billing";
+import { GENERIC_ERROR_MESSAGE } from "@/lib/friendlyErrors";
 
 export default function SubscriptionBillingScreen() {
   const router = useRouter();
@@ -31,22 +32,29 @@ export default function SubscriptionBillingScreen() {
     setStatus(result.ok ? "success" : "failure");
   };
 
+  const endDate = premium.validUntil ? new Date(premium.validUntil) : null;
+  const endLabel = endDate && !Number.isNaN(endDate.getTime()) ? endDate.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) : null;
+  const stateText = subscriptionStatus === "free"
+    ? "You’re on the free plan."
+    : subscriptionStatus === "cancelled"
+      ? `Active until ${endLabel ?? "the end of this billing period"}. It won’t renew.`
+      : "Renews monthly until cancelled.";
+
   return (
     <SettingsLayout
       testID="scr-21-billing"
-      title="Subscription Billing & Cancellation"
-      subtitle="SCR-21 • 2-Click Self-Service Cancellation"
+      title="Subscription"
       fallbackHref="/(tabs)/profile"
       activeNavId="settings-billing"
     >
       <FormStateView
         testID="scr-21-form-state"
         status={status}
-        pendingTitle="Updating subscription..."
-        successTitle="Subscription cancellation scheduled"
-        successMessage="Auto-renewal is turned off (cancel_at_period_end = true). Your entitlement remains active through the end of the current billing period."
-        failureTitle="Could not update subscription"
-        failureMessage="Please retry or check your connection."
+        pendingTitle="Updating subscription…"
+        successTitle="Cancellation scheduled"
+        successMessage="Your subscription won’t renew. Premium stays on until the end of this billing period."
+        failureTitle="Couldn’t update subscription"
+        failureMessage={GENERIC_ERROR_MESSAGE}
         onRetry={() => setStatus("idle")}
       >
         <Card testID="scr-21-status-card" variant="elevated">
@@ -55,22 +63,19 @@ export default function SubscriptionBillingScreen() {
               accessibilityRole="header"
               style={[styles.heading, { color: palette.text }]}
             >
-              Current Plan:{" "}
-              {subscriptionStatus === "free"
-                ? "Humbble Free"
-                : "Humbble Premium (monthly)"}
+              {subscriptionStatus === "free" ? "Humbble Free" : "Humbble Premium"}
             </Text>
             <Text
               testID="scr-21-subscription-state"
               style={[styles.stateText, { color: palette.textSecondary }]}
             >
-              Status: {subscriptionStatus}
+              {stateText}
             </Text>
 
             {subscriptionStatus === "active" && !confirmingCancel ? (
               <Button
                 testID="scr-21-cancel-step-1-btn"
-                label="Cancel Monthly Subscription (Click 1 of 2)"
+                label="Cancel subscription"
                 variant="danger"
                 size="md"
                 onPress={() => setConfirmingCancel(true)}
@@ -81,14 +86,14 @@ export default function SubscriptionBillingScreen() {
               <View style={styles.confirmRow}>
                 <Button
                   testID="scr-21-cancel-step-2-btn"
-                  label="Confirm Cancellation Now (Click 2 of 2)"
+                  label="Confirm cancellation"
                   variant="danger"
                   size="md"
                   onPress={handleConfirmCancel}
                 />
                 <Button
                   testID="scr-21-keep-plan-btn"
-                  label="Keep My Plan"
+                  label="Keep my plan"
                   variant="secondary"
                   size="md"
                   onPress={() => setConfirmingCancel(false)}
@@ -98,11 +103,16 @@ export default function SubscriptionBillingScreen() {
 
             <Button
               testID="scr-21-view-upgrade-btn"
-              label="View Plan Details (SCR-20)"
+              label={subscriptionStatus === "free" ? "See Premium" : "Plan details"}
               variant="secondary"
               size="sm"
               onPress={() => router.push("/(paywall)/upgrade" as any)}
             />
+            {PAYMENTS_ARE_TEST_ONLY && subscriptionStatus !== "free" ? (
+              <Text testID="scr-21-test-payments-note" style={[styles.note, { color: palette.textSecondary }]}>
+                {TEST_PAYMENTS_NOTICE}
+              </Text>
+            ) : null}
           </View>
         </Card>
       </FormStateView>
@@ -119,6 +129,9 @@ const styles = StyleSheet.create({
   },
   stateText: {
     ...Typography.body,
+  },
+  note: {
+    ...Typography.bodySmall,
   },
   confirmRow: {
     flexDirection: "row",
