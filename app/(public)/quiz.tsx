@@ -22,6 +22,7 @@ import {
   quizReducer,
   saveQuiz,
 } from "@/lib/quiz";
+import { collectQuizAttribution, trackQuizEvent } from "@/lib/quizAnalytics";
 
 /** Mobile-first prelander quiz: one question per screen, one tap to answer, then a single signup CTA. */
 export default function QuizScreen() {
@@ -36,6 +37,8 @@ export default function QuizScreen() {
   useEffect(() => {
     // The ad click may land straight on the quiz: keep first-touch attribution (30 days).
     void captureAttribution(params as Record<string, unknown>, "/quiz");
+    // Anonymous funnel measurement (non-blocking, failures silent, no-op when analytics are off). Click params only.
+    void collectQuizAttribution(params as Record<string, unknown>).then((attribution) => trackQuizEvent({ event: "quiz_started", attribution }));
     // Capture once per visit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -54,9 +57,19 @@ export default function QuizScreen() {
     if (state.step === 0) router.replace("/" as any);
     else { setPickingCountry(false); dispatch({ type: "back" }); }
   };
-  const answer = (value: string) => { setPickingCountry(false); dispatch({ type: "answer", stepId, value }); };
+  const answer = (value: string) => {
+    setPickingCountry(false);
+    dispatch({ type: "answer", stepId, value });
+    // Only a value the reducer accepts counts as an answer. Analytics never blocks or delays the UI.
+    const next = quizReducer(state, { type: "answer", stepId, value });
+    if (next.step > state.step) {
+      trackQuizEvent({ event: "quiz_step", step: state.step + 1, value });
+      if (next.step >= QUIZ_TOTAL_STEPS) trackQuizEvent({ event: "quiz_completed" });
+    }
+  };
 
   const goSignup = async () => {
+    trackQuizEvent({ event: "quiz_cta_clicked" });
     const stored = await loadStoredAttributionParams();
     router.push({ pathname: "/auth/signup", params: buildSignupParams(state.answers, params as Record<string, unknown>, stored) } as any);
   };

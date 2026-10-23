@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import QuizScreen from '@/app/(public)/quiz';
 import { LANDING_TRUST_POINTS } from '@/app/(public)/index';
 import { textContent } from '../test-utils/textContent';
+import { __resetQuizAnalytics, __setQuizAnalyticsFlag, __setQuizEventTransport, isUuidV4, type QuizEventArgs } from '@/lib/quizAnalytics';
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
@@ -28,7 +29,7 @@ async function mount() {
   return tree;
 }
 
-beforeEach(async () => { mockPush.mockClear(); mockReplace.mockClear(); mockParams = {}; await AsyncStorage.clear(); });
+beforeEach(async () => { mockPush.mockClear(); mockReplace.mockClear(); mockParams = {}; __resetQuizAnalytics(); await AsyncStorage.clear(); });
 afterEach(async () => { await act(async () => { mounted.splice(0).forEach((t) => t.unmount()); await Promise.resolve(); }); });
 
 describe('quiz prelander screen', () => {
@@ -93,5 +94,65 @@ describe('quiz prelander screen', () => {
 
   it('is reachable from the truthful landing list context (no new trust claims added there)', () => {
     expect(LANDING_TRUST_POINTS.join(' ')).not.toMatch(/verif/i);
+  });
+
+  describe('anonymous funnel events', () => {
+    const settle = async () => { await act(async () => { for (let i = 0; i < 10; i += 1) await Promise.resolve(); await new Promise((r) => setImmediate(r)); }); };
+
+    it('fires started, four steps, completed and cta once each, with enums only and no signup/account data', async () => {
+      const calls: QuizEventArgs[] = [];
+      __setQuizEventTransport(async (a) => { calls.push(a); });
+      mockParams = { click_id: 'abc123', utm_source: 'fb', q_intent: 'marriage', email: 'a@b.co' };
+      const tree = await mount();
+      await settle();
+      for (const id of ['quiz-option-intent-marriage', 'quiz-option-age-40_49', 'quiz-option-timing-now', 'quiz-option-country-SE']) await tap(tree, id);
+      await tap(tree, 'quiz-signup-cta');
+      await settle();
+      expect(calls.map((c) => [c.p_event, c.p_step, c.p_answer, c.p_country_code])).toEqual([
+        ['quiz_started', 0, null, null],
+        ['quiz_step', 1, 'marriage', null],
+        ['quiz_step', 2, '40_49', null],
+        ['quiz_step', 3, 'now', null],
+        ['quiz_step', 4, null, 'SE'],
+        ['quiz_completed', 0, null, null],
+        ['quiz_cta_clicked', 0, null, null],
+      ]);
+      expect(calls[0].p_attribution).toEqual({ click_id: 'abc123', utm_source: 'fb' });
+      expect(new Set(calls.map((c) => c.p_session_id)).size).toBe(1);
+      expect(isUuidV4(calls[0].p_session_id)).toBe(true);
+      // The anonymous session id is NOT linked to the account: it is not passed to signup.
+      expect(JSON.stringify(mockPush.mock.calls)).not.toContain(calls[0].p_session_id);
+    });
+
+    it('never blocks or breaks the quiz when analytics fail, and the result/CTA still work', async () => {
+      __setQuizEventTransport(async () => { throw new Error('offline'); });
+      const tree = await mount();
+      for (const id of ['quiz-option-intent-serious', 'quiz-option-age-30_39', 'quiz-option-timing-no_rush', 'quiz-option-country-SE']) await tap(tree, id);
+      expect(tree.root.findAllByProps({ testID: 'quiz-result' }).length).toBeGreaterThan(0);
+      await tap(tree, 'quiz-signup-cta');
+      expect(mockPush).toHaveBeenCalledTimes(1);
+    });
+
+    it('sends nothing when analytics are disabled', async () => {
+      __setQuizAnalyticsFlag('off');
+      const transport = jest.fn(async () => undefined);
+      __setQuizEventTransport(transport);
+      const tree = await mount();
+      await tap(tree, 'quiz-option-intent-serious');
+      await settle();
+      expect(transport).not.toHaveBeenCalled();
+      expect(visible(tree)).toContain('2 of 4');
+    });
+
+    it('a re-answer after Back does not duplicate the step event', async () => {
+      const calls: QuizEventArgs[] = [];
+      __setQuizEventTransport(async (a) => { calls.push(a); });
+      const tree = await mount();
+      await tap(tree, 'quiz-option-intent-serious');
+      await tap(tree, 'quiz-back');
+      await tap(tree, 'quiz-option-intent-marriage');
+      await settle();
+      expect(calls.filter((c) => c.p_event === 'quiz_step' && c.p_step === 1)).toHaveLength(1);
+    });
   });
 });

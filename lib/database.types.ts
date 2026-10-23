@@ -970,6 +970,45 @@ export type Database = {
           },
         ]
       }
+      quiz_events: {
+        Row: {
+          answer: string | null
+          attribution: Json
+          click_id: string | null
+          country_code: string | null
+          created_at: string
+          event: string
+          id: number
+          network: string | null
+          session_id: string
+          step: number
+        }
+        Insert: {
+          answer?: string | null
+          attribution?: Json
+          click_id?: string | null
+          country_code?: string | null
+          created_at?: string
+          event: string
+          id?: never
+          network?: string | null
+          session_id: string
+          step?: number
+        }
+        Update: {
+          answer?: string | null
+          attribution?: Json
+          click_id?: string | null
+          country_code?: string | null
+          created_at?: string
+          event?: string
+          id?: never
+          network?: string | null
+          session_id?: string
+          step?: number
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           category: Database["public"]["Enums"]["report_category"]
@@ -1446,6 +1485,31 @@ export type Database = {
           p_note: string
         }
         Returns: undefined
+      }
+      purge_quiz_events: {
+        Args: { p_limit?: number; p_retention_days?: number }
+        Returns: number
+      }
+      quiz_funnel_summary: {
+        Args: { p_from?: string; p_to?: string }
+        Returns: {
+          day: string
+          event: string
+          network: string
+          sessions: number
+          step: number
+        }[]
+      }
+      record_quiz_event: {
+        Args: {
+          p_answer?: string
+          p_attribution?: Json
+          p_country_code?: string
+          p_event: string
+          p_session_id: string
+          p_step?: number
+        }
+        Returns: boolean
       }
       record_swipe: {
         Args: {
