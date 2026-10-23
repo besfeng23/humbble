@@ -1,11 +1,13 @@
 // Shared apply-path used by the PayPal webhook AND the reconciler, so both grant/revoke under the
 // same rules: premium is granted only by billing_apply_readback after a fresh PayPal readback that is
-// ACTIVE with a last payment matching the stored plan (amount, currency, plan id).
+// ACTIVE with a last payment matching the stored plan (amount, currency, plan id). The database stores the readback
+// and re-checks it against billing_plans; nothing here is trusted for the grant (docs/operations/billing-trust-model.md).
 import type { BillingStore } from './billingStore.ts';
 import { isSettlementPending, mapPayPalStatus, type PayPalClient, REFUND_EVENTS, saleIdFromEvent, subscriptionIdFromEvent } from './paypal.ts';
 
-export type ProcessorPayPal = Pick<PayPalClient, 'getSubscription' | 'getSale'>;
-export type ProcessDeps = { paypal: ProcessorPayPal; store: BillingStore };
+export type ProcessorPayPal = Pick<PayPalClient, 'getSubscription' | 'getSale' | 'cancelSubscription'>;
+/** `environment` is the PayPal environment in use; the PayPal-side cancel only ever runs against the sandbox. */
+export type ProcessDeps = { paypal: ProcessorPayPal; store: BillingStore; environment?: 'sandbox' | 'live' };
 
 /** Outcomes that mean "do not treat as done": the event stays quarantined and may be re-processed. */
 export const QUARANTINE_OUTCOMES = new Set(['unknown_subscription', 'plan_mismatch', 'settlement_mismatch', 'unresolved_refund']);
@@ -43,11 +45,29 @@ export async function applySubscriptionReadback(deps: ProcessDeps, subscriptionI
   const sub = await deps.paypal.getSubscription(subscriptionId);
   const last = sub.billing_info?.last_payment?.amount;
   const result = await deps.store.applyReadback({
-    providerSubscriptionId: subscriptionId, providerPlanId: sub.plan_id ?? null, status: mapPayPalStatus(sub.status),
+    providerSubscriptionId: subscriptionId, providerPlanId: sub.plan_id ?? null, status: mapPayPalStatus(sub.status), providerStatus: sub.status,
     periodEnd: sub.billing_info?.next_billing_time ?? null,
     lastPaymentAmount: last?.value ?? null, lastPaymentCurrency: last?.currency_code ?? null, eventId,
   });
   return { ...result, sub };
+}
+
+/**
+ * F-05/N1: a subscription refunded/revoked locally must also stop billing at PayPal. Best effort and idempotent: PayPal is only
+ * called while it still reports ACTIVE/SUSPENDED; the outcome is recorded in the database (pending -> done | failed) and the
+ * reconciler retries pending rows. This never throws, so it can never block or undo the local premium revoke. Sandbox only.
+ */
+export async function attemptProviderCancel(deps: ProcessDeps, subscriptionId: string, remoteStatus: string | null): Promise<'done' | 'failed' | 'skipped'> {
+  if (deps.environment !== 'sandbox') return 'skipped';
+  try {
+    const status = remoteStatus ?? (await deps.paypal.getSubscription(subscriptionId)).status;
+    if (status === 'ACTIVE' || status === 'SUSPENDED') await deps.paypal.cancelSubscription(subscriptionId, 'Refunded or revoked in Humbble');
+    await deps.store.recordProviderCancel(subscriptionId, 'done');
+    return 'done';
+  } catch {
+    try { await deps.store.recordProviderCancel(subscriptionId, 'failed'); } catch { /* stays pending; the reconciler retries */ }
+    return 'failed';
+  }
 }
 
 export async function processBillingEvent(deps: ProcessDeps, input: ProcessInput): Promise<ProcessResult> {
@@ -74,7 +94,9 @@ export async function processBillingEvent(deps: ProcessDeps, input: ProcessInput
   if (isRefund) {
     // Existing entitlement rule: any verified refund/reversal revokes premium for that subscription.
     const sub = await deps.paypal.getSubscription(subscriptionId);
-    const r = await deps.store.applyReadback({ providerSubscriptionId: subscriptionId, providerPlanId: sub.plan_id ?? null, status: 'refunded', periodEnd: null, lastPaymentAmount: null, lastPaymentCurrency: null, eventId: input.eventId });
+    const r = await deps.store.applyReadback({ providerSubscriptionId: subscriptionId, providerPlanId: sub.plan_id ?? null, status: 'refunded', providerStatus: null, periodEnd: null, lastPaymentAmount: null, lastPaymentCurrency: null, eventId: input.eventId });
+    // Premium is already revoked locally; now stop PayPal billing too (never blocks the revoke).
+    if (r.outcome === 'revoked') await attemptProviderCancel(deps, subscriptionId, sub.status);
     return { ...r, quarantined: QUARANTINE_OUTCOMES.has(r.outcome), retryable: false };
   }
 
