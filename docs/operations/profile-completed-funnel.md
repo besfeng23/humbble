@@ -18,7 +18,7 @@ The event is recorded server-side, once per user, the first time `private.is_pro
   that run before it are not guarded, so an error there (for example a lock timeout while another session holds `ACCESS EXCLUSIVE` on `funnel_events`)
   still aborts the member's write.
 - **Alert on the warning.** The only signal of a swallowed failure is that Postgres log line, and it repeats on every relevant write while the cause
-  persists (up to two per photo write: the photo trigger and the discoverability sync). Add a log-based alert on the text
+  persists: up to two warnings per photo INSERT (the photo trigger and the discoverability sync) **and up to two per profile UPDATE** (the profile trigger and the discoverability sync). Add a log-based alert on the text
   `profile_completed funnel write failed` (Supabase Logs / log drain) so a broken funnel is noticed instead of silently losing events.
 
 ## Rolling back

@@ -2,7 +2,7 @@
 -- Rows: (1) table_acl   one per public table x API role holding anything: table-level privileges | column-level privileges | TRUNCATE guard state
 --       (2) function_acl one per new billing RPC (six, incl. billing_purge_readbacks): which API roles can EXECUTE (NULL if the function does not exist)
 --       (3) old_fn       must read 'absent' (the 7-argument caller-trusting billing_apply_readback is dropped)
---       (4) default_acl  default privileges for objects created by postgres in schema public (must show no anon/authenticated/service_role entry)
+--       (4) default_acl  default privileges for objects created by postgres in schema public and globally (tables: no API-role entry; functions/sequences: see privcheck6.sql)
 -- Compare against docs/operations/privilege-hardening.md ("Expected catalog state"). Any difference means a later migration or manual GRANT changed it.
 SELECT section, name, detail FROM (
   SELECT 1 AS o, 'table_acl' AS section, c.relname::text || ' / ' || r.rolname::text AS name,
@@ -27,7 +27,7 @@ SELECT section, name, detail FROM (
   SELECT 3, 'old_fn', 'billing_apply_readback(7 args)',
          CASE WHEN to_regprocedure('public.billing_apply_readback(text,text,public.subscription_status,timestamptz,numeric,text,uuid)') IS NULL THEN 'absent' ELSE 'PRESENT (caller-trusting version still installed)' END
   UNION ALL
-  SELECT 4, 'default_acl', pg_get_userbyid(d.defaclrole)::text || ' in ' || coalesce(d.defaclnamespace::regnamespace::text, 'all schemas') || ' objtype=' || d.defaclobjtype::text,
+  SELECT 4, 'default_acl', pg_get_userbyid(d.defaclrole)::text || ' in ' || CASE WHEN d.defaclnamespace = 0 THEN 'all schemas' ELSE d.defaclnamespace::regnamespace::text END || ' objtype=' || d.defaclobjtype::text,
          coalesce((SELECT string_agg(pg_get_userbyid(x.grantee) || '=' || x.privilege_type, ',' ORDER BY x.grantee, x.privilege_type) FROM aclexplode(d.defaclacl) x
                     WHERE pg_get_userbyid(x.grantee) IN ('anon','authenticated','service_role')), 'no API-role entries')
     FROM pg_default_acl d WHERE d.defaclnamespace = 'public'::regnamespace OR d.defaclnamespace = 0
