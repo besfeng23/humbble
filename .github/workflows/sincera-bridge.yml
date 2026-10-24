@@ -1,0 +1,28 @@
+name: Sincera secure bridge tests
+on:
+  pull_request:
+    paths:
+      - 'api/sincera/**'
+      - 'scripts/ops/sincera-bridge.test.mjs'
+      - '.github/workflows/sincera-bridge.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'api/sincera/**'
+      - 'scripts/ops/sincera-bridge.test.mjs'
+      - '.github/workflows/sincera-bridge.yml'
+permissions:
+  contents: read
+concurrency:
+  group: sincera-bridge-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  read-only-auth-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Run no-secret bridge tests
+        run: node --test scripts/ops/sincera-bridge.test.mjs
