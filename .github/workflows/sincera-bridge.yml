@@ -4,12 +4,14 @@ on:
     paths:
       - 'api/sincera/**'
       - 'scripts/ops/sincera-bridge.test.mjs'
+      - 'scripts/ops/sincera-identity-link.test.mjs'
       - '.github/workflows/sincera-bridge.yml'
   push:
     branches: [main]
     paths:
       - 'api/sincera/**'
       - 'scripts/ops/sincera-bridge.test.mjs'
+      - 'scripts/ops/sincera-identity-link.test.mjs'
       - '.github/workflows/sincera-bridge.yml'
 permissions:
   contents: read
@@ -25,4 +27,4 @@ jobs:
         with:
           persist-credentials: false
       - name: Run no-secret bridge tests
-        run: node --test scripts/ops/sincera-bridge.test.mjs
+        run: node --test scripts/ops/sincera-bridge.test.mjs scripts/ops/sincera-identity-link.test.mjs
