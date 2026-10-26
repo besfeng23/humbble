@@ -52,3 +52,40 @@ afterward.
 
 Production rollout remains distinct from this preflight. The exact reviewed
 source migration and test results will form the reviewable rollout candidate.
+
+## Preflight result
+
+The hosted transaction passed all 29 existing pgTAP assertions, including active
+sender success, suspended/blocked denial, no new message or push job on denial,
+unrelated-member behavior, replay idempotency, and restored sending after lifting
+the suspension. The transaction rolled back. Post-rollback checks confirmed no
+fixture accounts or pgTAP installation remained, and the original function MD5
+was restored (`fab88d3d78f14c7d692ba0baeeac2694`). This proves the proposed
+guard works on the hosted schema; the production guard is still unchanged.
+
+The migration SHA256 is
+`8d71e564b5cf7dfe6b72dfc6895e2bccf48bbb6c9cdb264915138912fea6e64e`.
+The executed preflight SQL is retained with the evidence, including its exact
+precondition, rollback, and cleanup checks. The 20 existing bridge/link Node
+tests also passed on the PR #54 source.
+
+## Remaining concrete gates
+
+- Server-side identity-link settings are absent. Do not install a privileged
+  credential or activate linking before the existing member-session, deletion,
+  retention and two-user acceptance gates are met.
+- Bubble uses Stripe; the repository's billing implementation is PayPal sandbox.
+  A single approved billing authority and verified callback path are required
+  before payment activation. No provider was selected or activated here.
+- The Supabase organization is Free. Official documentation limits native
+  leaked-password protection to Pro and above. No paid upgrade was initiated.
+- A fresh Gemini review was attempted through its existing Vault-backed broker.
+  The provider returned 403: its free tier is unavailable for this project and
+  billing must be enabled. No model verdict was produced and no billing changed.
+- The current native Memory bridge supports real_life operations, but no active
+  Sincera/Humbble project binding exists. Do not bypass project grants or write
+  these operational facts into the AU namespace. The source evidence is retained
+  here until an authorized project binding/write path is available.
+
+Exact evidence and limitations are in
+[the verification record](../evidence/sincera-alignment-repair-20261027.json).
