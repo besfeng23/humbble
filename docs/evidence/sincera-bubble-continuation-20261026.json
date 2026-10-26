@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-10-26",
+  "appname": "sincera",
+  "app_version": "test",
+  "branch_display": "Main",
+  "requested_connector": "Bubble.io",
+  "authority": "Development changes only; no Live deployment, member linking, migration, billing activation or retention change.",
+  "rollback": {
+    "savepoint_timestamp": 1793005377565,
+    "transactions": {
+      "native_session_creation": "1793005425403x853987650849828700",
+      "health_action_creation": "1793005578542x183735457790257250",
+      "health_action_initialization": "1793005616361x627175554476796900",
+      "admin_health_ui": "1793005900857x847916281672259200",
+      "copy_reorder": "1793006020303x270986877965756700",
+      "session_activation_gate": "1793006249498x339289031254135900"
+    }
+  },
+  "member_session": {
+    "event_id": "bTGgh",
+    "workflow_name": "sincera_member_session",
+    "method": "POST",
+    "publicly_exposed": false,
+    "authentication": "Native Bubble email/password login, staged for controlled acceptance.",
+    "ignore_privacy_rules": false,
+    "required_parameter_names": [
+      "email",
+      "password"
+    ],
+    "credential_values_stored_in_app_records": false,
+    "login_action": {
+      "id": "bTGgj",
+      "type": "LogIn",
+      "stay_logged_in": false,
+      "remember_email": false
+    },
+    "eligibility_action": {
+      "id": "bTGhL",
+      "type": "LogOut",
+      "condition": "Access removed is yes OR Adult confirmation is no OR email confirmed is no",
+      "verification": "Editor checked; real member and ineligible-member behavior unverified."
+    },
+    "activation_gate": "Keep issuance unexposed until controlled real-session, blocked-account, non-adult, unconfirmed-email, token-lifetime and revocation tests pass."
+  },
+  "member_logout": {
+    "event_id": "bTGgk",
+    "workflow_name": "sincera_member_logout",
+    "method": "POST",
+    "publicly_exposed": true,
+    "authentication": "User & admin",
+    "ignore_privacy_rules": false,
+    "action_id": "bTGgm",
+    "action_type": "LogOut",
+    "scope": "Revoke the caller's current Bubble session; not other users' sessions."
+  },
+  "admin_health": {
+    "page": "admin_dashboard",
+    "section": "Integrations",
+    "group_id": "ad_integ",
+    "button_id": "bTGgy",
+    "status_text_id": "bTGgu",
+    "checked_at_text_id": "bTGgw",
+    "workflow_id": "bTGhA",
+    "error_workflow_id": "bTGhH",
+    "api_collection": "bTGgC",
+    "api_call": "bTGgn",
+    "api_action_type": "apiconnector2-bTGgC.bTGgn",
+    "request_url": "https://humbble-alpha.vercel.app/api/sincera/health",
+    "method": "GET",
+    "authentication": "None; no private member data.",
+    "initial_status": "Not checked",
+    "success_condition": {
+      "status": "ok",
+      "service": "sincera-supabase-bridge"
+    },
+    "success_status": "Vercel and Supabase reachable",
+    "behavior": [
+      "Manual check only; no polling.",
+      "Checking state disables duplicate clicks.",
+      "Unexpected responses remain unavailable/not verified.",
+      "Transport errors produce generic retry guidance.",
+      "Completed checks display a timestamp."
+    ],
+    "scope_note": "Infrastructure reachability only. Bubble retains its member records until a verified cutover."
+  },
+  "verified": {
+    "full_app_issue_check": {
+      "complete": true,
+      "issues": 0,
+      "skipped_nodes": 0,
+      "failed_sections": 0
+    },
+    "health_http_status": 200,
+    "anonymous_logout_http_status": 401,
+    "missing_session_parameters_before_staging_gate": {
+      "http_status": 400,
+      "token_present": false
+    },
+    "admin_anonymous_preview": "Redirected to https://sincera.bubbleapps.io/version-test/join?auth=login",
+    "test_staff_fixtures": "No existing users labelled as test accounts were found; no roles or accounts were changed for testing.",
+    "session_issuance_not_public": {
+      "check": "session_issuance_not_public",
+      "http_status": 404,
+      "denied": true,
+      "token_present": false
+    }
+  },
+  "not_verified": [
+    "Signed-in admin button interaction and responsive rendering of the protected card.",
+    "Valid-member session issuance and ineligible-member rejection.",
+    "Actual bearer revocation after logout.",
+    "Supabase member linkage and migration."
+  ],
+  "preserved": [
+    "Existing member records, privacy rules and sign-in UI.",
+    "Pending legal-review notices and consent controls.",
+    "Existing initialized health data call bTGgD.",
+    "Live application configuration."
+  ],
+  "lessons": [
+    "Use declared API action metadata and initialized response fields for a manual health workflow; do not guess data-source provider references.",
+    "Move an element to change its order; setting order through element properties is rejected. The rejected batch rolled back without partial UI changes.",
+    "Distinguish infrastructure health, editor consistency, authenticated UI acceptance and member-data synchronization."
+  ],
+  "evidence_limit": "Pandora Memory retrieval returned an internal error. This record is a provider-backed development handoff, not an approved production activation.",
+  "reference_documentation": "https://manual.bubble.io/help-guides/integrations/api/the-bubble-api/authentication/as-a-user"
+}
