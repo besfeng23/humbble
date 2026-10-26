@@ -7,7 +7,7 @@ only after a verified cutover; do not claim it is the live source of truth yet.
 
 ## Installed non-destructive components
 
-- Bubble Development `test` backend API workflow
+- Bubble Development `test` and Live backend API workflow (both read back on 2026-10-26)
   `sincera_identity_whoami`: GET, **User & admin**, privacy rules on,
   returns `bubble_user_id`, `adult_eligible`, `access_removed`,
   `email_confirmed`. It is NOT an unauthenticated or administrator-impersonation
@@ -42,9 +42,11 @@ Required Vercel **server-only environment variables**, never EXPO_PUBLIC:
   is needed by this endpoint.** Do not place a member bearer in source control,
   Vercel env vars, screenshots or query strings.
 
-The API is **fail-closed (503)** without these settings. The Bubble workflow
-has only been created in Development; do not enable production linking
-until a separately checked Live workflow exists.
+The API is **fail-closed (503)** without these settings. On 2026-10-26, Vercel
+metadata showed no server-only link key and no `SINCERA_BUBBLE_WHOAMI_URL`.
+The Bubble workflow now exists in both Development and Live, and both reject
+unauthenticated GETs with 401. This supersedes the earlier Development-only
+status; real-member token issuance and positive-session acceptance remain unverified.
 
 ## User linking contract
 
@@ -97,8 +99,8 @@ non-sensitive error code. No PII or bearer values are written to audit data.
    test identities; never create underage production accounts.
 3. Install a **dedicated, rotated Supabase secret key** as a Vercel
    **server-only** variable. Test preview with Bubble development token.
-4. Release the authenticated whoami workflow to Bubble Live only after
-   user-session and privacy acceptance tests. Set production URL accordingly.
+4. Complete real-member user-session and privacy acceptance tests against the
+   existing Live whoami workflow. Then configure the exact production URL.
 5. Run actual dual-user end-to-end login/link, replay, conflict, and
    cross-account RLS tests, plus deletion/recovery support. Existing member
    passwords must not be copied between auth providers.
@@ -106,15 +108,19 @@ non-sensitive error code. No PII or bearer values are written to audit data.
    Supabase becomes authoritative for production profiles, messages, matches,
    payments and referrals. No mass data movement or shadow writes.
 
-### Separate high-priority release blocker: billing callbacks
+### Separate release blocker: verify one billing provider and its callbacks
 
 Bubble Live `sincera_stripe_sync` and `sincera_stripe_renewal`
-still advertise unauthenticated invocation and ignore privacy rules.
-Bubble Development versions have been changed to **Admin only**,
-but Live was intentionally left untouched pending verification of any real
-webhook delivery path. Reconcile the live payment-provider configuration
-and signature handling before production payment/entitlement changes;
-restricting Live to admin without redirecting webhooks can break renewals.
+both report **Admin only** authentication in the 2026-10-26 Live readback;
+both still ignore privacy rules. This supersedes the earlier unauthenticated-Live
+finding, without proving signature verification or actual webhook delivery.
+Bubble's configured API Connector uses Stripe, while this repository includes
+PayPal sandbox billing. Reconcile the intended billing provider and verify
+signed events, entitlements, renewals and refunds before activation. Do not
+change authentication or payment routing without verifying the actual sender.
+
+See [service alignment evidence](sincera-service-alignment.md) for exact resource
+bindings, recovered hosted migrations and current evidence limitations.
 
 ## Documentation
 
