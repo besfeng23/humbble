@@ -16,6 +16,18 @@ Items that must be resolved or consciously accepted by the owner before public l
   draft legal texts (`legal/drafts/terms-of-service.md` 9.1, `deletion-and-export.md`, `docs/legal/review-packet.md`) still describe immediate self-service deletion and must be reconciled by the owner/counsel before launch.
 - **Copy + client hardening (Themis N45-02/04/05/06):** the in-app Privacy Notice section 3 and the settings nav labels no longer promise self-service/permanent deletion "at any time"; they say requests are recorded and handled manually. The idempotency key now uses a CSPRNG (no `Math.random` fallback), the screen checks for a session, and a missing `profiles` row (FK 23503) gets a correct message. The **in-app notice wording still needs Owner/counsel sign-off**, and `legal/drafts/*`, `docs/legal/review-packet.md` (CHK-JRN-14, section 7) and `docs/product/screen-inventory.md` (SCR-19) are **not** changed here (N45-03) and still contradict the app.
 
+- **Sincera identity links (PR #54 review, 2026-10-26):** the recovered, already-hosted
+  `private.bubble_identity_links.supabase_user_id` foreign key uses `ON DELETE RESTRICT`.
+  A future erasure worker must resolve that operational mapping before deleting
+  `auth.users`; otherwise a linked account cannot be erased. There are currently
+  zero hosted mappings, and no erasure worker exists. Keep identity-link activation
+  blocked until an approved mapping-cleanup/retention policy is implemented and
+  tested together with the worker, including retry and legal-hold handling.
+  `private.bubble_identity_link_audit` has no FK and requires a separate approved
+  retention decision. Preserve recovered migration bytes; do not silently switch
+  to cascading deletion before the owner/counsel decision required by
+  `docs/implementation/database-runbook.md` (Retention, account deletion, and legal holds).
+
 ## LB-2 Billing: a service_role key can grant or revoke premium for any user, with no ledger event (Themis P39-01) - HIGH before live PayPal
 Anyone holding the service-role key can, with three calls and the public price list (`billing_register_pending_subscription` -> `billing_record_readback`
 with the plan's price and no event id -> `billing_apply_readback`), create an active premium entitlement for any user **without any `payment_events` row and

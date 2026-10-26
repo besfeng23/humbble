@@ -91,6 +91,11 @@ schema, dependencies and source digests.
    the existing protected credential path; neither is currently configured in Vercel.
 3. Run dual-member, replay, conflict, role-isolation, deletion and recovery acceptance
    before activating identity linking or moving the authoritative member database.
+   The existing mapping FK restricts auth-user deletion; mapping cleanup and the
+   separate audit retention decision must be approved and implemented in the
+   currently missing erasure worker. This is tracked in
+   [LB-1](operations/launch-blockers.md). Preserve the recovered schema until that
+   decision; no automatic cascade or retention rule is introduced here.
 4. Resolve the existing Stripe-versus-PayPal billing choice and prove signed callbacks
    before subscription activation. Live Stripe callbacks now report Admin only;
    the older unauthenticated-Live claim is superseded.

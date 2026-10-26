@@ -104,14 +104,20 @@ non-sensitive error code. No PII or bearer values are written to audit data.
 5. Run actual dual-user end-to-end login/link, replay, conflict, and
    cross-account RLS tests, plus deletion/recovery support. Existing member
    passwords must not be copied between auth providers.
-6. Plan a controlled one-way migration with audit and rollback before
+6. Resolve identity-link cleanup with the erasure worker before activation:
+   the existing mapping FK uses `ON DELETE RESTRICT`, so deleting `auth.users`
+   while a mapping exists will fail. The worker must apply the approved mapping
+   cleanup/retention policy first; audit-row retention is separate. Neither
+   cascading deletion nor a retention period is approved by this source recovery.
+   See LB-1 in [launch blockers](operations/launch-blockers.md).
+7. Plan a controlled one-way migration with audit and rollback before
    Supabase becomes authoritative for production profiles, messages, matches,
    payments and referrals. No mass data movement or shadow writes.
 
 ### Separate release blocker: verify one billing provider and its callbacks
 
 Bubble Live `sincera_stripe_sync` and `sincera_stripe_renewal`
-both report **Admin only** authentication in the 2026-10-26 Live readback;
+both report **Admin-only authentication** in the 2026-10-26 Live readback;
 both still ignore privacy rules. This supersedes the earlier unauthenticated-Live
 finding, without proving signature verification or actual webhook delivery.
 Bubble's configured API Connector uses Stripe, while this repository includes
