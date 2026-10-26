@@ -1,0 +1,45 @@
+{
+  "observed_date": "2026-10-26",
+  "provider": "Supabase",
+  "project": "bthfgwxgusizfjtmcacc",
+  "source": "supabase_migrations.schema_migrations",
+  "normalization": "Original statements joined with two newlines and one final newline.",
+  "hosted_database_modified": false,
+  "files": [
+    {
+      "file": "supabase/migrations/20261025170258_sincera_private_bubble_auth_identity_map.sql",
+      "version": "20261025170258",
+      "name": "sincera_private_bubble_auth_identity_map",
+      "md5": "5d25616ebe5bee88d03de8a4fdcc826c",
+      "sha256": "0ff301da30de3c64aaa135b8ed64599891552268975bb369d28581a4fa519e79"
+    },
+    {
+      "file": "supabase/migrations/20261025170924_sincera_dual_proof_link_activation_guard.sql",
+      "version": "20261025170924",
+      "name": "sincera_dual_proof_link_activation_guard",
+      "md5": "2006174412de433da10d7ed7c928210f",
+      "sha256": "f399174b95f087beb51b7b3a185e4961eab5caca6f774c1e827b04ba58f8634e"
+    },
+    {
+      "file": "supabase/migrations/20261025171922_sincera_verified_dual_session_link_rpc.sql",
+      "version": "20261025171922",
+      "name": "sincera_verified_dual_session_link_rpc",
+      "md5": "c718fa07a002eaf934f7e9398295a9e0",
+      "sha256": "8a5902a400d024c84fa3a9e780e529d4d627e8b4f7493d2b660ecaa02aade7ad"
+    },
+    {
+      "file": "supabase/migrations/20261025171953_sincera_identity_rpc_prevent_concurrent_relink.sql",
+      "version": "20261025171953",
+      "name": "sincera_identity_rpc_prevent_concurrent_relink",
+      "md5": "dc5e3b40a389c34f403e458ec9af022b",
+      "sha256": "40092463ada4fde2f71046ba44a3b6086b2ec4f33ed7ef4bdb4c8320309bc14e"
+    },
+    {
+      "file": "supabase/migrations/20261025172633_sincera_validated_bubble_link_rpc_v2.sql",
+      "version": "20261025172633",
+      "name": "sincera_validated_bubble_link_rpc_v2",
+      "md5": "49318cdb355fc7adb2f876a7af0e7da1",
+      "sha256": "2a541ca6c104871b76e8c742b4be2f3d9ef8f9d141fc04a79e0d9778a76bc7a9"
+    }
+  ]
+}

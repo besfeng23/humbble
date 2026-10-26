@@ -1714,6 +1714,14 @@ export type Database = {
           sender_id: string
         }[]
       }
+      sincera_activate_bubble_link: {
+        Args: {
+          p_bubble_user_id: string
+          p_evidence_reference: string
+          p_supabase_user_id: string
+        }
+        Returns: boolean
+      }
       submit_report: {
         Args: {
           p_category: Database["public"]["Enums"]["report_category"]
