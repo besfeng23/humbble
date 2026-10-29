@@ -33,7 +33,7 @@ export default function PricingScreen() {
     return () => { live = false; };
   }, [session]);
 
-  const priceDisplay = plan ? `${formatPrice(plan.amount, plan.currency)} / month` : "Monthly, in your local currency";
+  const priceDisplay = plan ? `${formatPrice(plan.amount, plan.currency)} / month · price proposal` : "Monthly pricing proposal · not on sale";
 
   const handleSelectReserve = () => {
     if (!session) {
@@ -47,7 +47,7 @@ export default function PricingScreen() {
     <PublicLayout
       testID="scr-02-pricing"
       title="Pricing"
-      subtitle="One monthly plan. Cancel anytime."
+      subtitle="Free membership · Premium proposed"
       showBack
       fallbackHref="/(public)"
       activeNavId="public-pricing"
@@ -63,7 +63,7 @@ export default function PricingScreen() {
               accessibilityRole="header"
               style={[styles.planName, { color: palette.text }]}
             >
-              Humbble Free
+              Sincera Free
             </Text>
             <Text style={[styles.planPrice, { color: palette.text }]}>
               Free
@@ -95,7 +95,7 @@ export default function PricingScreen() {
               accessibilityRole="header"
               style={[styles.planName, { color: palette.text }]}
             >
-              Humbble Premium
+              Sincera Premium · price preview
             </Text>
             <Text
               testID="scr-02-reserve-price"
@@ -106,7 +106,7 @@ export default function PricingScreen() {
             <Text
               style={[styles.planSummary, { color: palette.textSecondary }]}
             >
-              Renews monthly until cancelled. Cancel anytime from Billing.
+              Not on sale. Future plans may renew monthly. Cancel anytime from Billing.
             </Text>
             {PAYMENTS_ARE_TEST_ONLY ? (
               <Text
@@ -118,17 +118,18 @@ export default function PricingScreen() {
             ) : null}
             <Button
               testID="scr-02-reserve-cta"
-              label={
-                session
-                  ? "Continue"
-                  : "Sign In to Subscribe"
-              }
+              label="Not yet on sale"
+              disabled={true}
               variant="primary"
               shape="pill"
               onPress={handleSelectReserve}
             />
           </Card>
         </View>
+
+        <Text testID="scr-02-provider-approval-note" style={[styles.sectionBody, { color: palette.textSecondary }]}>
+          No live Sincera subscriptions are available. Payment-provider approval, verified checkout, and cancellation testing are required before paid plans can launch.
+        </Text>
 
         <Card testID="scr-02-comparison-table" variant="outlined">
           <Text
