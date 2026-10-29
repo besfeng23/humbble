@@ -82,7 +82,6 @@ export default function ConversionLandingScreen() {
   const [previewY, setPreviewY] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [demoStep, setDemoStep] = useState(0);
-  const [previewConsent, setPreviewConsent] = useState(false);
 
   useEffect(() => {
     void captureAttribution(params as Record<string, unknown>, "/");
