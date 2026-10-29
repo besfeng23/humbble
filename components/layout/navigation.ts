@@ -53,7 +53,7 @@ export const PUBLIC_NAV_ITEMS: readonly NavItem[] = [
     id: "public-home",
     label: "Overview",
     href: "/(public)",
-    accessibilityLabel: "Humbble overview landing page",
+    accessibilityLabel: "Sincera overview landing page",
   },
   {
     id: "public-pricing",
