@@ -128,7 +128,7 @@ export default function PricingScreen() {
         </View>
 
         <Text testID="scr-02-provider-approval-note" style={[styles.sectionBody, { color: palette.textSecondary }]}>
-          No live Sincera subscriptions are available. Payment-provider approval, verified checkout, and cancellation testing are required before paid plans can launch.
+          No live Sincera subscriptions are available. Payment-provider approval, secure checkout, and cancellation testing are required before paid plans can launch.
         </Text>
 
         <Card testID="scr-02-comparison-table" variant="outlined">
