@@ -42,8 +42,8 @@ export interface PublicLayoutProps {
 }
 
 export function PublicLayout({
-  title = "Humbble",
-  subtitle = "Intentional connections • Philippines launch preview",
+  title = "Sincera",
+  subtitle = "Intentional dating · 18+ preview",
   showBack = false,
   fallbackHref = "/(public)",
   activeNavId,
@@ -115,7 +115,7 @@ export function PublicLayout({
           ]}
         >
           <Text style={[styles.footerText, { color: palette.textSecondary }]}>
-            Humbble • 18+ Intentional Dating
+            Sincera · 18+ intentional dating
           </Text>
           <View style={styles.footerLinks}>
             <Button
