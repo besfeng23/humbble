@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import {
   ScrollView,
+  Platform,
   StyleSheet,
   Text,
   View,
@@ -21,6 +22,7 @@ import { useAuth } from "@/lib/AuthProvider";
 
 import { ResponsiveNavHeader } from "./ResponsiveNavHeader";
 import { PUBLIC_NAV_ITEMS } from "./navigation";
+import { BubblePublicNav } from "./BubblePublicNav";
 
 export interface PublicLayoutProps {
   /** Page heading in the public header */
@@ -86,17 +88,21 @@ export function PublicLayout({
       accessibilityValue={{ text: `breakpoint-${breakpoint}` }}
       style={[styles.root, { backgroundColor: palette.background }]}
     >
-      <ResponsiveNavHeader
-        testID={`${testID}-header`}
-        title={title}
-        subtitle={subtitle}
-        showBack={showBack}
-        fallbackHref={fallbackHref}
-        navItems={PUBLIC_NAV_ITEMS}
-        activeNavId={activeNavId}
-        rightSlot={ctaButton}
-        reduceMotion={reduceMotion}
-      />
+      {Platform.OS === "web" ? (
+        <BubblePublicNav testID={`${testID}-header`} activeNavId={activeNavId} />
+      ) : (
+        <ResponsiveNavHeader
+          testID={`${testID}-header`}
+          title={title}
+          subtitle={subtitle}
+          showBack={showBack}
+          fallbackHref={fallbackHref}
+          navItems={PUBLIC_NAV_ITEMS}
+          activeNavId={activeNavId}
+          rightSlot={ctaButton}
+          reduceMotion={reduceMotion}
+        />
+      )}
 
       <ScrollView
         testID={`${testID}-scroll`}
@@ -170,7 +176,7 @@ const styles = StyleSheet.create({
   },
   contentColumn: {
     width: "100%",
-    maxWidth: MaxContentWidth.page,
+    maxWidth: 1160,
     alignSelf: "center",
     padding: Spacing.xl,
     gap: Spacing.xl,

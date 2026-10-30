@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { PublicLayout } from "@/components/layout";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { FontFamilies } from "@/constants/Typography";
 
 const steps = [
   ["Create your account", "Sign up with an email and password, confirm your email and adult eligibility, then accept the Terms, Privacy Notice and Community Standards. Your exact birth date stays private."],
@@ -31,8 +32,8 @@ export default function SinceraHowItWorks() {
   </PublicLayout>;
 }
 const styles=StyleSheet.create({
-  intro:{gap:15,paddingVertical:20},kicker:{fontSize:12,letterSpacing:2,fontWeight:"700",color:"#90651F"},heading:{fontFamily:"Georgia",fontSize:43,lineHeight:51,color:"#17362D",maxWidth:800},lead:{fontSize:17,lineHeight:27,color:"#555F56",maxWidth:760},
+  intro:{gap:15,paddingVertical:20},kicker:{fontSize:12,letterSpacing:2,fontWeight:"700",color:"#90651F"},heading:{fontFamily:FontFamilies.editorial,fontSize:43,lineHeight:51,color:"#17362D",maxWidth:800},lead:{fontSize:17,lineHeight:27,color:"#555F56",maxWidth:760},
   grid:{flexDirection:"row",flexWrap:"wrap",gap:14},card:{flexBasis:280,flexGrow:1,borderRadius:17,borderWidth:1,padding:23,gap:13,minHeight:205},
-  number:{fontSize:14,fontWeight:"700",color:"#966C28"},stepTitle:{fontFamily:"Georgia",fontSize:26,lineHeight:31},body:{fontSize:15,lineHeight:24},
+  number:{fontSize:14,fontWeight:"700",color:"#966C28"},stepTitle:{fontFamily:FontFamilies.editorial,fontSize:26,lineHeight:31},body:{fontSize:15,lineHeight:24},
   safety:{padding:25,borderRadius:17,backgroundColor:"#17362D",gap:10},safetyHeading:{fontSize:25,color:"#FCF8F0",fontWeight:"600"},safetyBody:{fontSize:15,color:"#E9E2D3",lineHeight:23},cta:{backgroundColor:"#E7B96A",paddingVertical:16,paddingHorizontal:26,borderRadius:30,minHeight:48,alignSelf:"flex-start"},ctaText:{color:"#193128",fontSize:16,fontWeight:"700"}
 });

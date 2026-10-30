@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { PublicLayout } from "@/components/layout";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { FontFamilies } from "@/constants/Typography";
 import { useAuth } from "@/lib/AuthProvider";
 
 const safetyTips = [
@@ -46,14 +47,14 @@ export default function SinceraSafetyCenter() {
 const styles=StyleSheet.create({
   hero:{backgroundColor:"#17362D",borderRadius:18,padding:27,gap:14},
   eyebrow:{fontSize:12,color:"#E7C78C",fontWeight:"700",letterSpacing:2},
-  title:{fontFamily:"Georgia",fontSize:40,lineHeight:48,color:"#FFF9ED"},
+  title:{fontFamily:FontFamilies.editorial,fontSize:40,lineHeight:48,color:"#FFF9ED"},
   intro:{fontSize:17,lineHeight:25,color:"#E7E5DA"},
   grid:{flexDirection:"row",flexWrap:"wrap",gap:14},
   card:{flexGrow:1,flexBasis:285,padding:21,borderRadius:16,borderWidth:1,gap:10},
-  cardTitle:{fontFamily:"Georgia",fontSize:24,fontWeight:"600"},
+  cardTitle:{fontFamily:FontFamilies.editorial,fontSize:24,fontWeight:"600"},
   copy:{fontSize:15,lineHeight:24},
   helpBox:{backgroundColor:"#17362D",padding:25,borderRadius:16,gap:12},
-  helpTitle:{color:"#FFF9ED",fontFamily:"Georgia",fontSize:27},
+  helpTitle:{color:"#FFF9ED",fontFamily:FontFamilies.editorial,fontSize:27},
   helpText:{color:"#E7E5DA",fontSize:15,lineHeight:24},
   action:{backgroundColor:"#E7B96A",minHeight:48,alignSelf:"flex-start",borderRadius:30,paddingHorizontal:20,paddingVertical:12,justifyContent:"center"},
   actionText:{color:"#193128",fontSize:14,fontWeight:"700"},

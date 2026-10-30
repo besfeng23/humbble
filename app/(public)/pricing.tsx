@@ -6,7 +6,7 @@ import { PublicLayout } from "@/components/layout";
 import { Button, Card } from "@/components/ui";
 import { Colors } from "@/constants/Colors";
 import { Spacing } from "@/constants/Spacing";
-import { Typography } from "@/constants/Typography";
+import { FontFamilies, Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/lib/AuthProvider";
 import { type BillingPlan, PAYMENTS_ARE_TEST_ONLY, TEST_PAYMENTS_NOTICE, countryHintFromLocale, deviceLocale, formatPrice, getBillingPlan } from "@/lib/billing";
@@ -53,6 +53,11 @@ export default function PricingScreen() {
       activeNavId="public-pricing"
     >
       <View style={styles.stack}>
+        <View style={styles.pricingHero}>
+          <Text style={styles.kicker}>PRICING</Text>
+          <Text accessibilityRole="header" style={styles.pricingTitle}>Simple, transparent membership.</Text>
+          <Text style={styles.pricingLead}>Free membership stays available for profile discovery, mutual matches, private conversations and safety tools. Paid tiers are proposed only; no checkout is active.</Text>
+        </View>
         <View style={styles.cardsGrid}>
           <Card
             testID="scr-02-free-card"
@@ -63,15 +68,15 @@ export default function PricingScreen() {
               accessibilityRole="header"
               style={[styles.planName, { color: palette.text }]}
             >
-              Sincera Free
+              FREE MEMBERSHIP
             </Text>
             <Text style={[styles.planPrice, { color: palette.text }]}>
-              Free
+              Free — always
             </Text>
             <Text
               style={[styles.planSummary, { color: palette.textSecondary }]}
             >
-              Discover profiles, send up to 15 likes a day, and message your matches for free.
+              Create and edit your profile · Discover compatible members · Like and match · Message mutual matches · Block and report anyone. Current preview allowance is 15 likes/day; Bubble Live advertises 20 and backend parity is not yet complete.
             </Text>
             <Button
               testID="scr-02-free-cta"
@@ -95,7 +100,7 @@ export default function PricingScreen() {
               accessibilityRole="header"
               style={[styles.planName, { color: palette.text }]}
             >
-              Sincera Premium · price preview
+              Premium price preview · not yet on sale
             </Text>
             <Text
               testID="scr-02-reserve-price"
@@ -160,6 +165,14 @@ export default function PricingScreen() {
             </View>
           ))}
         </Card>
+        <View style={styles.billingNotes}>
+          <Text style={styles.notesTitle}>Payments</Text>
+          <Text style={styles.note}>PayPal online-dating merchant approval and verified live checkout are not complete. No production payment can be taken from this preview.</Text>
+          <Text style={styles.notesTitle}>Billing and renewal</Text>
+          <Text style={styles.note}>Any future plan would display its price, billing period, renewal terms and cancellation steps before payment.</Text>
+          <Text style={styles.notesTitle}>How to cancel</Text>
+          <Text style={styles.note}>Paid subscriptions are not active. When approved, cancellation must be verified with the payment provider, not just reflected in the page.</Text>
+        </View>
       </View>
     </PublicLayout>
   );
@@ -169,6 +182,13 @@ const styles = StyleSheet.create({
   stack: {
     gap: Spacing.lg,
   },
+  pricingHero: { paddingVertical: 18, gap: 12 },
+  kicker: { fontSize: 12, color: "#966B2D", letterSpacing: 1.7, fontWeight: "700" },
+  pricingTitle: { fontFamily: FontFamilies.editorial, fontSize: 48, lineHeight: 54, fontWeight: "600", color: "#17362D" },
+  pricingLead: { fontSize: 17, lineHeight: 26, color: "#536056", maxWidth: 870 },
+  billingNotes: { borderTopWidth: 1, borderTopColor: "#E8DFD3", paddingVertical: 20, gap: 9 },
+  notesTitle: { fontFamily: FontFamilies.editorial, fontSize: 25, color: "#17362D", fontWeight: "600" },
+  note: { color: "#596158", fontSize: 14, lineHeight: 23 },
   sectionTitle: {
     ...Typography.h3,
   },
