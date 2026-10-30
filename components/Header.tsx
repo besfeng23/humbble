@@ -1,4 +1,5 @@
 import React from "react";
+import { FontFamilies } from "@/constants/Typography";
 import { StyleSheet, Text, View } from "react-native";
 
 interface HeaderProp {
@@ -29,8 +30,9 @@ const styles = StyleSheet.create({
   },
   logo: {
     color: "#193329",
-    fontFamily: "Georgia",
-    fontSize: 28,
+    fontFamily: FontFamilies.editorial,
+    fontSize: 40,
+    lineHeight: 46,
     fontWeight: "600",
     letterSpacing: -0.4,
   },
