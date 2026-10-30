@@ -1,7 +1,7 @@
 import { Platform, type TextStyle } from "react-native";
 
 /**
- * Editorial typography scale preserving Humbble's existing visual hierarchy:
+ * Sincera editorials use Cormorant Garamond on web, with native serif fallbacks.
  * - Display / hero titles: 32px bold (ThemedText.title, auth welcome headers)
  * - Section / card titles: 24px bold (PeopleCard name/age, form titles, Header logo)
  * - Subtitles / subheadings: 20px–22px semi-bold/bold (Profile name, Discover sections)
@@ -12,7 +12,7 @@ import { Platform, type TextStyle } from "react-native";
 
 export const FontFamilies = {
   editorial: Platform.select({
-    web: \'"Cormorant Garamond", Georgia, serif\',
+    web: '"Cormorant Garamond", Georgia, serif',
     ios: "Georgia",
     android: "serif",
     default: "serif",
