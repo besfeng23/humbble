@@ -158,7 +158,7 @@ export function DatingLayout({
               {moreOpen ? (
                 <View testID="sincera-more-menu" style={[styles.moreMenu,{backgroundColor:palette.surface,borderColor:palette.border}]}>
                   {[
-                    ["Account settings","/(tabs)/profile/settings"],
+                    ["Account settings","/(tabs)/account-settings"],
                     ["Preferences","/(tabs)/discover/filters"],
                     ["Notifications","/(tabs)/notifications"],
                     ["Subscription","/(paywall)/billing"],

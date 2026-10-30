@@ -31,6 +31,7 @@ export default function TabLayout() {
     <Tabs.Screen name="discover" options={{href:null,title:"Explore"}}/>
     <Tabs.Screen name="discover/[id]" options={{href:null,title:"Member profile"}}/>
     <Tabs.Screen name="discover/filters" options={{href:null,title:"Discovery filters"}}/>
+    <Tabs.Screen name="account-settings" options={{href:null,title:"Account settings"}}/>
     <Tabs.Screen name="notifications" options={{href:null,title:"Notifications"}}/>
     <Tabs.Screen name="profile/settings" options={{href:null,title:"Settings"}}/>
     <Tabs.Screen name="profile/notifications" options={{href:null,title:"Notification settings"}}/>

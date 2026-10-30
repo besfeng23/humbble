@@ -115,6 +115,14 @@
     {
       "source": "/matches",
       "destination": "/index.html"
+    },
+    {
+      "source": "/account-settings",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/account_settings",
+      "destination": "/index.html"
     }
   ]
 }
