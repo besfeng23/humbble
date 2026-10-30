@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text } from 'react-native';
+import { setTrackingConsent } from '@/lib/attribution';
 import renderer, { act } from 'react-test-renderer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import QuizScreen from '@/app/(public)/quiz';
@@ -29,7 +30,7 @@ async function mount() {
   return tree;
 }
 
-beforeEach(async () => { mockPush.mockClear(); mockReplace.mockClear(); mockParams = {}; __resetQuizAnalytics(); await AsyncStorage.clear(); });
+beforeEach(async () => { mockPush.mockClear(); mockReplace.mockClear(); mockParams = {}; __resetQuizAnalytics(); await AsyncStorage.clear(); await setTrackingConsent('allowed'); });
 afterEach(async () => { await act(async () => { mounted.splice(0).forEach((t) => t.unmount()); await Promise.resolve(); }); });
 
 describe('quiz prelander screen', () => {
