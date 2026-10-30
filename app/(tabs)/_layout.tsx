@@ -30,6 +30,7 @@ export default function TabLayout() {
         screenOptions={{
           animation: "shift",
           tabBarActiveTintColor: Colors[scheme].tint,
+          tabBarInactiveTintColor: Colors[scheme].textSecondary,
           headerShown: false,
           tabBarButton: HapticTab,
           tabBarBackground: TabBarBackground,
@@ -53,7 +54,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="discover"
           options={{
-            title: "Discover",
+            title: "Explore",
             tabBarIcon: ({ color }) => (
               <MaterialCommunityIcons
                 name="compass-outline"
@@ -66,7 +67,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="people"
           options={{
-            title: "People",
+            title: "Discover",
             tabBarIcon: ({ color }) => (
               <IconSymbol size={28} name="person.3.fill" color={color} />
             ),
@@ -75,7 +76,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="(chats)"
           options={{
-            title: "Chats",
+            title: "Messages",
             tabBarIcon: ({ color }) => (
               <Ionicons name="chatbubble" size={24} color={color} />
             ),
@@ -84,7 +85,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: "liked You",
+            title: "Likes",
             tabBarIcon: ({ color }) => (
               <Ionicons name="heart" size={24} color={color} />
             ),
