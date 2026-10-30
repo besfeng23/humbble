@@ -33,9 +33,9 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
     slug: "terms-of-service",
     shortLabel: "Terms",
     title: "Terms of Service",
-    effectiveDate: "Effective 20 October 2026",
+    effectiveDate: "DRAFT · pending legal review · 20 October 2026",
     summary:
-      "Governs use of Humbble for adults aged 18 and older in the Philippines initial launch market.",
+      "Draft, unapproved terms for the separate Sincera Preview experience for adults 18 and older; these are not the current Bubble Live terms.",
     sections: [
       {
         heading: "1. Eligibility & 18+ Age Requirement",
@@ -43,7 +43,7 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
       },
       {
         heading: "2. Neutral Dating Platform Positioning",
-        body: "Humbble is a mutual-consent adult dating application. It does not operate as a marriage broker or catalogue service.",
+        body: "Sincera Preview is a mutual-consent adult dating application. It does not operate as a marriage broker or catalogue service.",
       },
       {
         heading: "3. Mutual Messaging & Safety Controls",
@@ -55,7 +55,7 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
     slug: "privacy-notice",
     shortLabel: "Privacy",
     title: "Privacy Notice (RA 10173 / Data Privacy Act)",
-    effectiveDate: "Effective 20 October 2026",
+    effectiveDate: "DRAFT · pending legal review · 20 October 2026",
     summary:
       "Explains how personal data, profile photos, verification status, and pseudonymous analytics are processed and how to exercise export and deletion rights.",
     sections: [
@@ -77,7 +77,7 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
     slug: "community-standards",
     shortLabel: "Community standards",
     title: "Community Standards & Safety Guidelines",
-    effectiveDate: "Effective 20 October 2026",
+    effectiveDate: "DRAFT · pending legal review · 20 October 2026",
     summary:
       "Sets clear rules against harassment, financial solicitation/romance scams, impersonation, non-consensual content, and underage use.",
     sections: [
@@ -95,7 +95,7 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
     slug: "complaints-handling",
     shortLabel: "Help & appeals",
     title: "Safety Help & Appeals",
-    effectiveDate: "Effective 20 October 2026",
+    effectiveDate: "DRAFT · pending legal review · 20 October 2026",
     summary: "How to report a safety concern or appeal a moderation decision.",
     sections: [
       {
@@ -113,17 +113,17 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocumentContent> = {
     slug: "refund-policy",
     shortLabel: "Subscriptions",
     title: "Subscription, Renewal & Cancellation Disclosures",
-    effectiveDate: "Effective 20 October 2026",
+    effectiveDate: "DRAFT · pending legal review · 20 October 2026",
     summary:
-      "Details monthly billing terms for Humbble Reserve (PH ₱599.00/month, US $29.99/month) and 2-click self-service cancellation.",
+      "Draft subscription framework only. There are no Sincera Preview paid memberships available for purchase.",
     sections: [
       {
         heading: "1. Server-Managed Monthly Plans",
-        body: "Humbble Reserve is offered only as a monthly subscription (₱599.00/month in PH). No multi-month lock-in plans are sold.",
+        body: "No paid Sincera membership is currently available. Proposed prices are not offers to sell or charge a customer.",
       },
       {
         heading: "2. Two-Click Cancellation",
-        body: "Cancel renewal anytime in two clicks from the Billing screen. Entitlement remains active until the end of the paid period unless revoked for refund or abuse.",
+        body: "Cancellation and refund terms require legal review and verified payment-provider integration before subscriptions can launch.",
       },
     ],
   },
@@ -152,6 +152,9 @@ export default function LegalDocumentScreen() {
         rawSlug === "privacy-notice" ? "public-privacy" : "public-terms"
       }
     >
+      <Text accessibilityRole="alert" testID="sincera-legal-draft-banner" style={{ color: "#634B1A", backgroundColor: "#FFF3D8", padding: 14, borderRadius: 12, lineHeight: 21 }}>
+        DRAFT – pending legal review. This Sincera Preview policy has not been approved for commercial launch. The existing Bubble Sincera service has separate records and legal notices.
+      </Text>
       <View style={styles.docSwitcher}>
         {Object.values(LEGAL_DOCUMENTS).map((item) => (
           <Button
