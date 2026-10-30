@@ -103,6 +103,14 @@
     {
       "source": "/404",
       "destination": "/index.html"
+    },
+    {
+      "source": "/contact-support",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/index.html"
     }
   ]
 }
