@@ -150,6 +150,7 @@ const styles = StyleSheet.create({
   ghostButtonText: { color: FOREST, fontWeight: "700" },
   card: { borderWidth: 1, borderColor: "#E8E0D3", borderRadius: 18, backgroundColor: "#FFFDFA", padding: 22, gap: 16 },
   notice: { gap: 8 },
+  detail: { fontSize: 14, lineHeight: 21 },
   identityRow: { flexDirection: "row", alignItems: "center", gap: 16 },
   initialAvatar: { width: 82, height: 82, borderRadius: 41, justifyContent: "center", alignItems: "center", backgroundColor: "#EAD9B9" },
   initialText: { color: FOREST, fontSize: 33, fontWeight: "700" },
