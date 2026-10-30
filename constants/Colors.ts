@@ -1,10 +1,10 @@
 /**
  * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * Preserves Humbble's warm editorial bumble-gold (#FFD600 / #FFA600) and deep charcoal (#1A1A1A / #11181C)
+ * Sincera's verified Bubble Live brand: cream #FCF8F0, forest #17362D and warm gold #E7B96A
  * visual direction while enforcing WCAG 2.2 AA contrast ratios (>= 4.5:1 normal text, >= 3.0:1 large text & UI).
  */
 
-const tintColorLight = "#0f0f0e";
+const tintColorLight = "#17362D";
 const tintColorDark = "#fff";
 
 export interface ThemeColorTokens {
@@ -125,33 +125,33 @@ export const BrandPalette = {
 
 export const Colors: { light: ThemeColorTokens; dark: ThemeColorTokens } = {
   light: {
-    text: "#11181C",
-    textSecondary: "#525860",
-    textMuted: "#5C646A",
+    text: "#193329",
+    textSecondary: "#515D52",
+    textMuted: "#625E53",
     textInverse: "#FFFFFF",
-    background: "#fff",
-    surface: "#FFFFFF",
-    surfaceMuted: "#F8F9FA",
-    surfaceElevated: "#FFFFFF",
+    background: "#FCF8F0",
+    surface: "#FFFDFA",
+    surfaceMuted: "#F4EEE5",
+    surfaceElevated: "#FFFDFA",
     tint: tintColorLight,
     icon: "#687076",
     tabIconDefault: "#687076",
     tabIconSelected: tintColorLight,
-    primary: "#FFD600",
-    primaryPressed: "#E6C000",
-    onPrimary: "#1A1A1A",
-    accent: "#FFA600",
-    accentPressed: "#E69500",
-    onAccent: "#1A1A1A",
-    secondary: "#EBEBEB",
-    secondaryPressed: "#DCDCDC",
-    onSecondary: "#1C1C1C",
-    border: "#E9ECEF",
-    borderStrong: "#687076",
+    primary: "#E7B96A",
+    primaryPressed: "#D6A95F",
+    onPrimary: "#193128",
+    accent: "#E7B96A",
+    accentPressed: "#D6A95F",
+    onAccent: "#193128",
+    secondary: "#F3EADB",
+    secondaryPressed: "#EADDC8",
+    onSecondary: "#17362D",
+    border: "#E9E0D3",
+    borderStrong: "#62695F",
     focusRing: "#0A7EA4",
     disabledBackground: "#E9ECEF",
     disabledText: "#5C646A",
-    link: "#0A7EA4",
+    link: "#245746",
     danger: "#C62828",
     dangerSolid: "#C62828",
     onDangerSolid: "#FFFFFF",
