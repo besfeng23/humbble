@@ -6,7 +6,7 @@ import { textContent } from '../test-utils/textContent';
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }), useLocalSearchParams: () => ({}), Redirect: () => null }));
 jest.mock('@/lib/AuthProvider', () => ({ useAuth: () => ({ session: null }) }));
-jest.mock('@/lib/attribution', () => ({ captureAttribution: jest.fn(async () => null) }));
+jest.mock('@/lib/attribution', () => ({ captureAttribution: jest.fn(async () => null), readTrackingConsent: jest.fn(async () => null), setTrackingConsent: jest.fn(async () => true) }));
 jest.mock('@/components/layout', () => { const { View } = require('react-native'); return { PublicLayout: ({ children }: any) => <View>{children}</View> }; });
 
 describe('landing copy', () => {
