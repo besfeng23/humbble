@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/Colors';
-import { getBubbleGridCardWidth } from '@/components/discovery/DiscoveryGrid';
+import { getBubbleGridCardWidth } from '@/lib/sinceraMemberLayout';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { DATING_NAV_ITEMS } from '../navigation';
 

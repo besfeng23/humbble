@@ -5,6 +5,7 @@ import { Colors } from "@/constants/Colors";
 import { FontFamilies } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { getDiscoveryPage, recordSwipe, type DiscoveryCard } from "@/lib/discovery";
+import { getBubbleGridCardWidth } from "@/lib/sinceraMemberLayout";
 
 type Intent = "" | "serious_relationship" | "long_term_dating" | "cultural_connection_and_dating";
 const INTENTS: {label:string;value:Intent}[] = [
@@ -15,11 +16,6 @@ const INTENTS: {label:string;value:Intent}[] = [
 const GREEN="#17362D";
 const pretty=(value:string)=>value.replace(/_/g," ");
 
-/** Account for page gutters and FlatList padding; no phone-width horizontal overflow. */
-export function getBubbleGridCardWidth(viewportWidth:number,columns:number):number {
- const available=Math.max(0,Math.min(viewportWidth-36,1120)-32);
- return Math.max(0,(available-(columns-1)*14)/columns);
-}
 
 export function DiscoveryGrid() {
  const router=useRouter();

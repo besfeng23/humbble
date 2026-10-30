@@ -9,3 +9,9 @@ export function getMemberCardWidth(viewportWidth: number, columns = getMemberCol
   const rail = Math.max(0, Math.min(viewportWidth, 1120) - gutter * 2);
   return Math.max(0, (rail - gap * (columns - 1)) / columns);
 }
+
+/** Available profile-card width inside Bubble's 1120px content rail. */
+export function getBubbleGridCardWidth(viewportWidth: number, columns: number): number {
+  const available = Math.max(0, Math.min(viewportWidth - 36, 1120) - 32);
+  return Math.max(0, (available - (columns - 1) * 14) / columns);
+}
