@@ -2,7 +2,7 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SignupScreen from '@/app/auth/signup';
-import { captureAttribution } from '@/lib/attribution';
+import { captureAttribution, setTrackingConsent } from '@/lib/attribution';
 import { saveQuiz } from '@/lib/quiz';
 
 const mockSignUp = jest.fn(async () => ({ error: null }));
@@ -32,6 +32,7 @@ beforeEach(async () => { mockSignUp.mockClear(); mockParams = {}; await AsyncSto
 
 describe('signup receives quiz answers and keeps attribution', () => {
   it('sends quiz metadata (from q_* params, over the local copy) alongside attribution and consent', async () => {
+    await setTrackingConsent('allowed');
     await captureAttribution({ click_id: 'abc', utm_source: 'fb' }, '/quiz');
     await saveQuiz({ intent: 'serious', age: '30_39', timing: 'no_rush', country: 'NO' });
     mockParams = { q_intent: 'marriage', q_age: '40_49', q_timing: 'now', q_country: 'SE', click_id: 'abc' };
