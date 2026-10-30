@@ -15,7 +15,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useAuth } from "@/lib/AuthProvider";
-import { captureAttribution, extractAttributionParams } from "@/lib/attribution";
+import { captureAttribution, extractAttributionParams, readTrackingConsent, setTrackingConsent, type TrackingConsentChoice } from "@/lib/attribution";
 
 /**
  * Faithful public-page layout from Sincera Bubble Live index, inspected 2026-10-30.
@@ -84,11 +84,30 @@ export default function ConversionLandingScreen() {
   const [previewY, setPreviewY] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [demoStep, setDemoStep] = useState(0);
+  const [trackingChoice, setTrackingChoice] = useState<TrackingConsentChoice | "checking">("checking");
+  const [trackingError, setTrackingError] = useState("");
 
   useEffect(() => {
     void captureAttribution(params as Record<string, unknown>, "/");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    void readTrackingConsent().then(choice => { if (mounted) setTrackingChoice(choice); });
+    return () => { mounted = false; };
+  }, []);
+
+  const chooseTracking = async (choice: "allowed" | "denied") => {
+    const saved = await setTrackingConsent(choice);
+    if (!saved && choice === "allowed") {
+      setTrackingError("This browser could not save your choice. Optional tracking remains off.");
+      return;
+    }
+    setTrackingError("");
+    setTrackingChoice(choice);
+    if (choice === "allowed" && saved) await captureAttribution(params as Record<string, unknown>, "/");
+  };
 
   if (session) return <Redirect href="/(tabs)/people" />;
 
@@ -370,6 +389,7 @@ export default function ConversionLandingScreen() {
               <Pressable accessibilityRole="link" onPress={goSafety}><Text style={styles.footerLink}>Safety</Text></Pressable>
               <Pressable accessibilityRole="link" onPress={goPricing}><Text style={styles.footerLink}>Pricing</Text></Pressable>
               <Pressable accessibilityRole="link" onPress={openQuiz}><Text style={styles.footerLink}>Explore the experience</Text></Pressable>
+              <Pressable accessibilityRole="button" onPress={() => { setTrackingError(""); setTrackingChoice(null); }}><Text style={styles.footerLink}>Tracking choices</Text></Pressable>
             </View>
             <View testID="scr-01-trust-points" style={styles.footerSafety}>
               <Text style={styles.footerDisclaimer}>18+ only. {LANDING_TRUST_POINTS[1]} You can {LANDING_TRUST_POINTS[2].toLowerCase()}</Text>
@@ -379,12 +399,31 @@ export default function ConversionLandingScreen() {
           </View>
         </View>
       </ScrollView>
+      {trackingChoice === null ? <View testID="sincera-consent-banner" style={styles.trackingBanner}>
+        <View style={styles.trackingInner}>
+          <Text style={styles.trackingCopy}>We measure visits and referrals without recording personal details or chat content. Optional attribution is off unless you allow it.</Text>
+          <View style={styles.trackingButtons}>
+            <Pressable accessibilityRole="button" testID="sincera-consent-allow" onPress={() => void chooseTracking("allowed")} style={styles.consentAllow}><Text style={styles.consentAllowText}>Allow</Text></Pressable>
+            <Pressable accessibilityRole="button" testID="sincera-consent-deny" onPress={() => void chooseTracking("denied")} style={styles.consentDeny}><Text style={styles.consentDenyText}>No thanks</Text></Pressable>
+          </View>
+          {trackingError ? <Text accessibilityRole="alert" style={styles.trackingError}>{trackingError}</Text> : null}
+        </View>
+      </View> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: CREAM },
+  trackingBanner: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: "#FFFCF7", borderTopWidth: 1, borderColor: "#E6DCCD", paddingHorizontal: 18, paddingVertical: 14, zIndex: 40, elevation: 8 },
+  trackingInner: { width: "100%", maxWidth: 1160, alignSelf: "center", gap: 10 },
+  trackingCopy: { color: "#354A3E", fontSize: 14, lineHeight: 22 },
+  trackingButtons: { flexDirection: "row", gap: 10, alignItems: "center" },
+  consentAllow: { minHeight: 44, borderRadius: 22, backgroundColor: GREEN, paddingHorizontal: 22, justifyContent: "center" },
+  consentAllowText: { color: "#FFF8EC", fontSize: 14, fontWeight: "700" },
+  consentDeny: { minHeight: 44, borderRadius: 22, borderWidth: 1, borderColor: "#CFC4B4", paddingHorizontal: 20, justifyContent: "center" },
+  consentDenyText: { color: GREEN, fontSize: 14, fontWeight: "700" },
+  trackingError: { color: "#A32C2C", fontSize: 13 },
   scroll: { flex: 1 },
   scrollBody: { flexGrow: 1, backgroundColor: CREAM },
   maxContent: { width: "100%", maxWidth: 1160, alignSelf: "center" },
