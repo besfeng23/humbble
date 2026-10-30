@@ -64,7 +64,7 @@ export default function SigninScreen() {
     } finally { setBusy(false); }
   };
 
-  return <AuthScreen testID="signin-screen" title="Welcome back." subtitle="Sign in to Sincera. Meaningful connections, at your pace.">
+  return <AuthScreen testID="signin-screen" title="Sign in" subtitle="Use your Sincera Preview account to continue.">
     {unavailable ? <AuthNotice testID="auth-unavailable">Sign-in is unavailable in this build</AuthNotice> : null}
     {params.reason === 'reauth' || authMessage === 'Please sign in again.' ? <Text accessibilityRole="alert" style={{ color: palette.textSecondary }}>Please sign in again.</Text> : null}
     {params.reset === 'complete' ? <Text style={{ color: palette.textSecondary }}>Password updated. Sign in with your new password.</Text> : null}
