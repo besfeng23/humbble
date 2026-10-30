@@ -9,7 +9,7 @@ import { Spacing, TouchTargets } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/lib/AuthProvider";
-import { captureAttribution } from "@/lib/attribution";
+import { captureAttribution, readTrackingConsent } from "@/lib/attribution";
 import { countryName, defaultCountryFromLocale } from "@/lib/countries";
 import {
   INITIAL_QUIZ_STATE,
@@ -85,8 +85,9 @@ export default function QuizScreen() {
 
   const goSignup = async () => {
     trackQuizEvent({ event: "quiz_cta_clicked" });
-    const stored = await loadStoredAttributionParams();
-    router.push({ pathname: "/auth/signup", params: buildSignupParams(state.answers, params as Record<string, unknown>, stored) } as any);
+    const allowed = (await readTrackingConsent()) === "allowed";
+    const stored = allowed ? await loadStoredAttributionParams() : {};
+    router.push({ pathname: "/auth/signup", params: buildSignupParams(state.answers, allowed ? params as Record<string, unknown> : {}, stored) } as any);
   };
 
   const summary = [optionLabel("intent", state.answers.intent), optionLabel("age", state.answers.age), state.answers.country ? countryName(state.answers.country, "en") : null]
