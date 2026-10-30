@@ -18,8 +18,10 @@ async function submitSignup() {
   await act(async () => { tree = renderer.create(<SignupScreen />); await Promise.resolve(); });
   const byId = (id: string, prop = 'onPress') => tree.root.findAll((n) => n.props.testID === id && typeof n.props[prop] === 'function')[0];
   await act(async () => {
+    byId('signup-display-name', 'onChangeText').props.onChangeText('Sincera Example');
     byId('signup-email', 'onChangeText').props.onChangeText('a@example.com');
     byId('signup-password', 'onChangeText').props.onChangeText('correct-horse-battery');
+    byId('signup-password-confirm', 'onChangeText').props.onChangeText('correct-horse-battery');
     byId('signup-consent-terms').props.onPress();
   });
   await act(async () => { await byId('signup-submit').props.onPress(); });
