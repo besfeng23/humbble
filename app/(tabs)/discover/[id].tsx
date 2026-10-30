@@ -45,13 +45,13 @@ export default function ProfileInspectorScreen() {
   const decide = async (direction: 'like' | 'pass') => {
     if (!candidate || busy) return;
     setBusy(true); setError('');
-    try { await recordSwipe(candidate.profile_id, direction); router.replace('/(tabs)/discover' as any); }
+    try { await recordSwipe(candidate.profile_id, direction); router.replace('/(tabs)/people' as any); }
     catch (cause) { setError(toFriendlyDiscoveryError(cause).message); }
     finally { setBusy(false); }
   };
   return <AuthGuard mode="protected" redirectTo="/auth/signin" testID="scr-12-guard">
     <View testID="scr-12-profile-inspector" style={[styles.root, { backgroundColor: palette.background }]}>
-      <ResponsiveNavHeader fadeEdge testID="scr-12-header" title="Profile" subtitle="Discovery profile" showBack fallbackHref="/(tabs)/discover" rightSlot={<Pressable testID="scr-12-shield-btn" accessibilityRole="button" accessibilityLabel="Safety: block or report" hitSlop={8} style={[styles.safety, { borderColor: palette.border }]} onPress={() => router.push({ pathname: '/(safety)/report-modal', params: { targetId: candidate?.profile_id ?? candidateId, targetName: candidate?.display_name ?? 'this person', source: 'profile' } } as any)}><Ionicons name="shield-outline" size={16} color={palette.text} /><Text style={[styles.safetyLabel, { color: palette.text }]}>Safety</Text></Pressable>} />
+      <ResponsiveNavHeader fadeEdge testID="scr-12-header" title="Profile" subtitle="Discovery profile" showBack fallbackHref="/(tabs)/people" rightSlot={<Pressable testID="scr-12-shield-btn" accessibilityRole="button" accessibilityLabel="Safety: block or report" hitSlop={8} style={[styles.safety, { borderColor: palette.border }]} onPress={() => router.push({ pathname: '/(safety)/report-modal', params: { targetId: candidate?.profile_id ?? candidateId, targetName: candidate?.display_name ?? 'this person', source: 'profile' } } as any)}><Ionicons name="shield-outline" size={16} color={palette.text} /><Text style={[styles.safetyLabel, { color: palette.text }]}>Safety</Text></Pressable>} />
       {loading ? <View style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Loading profile…</Text></View> : candidate ? <ScrollView contentContainerStyle={styles.content}>
         <ProfileMedia testID="scr-12-media" name={candidate.display_name} age={candidate.age} imageUri={candidate.imageUrl ?? undefined} subtitle={candidate.city_region} verified={candidate.is_verified === true} size="large" />
         <Card testID="scr-12-prompts-card" variant="elevated"><View style={styles.prompts}>
@@ -62,7 +62,7 @@ export default function ProfileInspectorScreen() {
         </View></Card>
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
         <View style={styles.actions}><Button testID="scr-12-pass-btn" label="Pass" variant="secondary" size="lg" shape="pill" style={styles.actionButton} disabled={busy} onPress={() => void decide('pass')} /><Button testID="scr-12-like-btn" label="Like" variant="primary" size="lg" shape="pill" style={styles.actionButton} disabled={busy} onPress={() => void decide('like')} /></View>
-      </ScrollView> : <View style={styles.center}><Text style={[styles.body, { color: palette.text }]}>{error || 'Profile unavailable.'}</Text><Button label="Back to Discover" onPress={() => router.replace('/(tabs)/discover' as any)} /></View>}
+      </ScrollView> : <View style={styles.center}><Text style={[styles.body, { color: palette.text }]}>{error || 'Profile unavailable.'}</Text><Button label="Back to Discover" onPress={() => router.replace('/(tabs)/people' as any)} /></View>}
     </View>
   </AuthGuard>;
 }

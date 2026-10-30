@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { Colors } from "@/constants/Colors";
 import { Spacing, TouchTargets } from "@/constants/Spacing";
@@ -10,6 +10,7 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/lib/AuthProvider";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { isModeratorRole } from "@/components/layout/navigation";
+import { getMemberCardWidth, getMemberColumns } from "@/lib/sinceraMemberLayout";
 
 type MyProfile = {
   display_name: string | null;
@@ -28,6 +29,9 @@ const GOLD = "#E7B96A";
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const photoColumns = getMemberColumns(width);
+  const photoWidth = getMemberCardWidth(width, photoColumns, 12, Spacing.xl);
   const { user, signOut } = useAuth();
   const palette = Colors[useColorScheme() ?? "light"];
   const [profile, setProfile] = useState<MyProfile | null>(null);
@@ -122,7 +126,7 @@ export default function ProfileScreen() {
           </View>
         ) : null}
         <View style={styles.identityRow}>
-          <View style={styles.initialAvatar}><Text style={styles.initialText}>{initial}</Text></View>
+          {myPhotos[0] ? <Image source={{uri:myPhotos[0]}} accessibilityLabel="Your primary profile photo" style={styles.primaryAvatar}/> : <View style={styles.initialAvatar}><Text style={styles.initialText}>{initial}</Text></View>}
           <View style={styles.identityCopy}>
             <Text style={styles.profileName}>{displayName}</Text>
             {location ? <Text style={styles.profileMeta}>{location}</Text> : null}
@@ -145,7 +149,7 @@ export default function ProfileScreen() {
       </View>
       <View style={styles.photoSection}>
         <View style={styles.photoHead}><Text accessibilityRole="header" style={[styles.sectionHeading,{color:palette.text}]}>Your photos</Text><Pressable accessibilityRole="button" onPress={()=>router.push("/(onboarding)/photos-prompts" as any)} style={styles.ghostButton}><Text style={styles.ghostButtonText}>Add a photo</Text></Pressable></View>
-        {myPhotos.length ? <View style={styles.photoGrid}>{myPhotos.map((url,i)=><Image key={i} source={{uri:url}} accessibilityLabel={"Your profile photo "+(i+1)} style={styles.photoThumb} />)}</View>
+        {myPhotos.length ? <View style={styles.photoGrid}>{myPhotos.map((url,i)=><Image key={i} source={{uri:url}} accessibilityLabel={"Your profile photo "+(i+1)} style={[styles.photoThumb,{width:photoWidth}]} />)}</View>
           : <Text style={[styles.lead,{color:palette.textSecondary}]}>Add your first profile photo. You control who can see it; verification is a separate step.</Text>}
         <Text style={[styles.profileMeta,{color:palette.textSecondary}]}>Up to 6 photos. Manage order and privacy through your photo settings.</Text>
       </View>
@@ -196,7 +200,8 @@ const styles = StyleSheet.create({
   notice: { gap: 8 },
   detail: { fontSize: 14, lineHeight: 21 },
   identityRow: { flexDirection: "row", alignItems: "center", gap: 16 },
-  initialAvatar: { width: 82, height: 82, borderRadius: 41, justifyContent: "center", alignItems: "center", backgroundColor: "#EAD9B9" },
+  primaryAvatar: { width: 148, height: 148, borderRadius: 74, backgroundColor: "#EAD9B9" },
+  initialAvatar: { width: 148, height: 148, borderRadius: 74, justifyContent: "center", alignItems: "center", backgroundColor: "#EAD9B9" },
   initialText: { color: FOREST, fontSize: 33, fontWeight: "700" },
   identityCopy: { flex: 1, gap: 5 },
   profileName: { color: FOREST, fontSize: 25, fontWeight: "700", lineHeight: 31 },
@@ -222,7 +227,7 @@ const styles = StyleSheet.create({
   photoSection: { padding: 22, backgroundColor: "#FFFDFA", borderWidth: 1, borderColor: "#E5DBCD", borderRadius: 16, gap: 13 },
   photoHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" },
   photoGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
-  photoThumb: { width: 118, height: 145, borderRadius: 10, backgroundColor: "#EFE5D5" },
+  photoThumb: { height: 240, borderRadius: 12, backgroundColor: "#EFE5D5" },
   safetyNote: { padding: 22, borderRadius: 16, backgroundColor: FOREST, gap: 9 },
   safetyTitle: { color: "#FFFAF0", fontSize: 19, fontWeight: "700" },
   safetyText: { color: "#E8E4D9", fontSize: 14, lineHeight: 22 },

@@ -109,7 +109,7 @@ export function DiscoveryGrid() {
    {!loading?<FlatList key={columns} testID="discovery-browse-results" data={filtered} numColumns={columns}
       columnWrapperStyle={columns>1?{gap:14}:undefined} keyExtractor={item=>item.profile_id}
       contentContainerStyle={styles.gridContent} renderItem={({item})=><View style={[styles.card,{width:cardWidth,backgroundColor:palette.surface,borderColor:palette.border}]} testID={`discovery-grid-profile-${item.profile_id}`}>
-       {item.imageUrl?<Image source={{uri:item.imageUrl}} accessibilityLabel={`Profile photo of ${item.display_name}`} style={styles.photo}/>:<View style={[styles.photo,styles.privatePhoto]}><Text style={styles.privatePhotoLabel}>Photos shared at this member’s pace.</Text></View>}
+       {item.imageUrl?<Image source={{uri:item.imageUrl}} accessibilityLabel={`Profile photo of ${item.display_name}`} style={styles.photo}/>:<View style={[styles.photo,styles.privatePhoto]}><View style={styles.initialAvatar}><Text style={styles.initialAvatarText}>{item.display_name.trim().slice(0,1).toUpperCase() || "S"}</Text></View><Text style={styles.privatePhotoLabel}>Photos shared at this member’s pace.</Text></View>}
        <View style={styles.cardBody}>
          <View style={styles.cardTitleRow}><Text style={[styles.cardTitle,{color:palette.text}]}>{item.display_name}, {item.age}</Text>{item.is_verified?<Text style={styles.verified}>Verified</Text>:null}</View>
          <Text style={styles.meta}>{item.city_region||"Location not shared"}</Text>
@@ -120,7 +120,7 @@ export function DiscoveryGrid() {
            <Pressable accessibilityRole="button" disabled={Boolean(busy)} onPress={()=>void swipe(item,"pass")} style={styles.pass}><Text style={styles.passText}>Pass</Text></Pressable>
            <Pressable accessibilityRole="button" disabled={Boolean(busy)||quota} onPress={()=>void swipe(item,"like")} style={styles.like}><Text style={styles.likeText}>Like</Text></Pressable>
          </View>
-         <Pressable accessibilityRole="button" onPress={()=>router.push({pathname:"/(safety)/report-modal",params:{targetId:item.profile_id,targetName:item.display_name,source:"discovery"}} as any)} style={styles.safetyLink}><Text style={styles.safetyText}>Block or report</Text></Pressable>
+         <View style={styles.safetyRow}><Pressable accessibilityRole="button" onPress={()=>router.push({pathname:"/(safety)/report-modal",params:{targetId:item.profile_id,targetName:item.display_name,source:"discovery"}} as any)} style={styles.safetyLink}><Text style={styles.safetyText}>Block</Text></Pressable><Pressable accessibilityRole="button" onPress={()=>router.push({pathname:"/(safety)/report-modal",params:{targetId:item.profile_id,targetName:item.display_name,source:"discovery"}} as any)} style={styles.safetyLink}><Text style={styles.safetyText}>Report</Text></Pressable></View>
        </View>
      </View>} ListEmptyComponent={!error?<View style={styles.empty}><Text style={styles.emptyTitle}>The right hello hasn't appeared yet.</Text><Text style={styles.filterHelp}>No member profiles match this search yet. Try clearing filters or broadening preferences.</Text><Pressable accessibilityRole="button" style={styles.like} onPress={reset}><Text style={styles.likeText}>Clear my filters</Text></Pressable></View>:null}
      ListFooterComponent={hasMore?<Pressable accessibilityRole="button" disabled={moreBusy} onPress={()=>void load(true)} style={styles.loadMore}><Text style={styles.toolbarText}>{moreBusy?"Loading…":"Show more profiles"}</Text></Pressable>:<Text style={styles.footer}>Sincera · Intentional connections. Adults 18+.</Text>}/>:null}
@@ -139,12 +139,12 @@ const styles=StyleSheet.create({
  notice:{marginHorizontal:16,padding:10,backgroundColor:"#FAEEDB",color:"#594C34",borderRadius:9,fontSize:14},
  error:{padding:15,gap:8},errorText:{color:"#A52F2F",fontSize:14},loading:{padding:25,gap:10,alignItems:"center"},
  gridContent:{paddingHorizontal:16,paddingBottom:35,gap:14},
- card:{borderWidth:1,borderRadius:14,overflow:"hidden",marginBottom:14},photo:{width:"100%",height:255,backgroundColor:"#EAE4D7"},privatePhoto:{alignItems:"center",justifyContent:"center"},privatePhotoLabel:{color:"#667065",textAlign:"center",padding:15,fontSize:13},
+ card:{borderWidth:1,borderRadius:14,overflow:"hidden",marginBottom:14},photo:{width:"100%",height:312,backgroundColor:"#EAE4D7"},privatePhoto:{alignItems:"center",justifyContent:"center",gap:12},initialAvatar:{width:96,height:96,borderRadius:48,backgroundColor:"#EBD9B8",alignItems:"center",justifyContent:"center"},initialAvatarText:{fontFamily:FontFamilies.editorial,fontSize:40,fontWeight:"600",color:GREEN},privatePhotoLabel:{color:"#667065",textAlign:"center",padding:15,fontSize:13},
  cardBody:{padding:15,gap:9},cardTitleRow:{flexDirection:"row",flexWrap:"wrap",alignItems:"center",gap:6},cardTitle:{fontFamily:FontFamilies.editorial,fontSize:24,fontWeight:"600",flexShrink:1},verified:{fontSize:11,color:"#1F5544",backgroundColor:"#DCE8DA",borderRadius:15,overflow:"hidden",paddingHorizontal:8,paddingVertical:4},
  meta:{color:"#536055",fontSize:13,lineHeight:18,textTransform:"capitalize"},viewLink:{minHeight:38,justifyContent:"center"},actionRow:{flexDirection:"row",gap:9},
  pass:{minHeight:44,flex:1,justifyContent:"center",alignItems:"center",borderWidth:1,borderColor:"#D4CBBE",borderRadius:23},passText:{color:GREEN,fontWeight:"700",fontSize:14},
  like:{minHeight:44,flex:1,justifyContent:"center",alignItems:"center",backgroundColor:"#E7B96A",paddingHorizontal:17,borderRadius:23},likeText:{color:GREEN,fontWeight:"700",fontSize:14},
- safetyLink:{minHeight:36,justifyContent:"center"},safetyText:{color:"#62695E",fontSize:12,textDecorationLine:"underline"},
+ safetyRow:{flexDirection:"row",gap:18},safetyLink:{minHeight:36,justifyContent:"center"},safetyText:{color:"#62695E",fontSize:12,textDecorationLine:"underline"},
  empty:{padding:22,backgroundColor:"#FFFCF7",borderRadius:15,gap:12,minHeight:240,justifyContent:"center",alignItems:"flex-start",borderWidth:1,borderColor:"#E7DFD2"},emptyTitle:{color:GREEN,fontFamily:FontFamilies.editorial,fontSize:27,fontWeight:"600"},
  loadMore:{padding:14,alignItems:"center",minHeight:44},footer:{padding:18,color:"#697268",fontSize:12,textAlign:"center"}
 });
