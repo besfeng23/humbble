@@ -15,7 +15,7 @@ Source: inspected Bubble Live (`sincera`), October 30, 2026, compared against Gi
 
 31 web pages, 38 backend workflows, 31 data types, 27 option sets, 5 reusables, 2 plugins (Google and API Connector). Live application also includes three mobile views.
 
-**Status legend**: Implemented (route exists but no visual/functional certification), Partially aligned (design/copy revised in this PR but still requires side-by-side and dual-member tests), Missing (no equivalent independent screen), Security review (privileged or sensitive path requires independent acceptance). Status is intentionally conservative.
+**Latest addition (October 30, 2026):** `20261030000001_sincera_member_operations.sql` adds member-notification events and idempotent, rate-limited member support tickets with owner-only read policies. Remote migration applied to the separate `humbble` Supabase project (not Bubble Live). GitHub includes an isolated two-account pgTAP suite; consult exact-head CI for results.\n\n**Status legend**: Implemented (route exists but no visual/functional certification), Partially aligned (design/copy revised in this PR but still requires side-by-side and dual-member tests), Missing (no equivalent independent screen), Security review (privileged or sensitive path requires independent acceptance). Status is intentionally conservative.
 
 | Bubble Live page | GitHub Expo route / counterpart | Current parity |
 |---|---|---|
@@ -35,15 +35,15 @@ Source: inspected Bubble Live (`sincera`), October 30, 2026, compared against Gi
 | privacy_settings | `app/(tabs)/profile/settings.tsx` and data requests | Incomplete: do not claim unsupported consent or privacy options work |
 | membership | `app/(paywall)/billing.tsx` and `upgrade.tsx` | Blocked by provider/legal acceptance; no Live Sincera charge |
 | pricing | `app/(public)/pricing.tsx` | Partially aligned: Sincera brand, proposals, paid CTA disabled |
-| notifications | `app/(tabs)/profile/notifications.tsx` | Incomplete: preferences available, Bubble-style member inbox missing |
+| notifications | `app/(tabs)/notifications.tsx` + notification settings | Partially aligned: owner-only in-app activity and read state implemented; historic Bubble notifications not migrated |
 | verification | `app/(onboarding)/verify.tsx` | Security review: provider/manual selfie flow not identical |
 | verification_review | `app/(admin)/moderation/*` | Security review: human reviewer-only authorization and evidence required |
 | safety | `app/(safety)/report-modal.tsx`, blocked users, legal guidance | Incomplete: report/block core exists; standalone safety center missing |
 | moderator_queue | `app/(admin)/moderation/*` | Security review: queues and reviewer decisions not equivalent |
-| admin_dashboard | `app/(admin)/moderation/*` | Missing full overview, account access, plan config, billing audit and affiliate panels |
+| admin_dashboard | `app/(admin)/dashboard.tsx` plus moderation routes | Partially aligned: moderator-only read-only triage snapshot; account access, subscriptions, affiliates, and full audit dashboards remain missing |
 | how_it_works | `app/(public)/how-it-works.tsx` | Partially aligned: 5-step explanation ported |
 | faq_help | `app/(public)/faq.tsx` | Partially aligned: core FAQ ported |
-| contact_support | None; no verified server-side support-request pipeline | Missing |
+| contact_support | `app/(public)/contact-support.tsx` and authenticated Supabase support RPC | Partially aligned: signed-in requests saved and rate-limited; public guest form and staff response workflow remain incomplete |
 | community_guidelines | `app/(public)/legal/[slug].tsx` | Incomplete: legal copy differs and requires counsel approval |
 | terms_of_service | `app/(public)/legal/[slug].tsx` | Incomplete: existing Humbble terms must **not** be represented as Sincera approved legal terms |
 | privacy_policy | `app/(public)/legal/[slug].tsx` | Incomplete: legal policy + retention review required |
@@ -76,6 +76,6 @@ Bubble Live currently represents itself as a real-member dating product, and its
 
 ## Release gate
 
-**NO-GO for changing `sincera.chat` DNS, merging as a production replacement, bulk migrating members, enabling live payments, or enabling fictional human/AI operators** until the above rows and flows have actual evidence. A Vercel READY state and 0 Bubble editor issues do not demonstrate secure functional parity.
+**NO-GO for changing `sincera.chat` DNS, merging as a production replacement, bulk migrating members, enabling live payments, or enabling fictional human/AI operators** until the above rows and flows have actual evidence. A Vercel READY state, passing unit tests and 0 Bubble editor issues do not demonstrate full secure functional parity. Migration ledger versions for the connected `humbble` project also differ from the repository's numbered SQL filenames; reconcile history before using automated schema promotion.
 
 Full parity requires desktop and phone screenshots from Bubble Live vs exact-head Expo Preview at identical viewport sizes; responsive screenshot diffs; all field labels and error states; accessibility/touch checks; QA using two authorized accounts; and approved data/identity cutover with rollback proof.
