@@ -62,6 +62,12 @@ export const PUBLIC_NAV_ITEMS: readonly NavItem[] = [
     accessibilityLabel: "How Sincera works",
   },
   {
+    id: "public-contact",
+    label: "Contact",
+    href: "/(public)/contact-support",
+    accessibilityLabel: "Sincera contact and support",
+  },
+  {
     id: "public-faq",
     label: "Help & FAQ",
     href: "/(public)/faq",
@@ -197,6 +203,12 @@ export const SETTINGS_NAV_ITEMS: readonly NavItem[] = [
 ] as const;
 
 export const MODERATION_NAV_ITEMS: readonly NavItem[] = [
+  {
+    id: "moderation-dashboard",
+    label: "Overview",
+    href: "/(admin)/dashboard",
+    accessibilityLabel: "Trust and safety operations overview",
+  },
   {
     id: "moderation-queue",
     label: "Moderation queue",
