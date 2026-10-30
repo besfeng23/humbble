@@ -99,37 +99,13 @@ export const PUBLIC_NAV_ITEMS: readonly NavItem[] = [
   },
 ] as const;
 
+/** Bubble Live Sincera header ordering, October 30, 2026. Do not substitute Explore for Matches. */
 export const DATING_NAV_ITEMS: readonly NavItem[] = [
-  {
-    id: "dating-people",
-    label: "Discover",
-    href: "/(tabs)/people",
-    accessibilityLabel: "People swipe deck",
-  },
-  {
-    id: "dating-discover",
-    label: "Explore",
-    href: "/(tabs)/discover",
-    accessibilityLabel: "Discover recommendations",
-  },
-  {
-    id: "dating-likes",
-    label: "Likes",
-    href: "/(tabs)",
-    accessibilityLabel: "Liked You incoming likes",
-  },
-  {
-    id: "dating-chats",
-    label: "Messages",
-    href: "/(tabs)/(chats)",
-    accessibilityLabel: "Chats and active matches",
-  },
-  {
-    id: "dating-profile",
-    label: "Profile",
-    href: "/(tabs)/profile",
-    accessibilityLabel: "Your profile and settings",
-  },
+  { id: "dating-people", label: "Discover", href: "/(tabs)/people", accessibilityLabel: "Discover people" },
+  { id: "dating-likes", label: "Likes", href: "/(tabs)", accessibilityLabel: "Likes" },
+  { id: "dating-matches", label: "Matches", href: "/(tabs)/matches", accessibilityLabel: "Your mutual matches" },
+  { id: "dating-chats", label: "Messages", href: "/(tabs)/(chats)", accessibilityLabel: "Messages" },
+  { id: "dating-profile", label: "Profile", href: "/(tabs)/profile", accessibilityLabel: "Your profile" },
 ] as const;
 
 export const ONBOARDING_STEP_ITEMS: readonly (NavItem & { step: number })[] = [

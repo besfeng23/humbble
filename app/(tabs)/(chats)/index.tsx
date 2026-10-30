@@ -26,10 +26,10 @@ export default function Chats() {
   useEffect(() => { void load(); }, [load]);
   return <AuthGuard mode="protected" redirectTo="/auth/signin" testID="chats-list-guard">
     <View style={[styles.root, { backgroundColor: palette.background }]} testID="scr-15-chats-inbox">
-      <ResponsiveNavHeader fadeEdge title="Messages" subtitle="Your mutual connections, all in one place." />
+      <Text style={styles.kicker}>YOUR CONVERSATIONS</Text><ResponsiveNavHeader fadeEdge title="Conversations worth having." subtitle="Your mutual connections, all in one place." />
       {loading ? <View style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Loading conversations…</Text></View> :
         error ? <View style={styles.center}><Text style={[styles.message, { color: palette.text }]}>{error}</Text><Pressable onPress={() => void load()}><Text style={styles.link}>Try again</Text></Pressable></View> :
-        items.length === 0 ? <View style={styles.center}><Text style={[styles.heading, { color: palette.text }]}>No conversations yet</Text><Text style={[styles.message, { color: palette.textSecondary }]}>When you and someone like each other, you can message each other for free.</Text><Pressable onPress={() => router.push('/(tabs)/discover' as any)}><Text style={styles.link}>Explore Discover</Text></Pressable></View> :
+        items.length === 0 ? <View style={styles.center}><Text style={[styles.heading, { color: palette.text }]}>No conversations yet</Text><Text style={[styles.message, { color: palette.textSecondary }]}>When you and someone like each other, you can message each other for free.</Text><Pressable onPress={() => router.push('/(tabs)/people' as any)}><Text style={styles.link}>Start discovering</Text></Pressable></View> :
         <ScrollView contentContainerStyle={styles.list}>{items.map(item => <Pressable key={item.id} testID={`conversation-${item.id}`} accessibilityHint="Long-press for Block, Report, or Unmatch" onLongPress={() => router.push({ pathname: '/(safety)/report-modal', params: { targetId: item.counterpartId, targetName: item.counterpartName, source: 'conversation-list', matched: '1' } } as any)} onPress={() => router.push(`/(tabs)/(chats)/${item.id}` as any)} style={styles.row}>
           <View style={styles.avatar}><Text style={styles.avatarText}>{item.counterpartName.slice(0,1).toUpperCase()}</Text></View>
           <View style={styles.copy}><Text style={[styles.name, { color: palette.text }]}>{item.counterpartName}</Text><Text numberOfLines={1} style={[styles.preview, { color: palette.textSecondary }]}>{item.lastMessage}</Text></View>
@@ -39,7 +39,8 @@ export default function Chats() {
   </AuthGuard>;
 }
 const styles = StyleSheet.create({
-  root: { flex: 1, paddingHorizontal: 20 }, list: { paddingBottom: 30 },
+  root: { flex: 1, paddingHorizontal: 20, paddingTop: 16 },
+  kicker: { color: "#966B31", fontSize: 12, letterSpacing: 1.7, fontWeight: "700", paddingLeft: 20, marginTop: 8 }, list: { paddingBottom: 30 },
   row: { minHeight: 84, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#EAE5DA', alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 20, fontWeight: '600', color: '#24221D' },

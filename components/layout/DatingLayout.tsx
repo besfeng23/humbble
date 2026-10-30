@@ -1,5 +1,7 @@
-import { useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import React, { useState } from "react";
+import { useAuth } from "@/lib/AuthProvider";
+import { FontFamilies } from "@/constants/Typography";
 import {
   Pressable,
   StyleSheet,
@@ -20,8 +22,7 @@ import {
   getMotionConfig,
   useReducedMotion,
 } from "@/constants/Motion";
-import { Radii } from "@/constants/Radii";
-import { HitSlop, Spacing, TouchTargets } from "@/constants/Spacing";
+import { HitSlop, Spacing } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
@@ -52,6 +53,9 @@ export function DatingLayout({
   skipAuthGuard = false,
 }: DatingLayoutProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const { signOut, user } = useAuth();
+  const [moreOpen, setMoreOpen] = useState(false);
   const scheme = useColorScheme() ?? "light";
   const palette = Colors[scheme];
   const reduceMotion = useReducedMotion(reduceMotionProp);
@@ -61,6 +65,15 @@ export function DatingLayout({
   const breakpoint = getBreakpointForWidth(effectiveWidth);
   const isWide = isWidthAtLeast(effectiveWidth, "md");
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const activePath = activeNavId || pathname;
+  const currentTab = (item: typeof DATING_NAV_ITEMS[number]) =>
+    activePath === item.id || activePath === item.href ||
+    (item.id === "dating-likes" && (activePath === "/" || activePath === "/(tabs)")) ||
+    (item.id === "dating-chats" && (pathname.includes("/(chats)") || pathname.startsWith("/chats"))) ||
+    (item.id === "dating-people" && (pathname.includes("/people") || pathname.includes("/discover"))) ||
+    (item.id === "dating-matches" && pathname.includes("/matches")) ||
+    (item.id === "dating-profile" && pathname.includes("/profile"));
+  const logOut = async () => { setMoreOpen(false); await signOut(); router.replace("/auth/signin" as any); };
 
   return (
     <MaybeGuard
@@ -86,16 +99,12 @@ export function DatingLayout({
             ]}
           >
             <View style={styles.desktopNavInner}>
-              <Text
-                style={[styles.brandTitle, { color: palette.text }]}
-                accessibilityRole="header"
-              >
-                sincera·
-              </Text>
+              <Pressable accessibilityRole="link" accessibilityLabel="Sincera homepage" onPress={() => router.push("/(tabs)/people" as any)}>
+                <Text style={[styles.brandTitle, { color: palette.text }]}>sincera</Text>
+              </Pressable>
               <View style={styles.desktopNavLinks}>
                 {DATING_NAV_ITEMS.map((item) => {
-                  const isSelected =
-                    activeNavId === item.id || activeNavId === item.href;
+                  const isSelected = currentTab(item);
                   const isFocused = focusedId === item.id;
 
                   return (
@@ -118,17 +127,9 @@ export function DatingLayout({
                       style={({ pressed }) => [
                         styles.desktopNavPill,
                         {
-                          backgroundColor: isSelected
-                            ? palette.primary
-                            : pressed
-                              ? palette.secondaryPressed
-                              : palette.surfaceMuted,
-                          borderColor: isFocused
-                            ? palette.focusRing
-                            : isSelected
-                              ? palette.primaryPressed
-                              : palette.border,
-                          borderWidth: isFocused ? 2 : 1,
+                          backgroundColor: pressed ? palette.surfaceMuted : "transparent",
+                          borderBottomColor: isSelected ? "#BA9352" : (isFocused ? palette.focusRing : "transparent"),
+                          borderBottomWidth: isSelected || isFocused ? 2 : 0,
                           opacity: pressed ? MotionTransforms.pressedOpacity : 1,
                           transform: [
                             { scale: pressed ? motion.pressedScale : 1 },
@@ -140,10 +141,8 @@ export function DatingLayout({
                         style={[
                           styles.desktopNavText,
                           {
-                            color: isSelected
-                              ? palette.onPrimary
-                              : palette.text,
-                            fontWeight: isSelected ? "700" : "600",
+                            color: isSelected ? "#17362D" : palette.textSecondary,
+                            fontWeight: isSelected ? "700" : "500",
                           },
                         ]}
                       >
@@ -152,7 +151,24 @@ export function DatingLayout({
                     </Pressable>
                   );
                 })}
+                <Pressable testID="sincera-more-menu-toggle" accessibilityRole="button" accessibilityLabel="More account options" onPress={() => setMoreOpen(!moreOpen)} style={styles.moreToggle}>
+                  <Text style={[styles.moreText,{color:palette.text}]}>More {moreOpen ? "▴" : "▾"}</Text>
+                </Pressable>
               </View>
+              {moreOpen ? (
+                <View testID="sincera-more-menu" style={[styles.moreMenu,{backgroundColor:palette.surface,borderColor:palette.border}]}>
+                  {[
+                    ["Account settings","/(tabs)/profile/settings"],
+                    ["Preferences","/(tabs)/discover/filters"],
+                    ["Notifications","/(tabs)/notifications"],
+                    ["Subscription","/(paywall)/billing"],
+                    ["Safety","/(public)/safety"],
+                    ["Help","/(public)/faq"],
+                  ].map(([label,href])=><Pressable key={href} accessibilityRole="link" style={styles.moreItem} onPress={()=>{setMoreOpen(false);router.push(href as any);}}><Text style={[styles.moreText,{color:palette.text}]}>{label}</Text></Pressable>)}
+                  {user?.app_metadata?.role==="moderator" ? <Pressable style={styles.moreItem} accessibilityRole="link" onPress={()=>{setMoreOpen(false);router.push("/(admin)/dashboard" as any)}}><Text style={[styles.moreText,{color:palette.text}]}>Admin</Text></Pressable> : null}
+                  <Pressable style={styles.moreItem} accessibilityRole="button" onPress={()=>void logOut()}><Text style={[styles.moreText,{color:palette.text}]}>Log out</Text></Pressable>
+                </View>
+              ) : null}
             </View>
           </View>
         ) : null}
@@ -174,9 +190,10 @@ const styles = StyleSheet.create({
   },
   desktopNavBar: {
     width: "100%",
+    zIndex: 10,
     borderBottomWidth: 1,
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 8,
   },
   desktopNavInner: {
     width: "100%",
@@ -189,21 +206,25 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     ...Typography.h2,
-    fontFamily: "Georgia",
-    fontSize: 30,
-    fontWeight: "700",
+    fontFamily: FontFamilies.editorial,
+    fontSize: 32,
+    fontWeight: "600",
   },
   desktopNavLinks: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
-    gap: Spacing.sm,
+    gap: 17,
   },
+  moreToggle: { minHeight: 44, paddingHorizontal: 10, justifyContent: "center" },
+  moreMenu: { position: "absolute", right: 0, top: 61, borderWidth: 1, borderRadius: 12, paddingVertical: 7, paddingHorizontal: 8, minWidth: 195, zIndex: 20, elevation: 8 },
+  moreItem: { minHeight: 43, paddingHorizontal: 12, justifyContent: "center" },
+  moreText: { fontSize: 14, fontWeight: "600" },
   desktopNavPill: {
     minHeight: TouchTargets.minimum,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radii.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    borderRadius: 0,
     justifyContent: "center",
     alignItems: "center",
   },
