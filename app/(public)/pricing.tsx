@@ -76,7 +76,7 @@ export default function PricingScreen() {
             <Text
               style={[styles.planSummary, { color: palette.textSecondary }]}
             >
-              Create and edit your profile · Discover compatible members · Like and match · Message mutual matches · Block and report anyone. Current preview allowance is 15 likes/day; Bubble Live advertises 20 and backend parity is not yet complete.
+              Create and edit your profile · Discover compatible members · Like and match · Message mutual matches · Block and report anyone. Free membership currently includes up to 15 likes per day in this preview.
             </Text>
             <Button
               testID="scr-02-free-cta"
@@ -167,11 +167,11 @@ export default function PricingScreen() {
         </Card>
         <View style={styles.billingNotes}>
           <Text style={styles.notesTitle}>Payments</Text>
-          <Text style={styles.note}>PayPal online-dating merchant approval and verified live checkout are not complete. No production payment can be taken from this preview.</Text>
+          <Text style={styles.note}>PayPal online-dating merchant approval and confirmed live checkout are not complete. No production payment can be taken from this preview.</Text>
           <Text style={styles.notesTitle}>Billing and renewal</Text>
           <Text style={styles.note}>Any future plan would display its price, billing period, renewal terms and cancellation steps before payment.</Text>
           <Text style={styles.notesTitle}>How to cancel</Text>
-          <Text style={styles.note}>Paid subscriptions are not active. When approved, cancellation must be verified with the payment provider, not just reflected in the page.</Text>
+          <Text style={styles.note}>Paid subscriptions are not active. When approved, cancellation must be confirmed with the payment provider, not just reflected in the page.</Text>
         </View>
       </View>
     </PublicLayout>
