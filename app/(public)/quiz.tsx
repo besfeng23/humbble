@@ -99,7 +99,7 @@ export default function QuizScreen() {
         <View testID={done ? "quiz-result" : `quiz-step-${state.step + 1}`} style={styles.content}>
           <View style={styles.topBar}>
             {state.step === 0 && !done ? (
-              <Text accessibilityRole="header" style={[Typography.h3, { color: palette.text }]}>Humbble</Text>
+              <Text accessibilityRole="header" style={[Typography.h3, { color: palette.text }]}>sincera·</Text>
             ) : (
               <Pressable testID="quiz-back" accessibilityRole="button" accessibilityLabel="Back" onPress={goBack} hitSlop={8} style={styles.back}>
                 <Text style={[Typography.link, { color: palette.text }]}>{"\u2039  Back"}</Text>
