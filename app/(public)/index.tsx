@@ -121,10 +121,13 @@ export default function ConversionLandingScreen() {
     scroll.current?.scrollTo({ y, animated: true });
     setMenuOpen(false);
   };
-  const openQuiz = () => router.push({
-    pathname: "/quiz",
-    params: extractAttributionParams(params as Record<string, unknown>),
-  } as any);
+  const openQuiz = async () => {
+    const choice = await readTrackingConsent();
+    router.push({
+      pathname: "/quiz",
+      params: choice === "allowed" ? extractAttributionParams(params as Record<string, unknown>) : {},
+    } as any);
+  };
 
   const onHowLayout = (e: LayoutChangeEvent) => setHowY(e.nativeEvent.layout.y);
   const onPreviewLayout = (e: LayoutChangeEvent) => setPreviewY(e.nativeEvent.layout.y);
