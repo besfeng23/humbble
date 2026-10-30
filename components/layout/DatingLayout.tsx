@@ -13,7 +13,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
-  MaxContentWidth,
   getBreakpointForWidth,
   isWidthAtLeast,
 } from "@/constants/Breakpoints";
@@ -119,7 +118,7 @@ export function DatingLayout({
                       key={item.id}
                       testID={`${testID}-nav-${item.id}`}
                       hitSlop={HitSlop.compact}
-                      onPress={() => router.push(item.href as any)}
+                      onPress={() => { setMoreOpen(false); router.push(item.href as any); }}
                       onFocus={() => setFocusedId(item.id)}
                       onBlur={() =>
                         setFocusedId((prev) =>
@@ -159,10 +158,10 @@ export function DatingLayout({
                     </Pressable>
                   );
                 })}
-                <Pressable testID="sincera-more-menu-toggle" accessibilityRole="button" accessibilityLabel="More account options" onPress={() => setMoreOpen(!moreOpen)} style={styles.moreToggle}>
+                <View style={styles.moreAnchor}>
+                <Pressable testID="sincera-more-menu-toggle" accessibilityRole="button" accessibilityLabel="More account options" accessibilityState={{ expanded: moreOpen }} onPress={() => setMoreOpen(!moreOpen)} style={styles.moreToggle}>
                   <Text style={[styles.moreText,{color:palette.text}]}>More {moreOpen ? "▴" : "▾"}</Text>
                 </Pressable>
-              </View>
               {moreOpen ? (
                 <View testID="sincera-more-menu" style={[styles.moreMenu,{backgroundColor:palette.surface,borderColor:palette.border}]}>
                   {[
@@ -177,6 +176,8 @@ export function DatingLayout({
                   <Pressable style={styles.moreItem} accessibilityRole="button" onPress={()=>void logOut()}><Text style={[styles.moreText,{color:palette.text}]}>Log out</Text></Pressable>
                 </View>
               ) : null}
+                </View>
+              </View>
             </View>
           </View>
         ) : null}
@@ -224,8 +225,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 17,
   },
+  moreAnchor: { position: "relative", zIndex: 20 },
   moreToggle: { minHeight: 44, paddingHorizontal: 10, justifyContent: "center" },
-  moreMenu: { position: "absolute", right: 0, top: 61, borderWidth: 1, borderRadius: 12, paddingVertical: 7, paddingHorizontal: 8, minWidth: 195, zIndex: 20, elevation: 8 },
+  moreMenu: { position: "absolute", right: 0, top: 44, borderWidth: 1, borderRadius: 12, paddingVertical: 7, paddingHorizontal: 8, minWidth: 195, zIndex: 20, elevation: 8 },
   moreItem: { minHeight: 43, paddingHorizontal: 12, justifyContent: "center" },
   moreText: { fontSize: 14, fontWeight: "600" },
   desktopNavPill: {
