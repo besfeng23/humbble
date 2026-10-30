@@ -90,7 +90,7 @@ export function DatingLayout({
                 style={[styles.brandTitle, { color: palette.text }]}
                 accessibilityRole="header"
               >
-                Humbble
+                sincera·
               </Text>
               <View style={styles.desktopNavLinks}>
                 {DATING_NAV_ITEMS.map((item) => {
@@ -189,6 +189,8 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     ...Typography.h2,
+    fontFamily: "Georgia",
+    fontSize: 30,
     fontWeight: "700",
   },
   desktopNavLinks: {
