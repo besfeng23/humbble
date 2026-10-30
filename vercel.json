@@ -111,6 +111,10 @@
     {
       "source": "/dashboard",
       "destination": "/index.html"
+    },
+    {
+      "source": "/matches",
+      "destination": "/index.html"
     }
   ]
 }
