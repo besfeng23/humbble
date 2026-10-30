@@ -68,7 +68,7 @@ export default function SignupScreen() {
       setError('Sign-up is temporarily unavailable. Try again.');
     } finally { setBusy(false); }
   };
-  return <AuthScreen testID="signup-screen" title="Start with your story." subtitle="Join Sincera free. Adults 18+ only; your privacy matters.">
+  return <AuthScreen testID="signup-screen" title="Create your free profile" subtitle="Join Sincera free. Adults 18+ only; your privacy matters.">
     {unavailable ? <AuthNotice testID="auth-unavailable">Sign-in is unavailable in this build</AuthNotice> : null}
     <TextField testID="signup-email" label="Email address" value={email} onChangeText={setEmail} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" required />
     <TextField testID="signup-password" label="Password" value={password} onChangeText={setPassword} secureTextEntry textContentType="newPassword" returnKeyType="go" onSubmitEditing={submit} required />
