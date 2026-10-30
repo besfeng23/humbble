@@ -78,25 +78,25 @@ export const PUBLIC_NAV_ITEMS: readonly NavItem[] = [
 export const DATING_NAV_ITEMS: readonly NavItem[] = [
   {
     id: "dating-people",
-    label: "People",
+    label: "Discover",
     href: "/(tabs)/people",
     accessibilityLabel: "People swipe deck",
   },
   {
     id: "dating-discover",
-    label: "Discover",
+    label: "Explore",
     href: "/(tabs)/discover",
     accessibilityLabel: "Discover recommendations",
   },
   {
     id: "dating-likes",
-    label: "Liked You",
+    label: "Likes",
     href: "/(tabs)",
     accessibilityLabel: "Liked You incoming likes",
   },
   {
     id: "dating-chats",
-    label: "Chats",
+    label: "Messages",
     href: "/(tabs)/(chats)",
     accessibilityLabel: "Chats and active matches",
   },
@@ -162,7 +162,7 @@ export const SETTINGS_NAV_ITEMS: readonly NavItem[] = [
     id: "settings-upgrade",
     label: "Premium",
     href: "/(paywall)/upgrade",
-    accessibilityLabel: "Upgrade to Humbble Premium",
+    accessibilityLabel: "Sincera membership and proposed plans",
   },
   {
     id: "settings-billing",
