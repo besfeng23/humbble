@@ -16,6 +16,7 @@ export function AuthScreen({ title, subtitle, children, testID }: { title: strin
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={[styles.scroll, isWide ? { minHeight: height, justifyContent: 'center' } : styles.scrollCompact]} keyboardShouldPersistTaps="handled">
           <View style={styles.content} testID={testID}>
+            <Text style={styles.wordmark}>sincera·</Text>
             <Text accessibilityRole="header" style={[styles.title, { color: palette.text }]}>{title}</Text>
             {subtitle ? <Text style={[styles.subtitle, { color: palette.textSecondary }]}>{subtitle}</Text> : null}
             {children}
@@ -40,8 +41,9 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: Spacing.xl },
   scrollCompact: { justifyContent: 'flex-start', paddingTop: Spacing['3xl'], paddingBottom: Spacing.xl },
-  content: { width: '100%', maxWidth: 440, alignSelf: 'center', gap: Spacing.lg },
-  title: { ...Typography.h1 },
+  content: { width: '100%', maxWidth: 440, alignSelf: 'center', gap: Spacing.lg, padding: 24, backgroundColor: '#FFFDFA', borderRadius: 20, borderWidth: 1, borderColor: '#E9E0D3' },
+  wordmark: { fontFamily: 'Georgia', color: '#17362D', fontSize: 30, fontWeight: '700', marginBottom: 10 },
+  title: { ...Typography.h1, fontFamily: 'Georgia', fontSize: 34, lineHeight: 40 },
   subtitle: { ...Typography.body },
   notice: { borderWidth: 1, borderRadius: 10, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, marginVertical: Spacing.xs },
   disabledOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.18)', borderRadius: 12 },
@@ -64,7 +66,7 @@ export function AuthPrimaryButton({ testID, label, disabled = false, loading = f
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={({ pressed }) => ({
         minHeight: TouchTargets.comfortable,
-        borderRadius: 12,
+        borderRadius: 28,
         paddingHorizontal: Spacing['3xl'],
         paddingVertical: Spacing.xl,
         alignItems: 'center',
