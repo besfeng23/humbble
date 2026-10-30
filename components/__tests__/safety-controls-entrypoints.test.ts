@@ -7,8 +7,8 @@ describe('P3-05 safety controls entry points', () => {
   test('discovery profile opens targeted safety controls', () => {
     const screen = source('app/(tabs)/discover/[id].tsx');
     expect(screen).toContain('scr-12-shield-btn');
-    expect(screen).toMatch(/['\"]\\/\\(safety\\)\\/report-modal['\"]/);
-    expect(screen).toMatch(/targetId:\\s*candidate(?:\\?\\.|\\.)profile_id/);
+    expect(screen).toContain('pathname:"/(safety)/report-modal"');
+    expect(screen).toContain('targetId:candidate.profile_id');
   });
 
   test('mutual-match view exposes safety controls for the matched profile', () => {
