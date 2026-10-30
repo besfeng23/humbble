@@ -79,6 +79,14 @@ Bubble's 38 backend workflows include member session and identity, likes, mutual
 - **Verified product-policy mismatch:** Bubble Live advertises 20 free likes/day, while independent Supabase `public.record_swipe` currently enforces 15. Public preview accurately states 15, and underlying quota must be brought into alignment through reviewed migration and tests before claiming full parity.
 - Authenticated browser screenshot diffs, private original-photo authorization probes, genuine two-member journeys, legal approval, complete administrative and affiliate systems, and Bubble-to-Supabase identity/data migration remain OPEN. Code compilation, route HTTP 200 and test PASS are not substitutes.
 
+## Tracking consent and quiz launch guardrail (verified source decisions)
+
+- Bubble Live displays an optional tracking-choice floating group with **Allow / No thanks**. Preview now uses the same wording and consent choice, persisted per device, with a **Tracking choices** link to reopen it.
+- No optional click/sub ID or UTM attribution is stored, retrieved or forwarded from the landing-to-quiz-to-signup flow unless the user expressly opted in. A denial clears stored attribution; missing/unwritable consent fails closed.
+- Anonymous quiz tracking is separately **OFF by default** behind `EXPO_PUBLIC_QUIZ_ANALYTICS`, and when enabled also requires the same affirmative choice; denial blocks event transport and local session ID creation. DNT / GPC and quiz-specific opt-out remain additive safeguards.
+- The signup terms consent and marketing opt-in remain separate from optional analytics/affiliate attribution. Real Bubble consent rows are not migrated into the independent Supabase Preview.
+- Source UI parity and code/unit tests do **not** certify provider-side logging, complete cookie classification, jurisdiction-specific consent legal approval, or a deletion/withdrawal worker. Review these independently before any production cutover.
+
 ## Product-model discrepancy: fictional entertainment
 
 Owner's planned future model includes non-explicit AI and paid human-operated fictional profiles, separate from genuine member dating. **This feature is not yet implemented in either reviewed Live or Expo product.**
