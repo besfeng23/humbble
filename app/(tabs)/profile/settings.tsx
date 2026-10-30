@@ -60,8 +60,8 @@ export default function PrivacyAndSafetySettingsScreen() {
   return (
     <SettingsLayout
       testID="scr-18-settings"
-      title="Privacy, Notification & Safety Settings"
-      subtitle="Privacy, consent & blocked people"
+      title="Your pace. Your boundaries."
+      subtitle="Control your visibility, notifications and account data."
       fallbackHref="/(tabs)/profile"
       activeNavId="settings-main"
       fadeEdge
@@ -98,14 +98,15 @@ export default function PrivacyAndSafetySettingsScreen() {
                 <Text
                   style={[styles.sublabel, { color: palette.textSecondary }]}
                 >
-                  Optional PII-minimized product analytics. Opting out revokes capture immediately.
+                  Analytics consent is not yet connected in this independent preview. Optional analytics remain off.
                 </Text>
               </View>
               <Switch
                 testID="scr-18-analytics-switch"
                 accessibilityRole="switch"
                 accessibilityLabel="Pseudonymous Analytics Consent"
-                value={analyticsConsent}
+                value={false}
+                disabled={true}
                 onValueChange={setAnalyticsConsent}
               />
             </View>
@@ -113,19 +114,20 @@ export default function PrivacyAndSafetySettingsScreen() {
             <View style={styles.switchRow}>
               <View style={styles.switchInfo}>
                 <Text style={[styles.label, { color: palette.text }]}>
-                  Incognito Discovery Mode (Humbble Reserve)
+                  Incognito discovery (not yet available)
                 </Text>
                 <Text
                   style={[styles.sublabel, { color: palette.textSecondary }]}
                 >
-                  Only appear to people you have already liked.
+                  This preference is not connected to Supabase discovery yet. No privacy change will be applied here.
                 </Text>
               </View>
               <Switch
                 testID="scr-18-incognito-switch"
                 accessibilityRole="switch"
                 accessibilityLabel="Incognito Discovery Mode"
-                value={incognitoEnabled}
+                value={false}
+                disabled={true}
                 onValueChange={(nextValue) => {
                   setIncognitoEnabled(nextValue);
                 }}
@@ -134,13 +136,16 @@ export default function PrivacyAndSafetySettingsScreen() {
 
             <Button
               testID="scr-18-save-btn"
-              label="Save Settings"
+              label="Preview-only options unavailable"
               variant="primary"
               size="md"
+              disabled={true}
               onPress={handleSaveSettings}
             />
           </View>
         </Card>
+
+        <Text style={[styles.sublabel, { color: palette.textSecondary }]}>Profile visibility and country changes save individually. Inactive options above cannot be enabled until their server-side behavior and consent records are verified.</Text>
 
         <Card testID="scr-18-pause-card" variant="outlined">
           <View style={styles.section}>
