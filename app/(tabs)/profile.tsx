@@ -112,11 +112,13 @@ export default function ProfileScreen() {
         <NavCard testID="profile-link-preferences" title="Match preferences" description="Set the age range and intentions that matter to you." onPress={() => router.push("/(tabs)/discover/filters" as any)} />
         <NavCard testID="profile-link-photos" title="Photos & profile" description="Add recent photos and choose how you introduce yourself." onPress={() => router.push("/(onboarding)/photos-prompts" as any)} />
         <NavCard testID="profile-link-settings" title="Privacy & safety" description="Manage visibility, notifications, reporting and blocked members." onPress={() => router.push("/(tabs)/profile/settings" as any)} />
+        <NavCard testID="profile-link-activity" title="Notifications" description="Private activity from mutual matches and messages." onPress={() => router.push("/(tabs)/notifications" as any)} />
+        <NavCard testID="profile-link-support" title="Contact support" description="Securely send a question or report a technical issue." onPress={() => router.push("/(public)/contact-support" as any)} />
         <NavCard testID="profile-link-privacy-delete" title="Your data" description="Request an export or account deletion. Requests are processed manually." onPress={() => router.push("/(tabs)/profile/privacy-delete" as any)} />
         <NavCard testID="profile-link-billing" title="Membership" description="Free matching and conversations remain available. Paid plans are not approved for launch." onPress={() => router.push("/(paywall)/billing" as any)} />
         <NavCard testID="profile-link-verification" title="Verification" description="Optional photo verification, when available, does not guarantee safety." onPress={() => router.push("/(onboarding)/verify" as any)} />
         {isModeratorRole(user) ? (
-          <NavCard testID="profile-link-moderation" title="Moderation" description="Authorized trust and safety review." onPress={() => router.push("/(admin)/moderation" as any)} />
+          <NavCard testID="profile-link-moderation" title="Moderation" description="Authorized trust and safety review." onPress={() => router.push("/(admin)/dashboard" as any)} />
         ) : null}
       </View>
 
