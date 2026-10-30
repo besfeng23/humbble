@@ -66,9 +66,9 @@ export default function SinceraLikes() {
  </ScrollView>;
 }
 const styles=StyleSheet.create({
- root:{flex:1},body:{width:"100%",maxWidth:1020,alignSelf:"center",paddingHorizontal:22,paddingVertical:32,paddingBottom:55,gap:17},
+ root:{flex:1},body:{width:"100%",maxWidth:1120,alignSelf:"center",paddingHorizontal:22,paddingVertical:32,paddingBottom:55,gap:17},
  eyebrow:{fontWeight:"700",fontSize:12,letterSpacing:1.8,color:"#98692B"},
- title:{fontFamily:FontFamilies.editorial,fontSize:46,lineHeight:52,fontWeight:"600"},
+ title:{fontFamily:FontFamilies.editorial,fontSize:36,lineHeight:43,fontWeight:"600"},
  subtitle:{fontSize:15,lineHeight:24,maxWidth:820},
  section:{borderWidth:1,borderRadius:16,padding:23,gap:15},
  sectionTitle:{fontFamily:FontFamilies.editorial,fontSize:30,fontWeight:"600"},

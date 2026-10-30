@@ -47,9 +47,9 @@ export default function MatchesScreen() {
  </ScrollView>;
 }
 const styles=StyleSheet.create({
- root:{flex:1},content:{width:"100%",maxWidth:1040,alignSelf:"center",paddingHorizontal:22,paddingVertical:30,paddingBottom:48,gap:16},
+ root:{flex:1},content:{width:"100%",maxWidth:1120,alignSelf:"center",paddingHorizontal:22,paddingVertical:30,paddingBottom:48,gap:16},
  kicker:{fontSize:12,fontWeight:"700",letterSpacing:1.8,color:"#946B34"},
- title:{fontFamily:FontFamilies.editorial,fontSize:44,lineHeight:50,fontWeight:"600"},
+ title:{fontFamily:FontFamilies.editorial,fontSize:36,lineHeight:43,fontWeight:"600"},
  description:{fontSize:15,lineHeight:24},
  empty:{padding:28,borderRadius:16,borderWidth:1,borderColor:"#E9E0D3",backgroundColor:"#FFFDFA",alignItems:"flex-start",gap:12,marginTop:8},
  emptyTitle:{fontFamily:FontFamilies.editorial,fontSize:29,fontWeight:"600"},

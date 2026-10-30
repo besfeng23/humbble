@@ -42,7 +42,7 @@ export default function AccountSettingsScreen() {
 const styles=StyleSheet.create({
  root:{flex:1},body:{width:"100%",maxWidth:1120,alignSelf:"center",paddingHorizontal:24,paddingVertical:30,paddingBottom:50,gap:16},
  eyebrow:{fontWeight:"700",color:"#966B2F",fontSize:12,letterSpacing:1.7},
- title:{fontFamily:FontFamilies.editorial,fontSize:46,lineHeight:52,fontWeight:"600"},
+ title:{fontFamily:FontFamilies.editorial,fontSize:36,lineHeight:43,fontWeight:"600"},
  lead:{fontSize:16,lineHeight:25,maxWidth:770},
  grid:{flexDirection:"row",flexWrap:"wrap",gap:16},
  card:{borderRadius:15,borderWidth:1,flexGrow:1,flexBasis:310,padding:22,gap:12},

@@ -1,4 +1,5 @@
 import { usePathname, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { useAuth } from "@/lib/AuthProvider";
 import { FontFamilies } from "@/constants/Typography";
@@ -28,6 +29,12 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 
 import { AuthGuard } from "./AuthGuard";
 import { DATING_NAV_ITEMS } from "./navigation";
+
+const NAV_ICONS = {
+  "dating-people": "compass-outline", "dating-likes": "heart-outline",
+  "dating-matches": "people-outline", "dating-chats": "chatbubble-ellipses-outline",
+  "dating-profile": "person-outline",
+} as const;
 
 export interface DatingLayoutProps {
   /** Active tab or route identifier */
@@ -93,14 +100,14 @@ export function DatingLayout({
             style={[
               styles.desktopNavBar,
               {
-                backgroundColor: palette.surface,
+                backgroundColor: palette.background,
                 borderBottomColor: palette.border,
               },
             ]}
           >
             <View style={styles.desktopNavInner}>
               <Pressable accessibilityRole="link" accessibilityLabel="Sincera homepage" onPress={() => router.push("/(tabs)/people" as any)}>
-                <Text style={[styles.brandTitle, { color: palette.text }]}>sincera</Text>
+                <Text style={[styles.brandTitle, { color: "#C9973A" }]}>sincera</Text>
               </Pressable>
               <View style={styles.desktopNavLinks}>
                 {DATING_NAV_ITEMS.map((item) => {
@@ -137,6 +144,7 @@ export function DatingLayout({
                         },
                       ]}
                     >
+                      <Ionicons name={NAV_ICONS[item.id as keyof typeof NAV_ICONS]} size={16} color={isSelected ? "#17362D" : palette.textSecondary} />
                       <Text
                         style={[
                           styles.desktopNavText,
@@ -197,7 +205,7 @@ const styles = StyleSheet.create({
   },
   desktopNavInner: {
     width: "100%",
-    maxWidth: MaxContentWidth.page,
+    maxWidth: 1120,
     alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
@@ -221,6 +229,8 @@ const styles = StyleSheet.create({
   moreItem: { minHeight: 43, paddingHorizontal: 12, justifyContent: "center" },
   moreText: { fontSize: 14, fontWeight: "600" },
   desktopNavPill: {
+    flexDirection: "row",
+    gap: 6,
     minHeight: TouchTargets.minimum,
     paddingHorizontal: 8,
     paddingVertical: 12,
@@ -236,7 +246,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   contentWide: {
-    maxWidth: MaxContentWidth.page,
+    maxWidth: 1120,
     alignSelf: "center",
   },
 });

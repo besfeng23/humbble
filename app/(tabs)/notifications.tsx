@@ -43,9 +43,9 @@ export default function SinceraNotifications() {
   if(failed)setError('Some activity could not be marked read. Retry the remaining items.');
   setBusy(false);
  };
- return <ScrollView testID="sincera-activity" style={{flex:1,backgroundColor:'#FCF8F0'}} contentContainerStyle={{padding:22,gap:16,maxWidth:960,width:'100%',alignSelf:'center'}}>
+ return <ScrollView testID="sincera-activity" style={{flex:1,backgroundColor:'#FCF8F0'}} contentContainerStyle={{padding:22,gap:16,maxWidth:1120,width:'100%',alignSelf:'center'}}>
    <Text style={{fontSize:12,color:'#936B30',letterSpacing:2,fontWeight:'700'}}>NOTIFICATIONS</Text>
-   <Text accessibilityRole="header" style={{fontFamily:FontFamilies.editorial,fontSize:40,color:'#17362D',fontWeight:'600'}}>Good things, quietly delivered.</Text>
+   <Text accessibilityRole="header" style={{fontFamily:FontFamilies.editorial,fontSize:36,color:'#17362D',fontWeight:'600'}}>Good things, quietly delivered.</Text>
    <Text style={{fontSize:15,lineHeight:23,color:'#526057'}}>Matches, likes, messages and updates — without exposing private details.</Text>
    <View style={{flexDirection:'row',flexWrap:'wrap',gap:12}}>
     {items.some(x=>!x.read_at)?<Pressable testID="sincera-notifications-read-all" disabled={busy} accessibilityRole="button" onPress={()=>void markAll()} style={{backgroundColor:'#E7B96A',padding:13,borderRadius:25,alignSelf:'flex-start'}}><Text style={{color:'#17362D',fontWeight:'700'}}>{busy?'Saving…':'Mark all as read'}</Text></Pressable>:null}

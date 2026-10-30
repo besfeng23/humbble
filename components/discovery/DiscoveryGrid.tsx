@@ -15,12 +15,18 @@ const INTENTS: {label:string;value:Intent}[] = [
 const GREEN="#17362D";
 const pretty=(value:string)=>value.replace(/_/g," ");
 
+/** Account for page gutters and FlatList padding; no phone-width horizontal overflow. */
+export function getBubbleGridCardWidth(viewportWidth:number,columns:number):number {
+ const available=Math.max(0,Math.min(viewportWidth-36,1120)-32);
+ return Math.max(0,(available-(columns-1)*14)/columns);
+}
+
 export function DiscoveryGrid() {
  const router=useRouter();
  const palette=Colors[useColorScheme()??"light"];
  const {width}=useWindowDimensions();
  const columns=width>=1020?3:width>=680?2:1;
- const cardWidth=Math.max(220,(Math.min(width-36,1120)-(columns-1)*14)/columns);
+ const cardWidth=getBubbleGridCardWidth(width,columns);
  const [items,setItems]=useState<DiscoveryCard[]>([]);
  const [loading,setLoading]=useState(true);
  const [moreBusy,setMoreBusy]=useState(false);

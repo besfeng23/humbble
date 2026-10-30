@@ -1,20 +1,31 @@
-import { Octicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Header from '@/components/Header';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { DiscoveryFeed } from '@/components/discovery/DiscoveryFeed';
 import { DiscoveryGrid } from '@/components/discovery/DiscoveryGrid';
-import { HitSlop, TouchTargets } from '@/constants/Spacing';
 import { Colors } from '@/constants/Colors';
+import { FontFamilies } from '@/constants/Typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
+/** Bubble Live: bounded editorial header, then progressive member filters and grid. */
 export default function PeopleScreen() {
-  const router = useRouter();
   const params = useLocalSearchParams<{ preview?: string }>();
+  const { width } = useWindowDimensions();
   const palette = Colors[useColorScheme() ?? 'light'];
-  const preview = __DEV__ && ['feed', 'empty', 'quota', 'error', 'match', 'ineligible'].includes(String(params.preview ?? '')) ? String(params.preview) as 'feed' | 'empty' | 'quota' | 'error' | 'match' | 'ineligible' : undefined;
-  const button = () => <Pressable testID="people-filter-btn" hitSlop={HitSlop.default} onPress={() => router.push('/(tabs)/discover/filters' as any)} accessibilityRole="button" accessibilityLabel="Open discovery filters" style={styles.filterButton}><Octicons name="filter" size={22} color={palette.text} /></Pressable>;
-  return <View testID="scr-11-people" style={[styles.container, { backgroundColor: palette.background }]}><Text style={styles.kicker}>MEET WITH INTENTION</Text><Header headerTitle="Discover people who feel right." button={button} /><Text style={[styles.subtitle, { color: palette.textSecondary }]}>Look beyond the first photo. Discover compatible adults and connect when the feeling is mutual.</Text>{preview ? <DiscoveryFeed previewState={preview} /> : <DiscoveryGrid />}</View>;
+  const preview = __DEV__ && ['feed', 'empty', 'quota', 'error', 'match', 'ineligible'].includes(String(params.preview ?? ''))
+    ? String(params.preview) as 'feed' | 'empty' | 'quota' | 'error' | 'match' | 'ineligible'
+    : undefined;
+  return <View testID="scr-11-people" style={[styles.container, { backgroundColor: palette.background }]}>
+    <Text style={styles.kicker}>MEET WITH INTENTION</Text>
+    <Text accessibilityRole="header" style={[styles.title, width < 760 && styles.titleMobile, { color: palette.text }]}>Discover people who feel right.</Text>
+    <Text style={[styles.subtitle, { color: palette.textSecondary }]}>Look beyond the first photo. Discover compatible adults and connect when the feeling is mutual.</Text>
+    {preview ? <DiscoveryFeed previewState={preview} /> : <DiscoveryGrid />}
+  </View>;
 }
-const styles = StyleSheet.create({ container: { flex: 1, paddingHorizontal: 18, paddingTop: 18 }, kicker: { fontSize: 12, letterSpacing: 1.6, fontWeight: "700", color: "#966B31", paddingHorizontal: 8, marginBottom: 9 }, filterButton: { minWidth: TouchTargets.minimum, minHeight: TouchTargets.minimum, justifyContent: 'center', alignItems: 'center' }, subtitle: { fontSize: 14, marginBottom: 12, paddingHorizontal: 8 } });
+const styles = StyleSheet.create({
+  container: { flex: 1, width: '100%', maxWidth: 1120, alignSelf: 'center', paddingTop: 28 },
+  kicker: { fontSize: 12, letterSpacing: 2, fontWeight: '700', color: '#956B35', paddingHorizontal: 18, marginBottom: 8 },
+  title: { fontFamily: FontFamilies.editorial, fontSize: 36, lineHeight: 43, fontWeight: '600', paddingHorizontal: 18, marginBottom: 8 },
+  titleMobile: { fontSize: 30, lineHeight: 35 },
+  subtitle: { fontSize: 16, lineHeight: 24, marginBottom: 16, maxWidth: 760, paddingHorizontal: 18 },
+});
