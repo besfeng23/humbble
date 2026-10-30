@@ -9,6 +9,7 @@ export default function PublicStackLayout() {
       <Stack.Screen name="pricing" />
       <Stack.Screen name="how-it-works" />
       <Stack.Screen name="faq" />
+      <Stack.Screen name="safety" />
       <Stack.Screen name="legal/[slug]" />
     </Stack>
   );
