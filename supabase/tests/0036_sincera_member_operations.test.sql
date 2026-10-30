@@ -28,8 +28,8 @@ INSERT INTO auth.users (id,aud,role,email,created_at,updated_at) VALUES
 INSERT INTO public.profiles (id,display_name,birth_date)
 VALUES ('00000000-0000-0000-0000-00000000f701','Sincera Fixture A',DATE '1990-01-01'),
        ('00000000-0000-0000-0000-00000000f702','Sincera Fixture B',DATE '1990-01-01');
-INSERT INTO public.notification_events(recipient_id,kind,source_id)
-VALUES ('00000000-0000-0000-0000-00000000f701','match','00000000-0000-0000-0000-00000000f704');
+INSERT INTO public.notification_events(id,recipient_id,kind,source_id)
+VALUES ('00000000-0000-0000-0000-00000000f705','00000000-0000-0000-0000-00000000f701','match','00000000-0000-0000-0000-00000000f704');
 
 SET LOCAL ROLE authenticated;
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-00000000f701","role":"authenticated"}';
@@ -43,7 +43,7 @@ SELECT is((SELECT count(*)::INTEGER FROM public.notification_events),1,'A sees t
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-00000000f702","role":"authenticated"}';
 SELECT is((SELECT count(*)::INTEGER FROM public.support_requests),0,'B cannot read A support ticket');
 SELECT is((SELECT count(*)::INTEGER FROM public.notification_events),0,'B cannot read A activity');
-SELECT is(public.mark_my_notification_read((SELECT id FROM public.notification_events WHERE recipient_id='00000000-0000-0000-0000-00000000f702' LIMIT 1)),FALSE,
+SELECT is(public.mark_my_notification_read('00000000-0000-0000-0000-00000000f705'),FALSE,
   'B cannot mark a foreign notification as read');
 RESET ROLE;
 
