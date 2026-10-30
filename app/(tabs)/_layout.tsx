@@ -105,6 +105,7 @@ export default function TabLayout() {
             title: "Discovery Filters",
           }}
         />
+        <Tabs.Screen name="notifications" options={{href:null,title:"Notifications"}} />
         <Tabs.Screen
           name="profile/settings"
           options={{
