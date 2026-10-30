@@ -56,6 +56,18 @@ export const PUBLIC_NAV_ITEMS: readonly NavItem[] = [
     accessibilityLabel: "Sincera overview landing page",
   },
   {
+    id: "public-how",
+    label: "How it works",
+    href: "/(public)/how-it-works",
+    accessibilityLabel: "How Sincera works",
+  },
+  {
+    id: "public-faq",
+    label: "Help & FAQ",
+    href: "/(public)/faq",
+    accessibilityLabel: "Sincera help and frequently asked questions",
+  },
+  {
     id: "public-pricing",
     label: "Pricing",
     href: "/(public)/pricing",
