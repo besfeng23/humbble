@@ -120,6 +120,7 @@ export function PublicLayout({
           <View style={styles.footerLinks}>
             <Button label="How it works" variant="ghost" size="sm" onPress={() => router.push("/(public)/how-it-works" as any)} />
             <Button label="Help & FAQ" variant="ghost" size="sm" onPress={() => router.push("/(public)/faq" as any)} />
+            <Button label="Safety Guide" variant="ghost" size="sm" onPress={() => router.push("/(public)/safety" as any)} />
             <Button
               testID={`${testID}-footer-terms`}
               label="Terms of Service"
