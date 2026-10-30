@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { captureAttribution } from '@/lib/attribution';
+import { captureAttribution, readTrackingConsent, setTrackingConsent } from '@/lib/attribution';
 import {
   QUIZ_OPTOUT_STORAGE_KEY,
   QUIZ_SESSION_STORAGE_KEY,
@@ -34,6 +34,7 @@ beforeEach(async () => {
   __resetQuizAnalytics();
   __setQuizAnalyticsFlag('1'); // analytics are OFF by default; these tests opt in explicitly (see the 'default off' block)
   await AsyncStorage.clear();
+  await setTrackingConsent('allowed');
 });
 afterEach(() => { jest.restoreAllMocks(); });
 
@@ -164,6 +165,22 @@ describe('deriveQuizAttribution / collectQuizAttribution (F-01: slugs only, neve
   it('is empty without any params', async () => { expect(await collectQuizAttribution({})).toEqual({}); });
 });
 
+describe('Sincera consent gate', () => {
+  it('stops events and prevents a quiz session even if the analytics flag is on', async () => {
+    await setTrackingConsent('denied');
+    __resetQuizAnalytics();
+    __setQuizAnalyticsFlag('1');
+    const transport = jest.fn(async () => undefined);
+    __setQuizEventTransport(transport);
+    expect(await readTrackingConsent()).toBe('denied');
+    expect((await initQuizAnalytics()).active).toBe(false);
+    trackQuizEvent({ event: 'quiz_started' });
+    await flush();
+    expect(transport).not.toHaveBeenCalled();
+    expect(await AsyncStorage.getItem(QUIZ_SESSION_STORAGE_KEY)).toBeNull();
+    expect(await collectQuizAttribution({utm_source:'fb'})).toEqual({});
+  });
+});
 describe('trackQuizEvent', () => {
   it('returns synchronously (void) before any network work happens, so it cannot delay the UI', async () => {
     let called = false;
