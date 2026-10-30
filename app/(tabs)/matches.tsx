@@ -34,7 +34,7 @@ export default function MatchesScreen() {
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   return <ScrollView testID="sincera-matches-list" style={[styles.root, { backgroundColor: palette.background }]} contentContainerStyle={styles.content}>
     <Text style={styles.kicker}>YOUR CONNECTIONS</Text>
-    <Text accessibilityRole="header" style={[styles.title, { color: palette.text }]}>The feeling is mutual.</Text>
+    <Text accessibilityRole="header" style={[styles.title, width<760&&styles.titleMobile, { color: palette.text }]}>The feeling is mutual.</Text>
     <Text style={[styles.description, { color: palette.textSecondary }]}>Mutual likes. Private conversations.</Text>
     {loading ? <ActivityIndicator color={GREEN}/> : null}
     {error ? <View style={styles.empty}><Text accessibilityRole="alert" style={{ color: palette.danger }}>{error}</Text><Pressable accessibilityRole="button" style={styles.linkBox} onPress={() => void load()}><Text style={styles.link}>Try again</Text></Pressable></View> : null}
@@ -65,6 +65,7 @@ const styles = StyleSheet.create({
   content: { width: "100%", maxWidth: 1120, alignSelf: "center", paddingHorizontal: 22, paddingTop: 30, paddingBottom: 55, gap: 16 },
   kicker: { fontSize: 12, fontWeight: "700", letterSpacing: 1.8, color: "#956B35" },
   title: { fontFamily: FontFamilies.editorial, fontSize: 36, lineHeight: 43, fontWeight: "600" },
+  titleMobile: { fontSize: 26, lineHeight: 33 },
   description: { fontSize: 15, lineHeight: 23 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 16, alignItems: "stretch", marginTop: 8 },
   card: { borderWidth: 1, borderRadius: 16, padding: 20, gap: 12, alignItems: "flex-start" },

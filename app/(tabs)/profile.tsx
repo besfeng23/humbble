@@ -10,7 +10,7 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/lib/AuthProvider";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { isModeratorRole } from "@/components/layout/navigation";
-import { getMemberCardWidth, getMemberColumns } from "@/lib/sinceraMemberLayout";
+import { getMemberCardWidth } from "@/lib/sinceraMemberLayout";
 
 type MyProfile = {
   display_name: string | null;
@@ -30,7 +30,7 @@ const GOLD = "#E7B96A";
 export default function ProfileScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const photoColumns = getMemberColumns(width);
+  const photoColumns = width >= 1024 ? 3 : 2;
   const photoWidth = getMemberCardWidth(width, photoColumns, 12, Spacing.xl);
   const { user, signOut } = useAuth();
   const palette = Colors[useColorScheme() ?? "light"];
@@ -102,7 +102,7 @@ export default function ProfileScreen() {
       <View style={styles.headingRow}>
         <View style={styles.headingBlock}>
           <Text style={styles.eyebrow}>YOUR PROFILE</Text>
-          <Text accessibilityRole="header" style={[styles.heading, { color: palette.text }]}>Your story.</Text>
+          <Text accessibilityRole="header" style={[styles.heading, width<760&&styles.headingMobile, { color: palette.text }]}>Your story.</Text>
           <Text style={[styles.lead, { color: palette.textSecondary }]}>A thoughtful introduction goes further than a perfect one.</Text>
         </View>
         <Pressable testID="profile-signout-btn" accessibilityRole="button" onPress={() => void signOutNow()} style={styles.ghostButton}>
@@ -192,7 +192,8 @@ const styles = StyleSheet.create({
   headingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 14 },
   headingBlock: { flex: 1, gap: 7, minWidth: 220 },
   eyebrow: { color: "#966C28", fontSize: 12, letterSpacing: 1.7, fontWeight: "700" },
-  heading: { fontFamily: FontFamilies.editorial, fontSize: 38, fontWeight: "600", lineHeight: 43 },
+  heading: { fontFamily: FontFamilies.editorial, fontSize: 36, fontWeight: "600", lineHeight: 43 },
+  headingMobile: { fontSize: 34, lineHeight: 40 },
   lead: { fontSize: 15, lineHeight: 23 },
   ghostButton: { minHeight: TouchTargets.minimum, paddingHorizontal: 18, borderRadius: 25, borderWidth: 1, borderColor: "#C8BDA9", justifyContent: "center" },
   ghostButtonText: { color: FOREST, fontWeight: "700" },

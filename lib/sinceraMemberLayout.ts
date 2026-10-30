@@ -3,7 +3,7 @@
  * are read from Bubble's authenticated page tree (2026-10-31).
  */
 export function getMemberColumns(viewportWidth: number): number {
-  return viewportWidth >= 1020 ? 3 : viewportWidth >= 680 ? 2 : 1;
+  return viewportWidth >= 1024 ? 3 : viewportWidth >= 760 ? 2 : 1;
 }
 export function getMemberCardWidth(viewportWidth: number, columns = getMemberColumns(viewportWidth), gap = 16, gutter = 22): number {
   const rail = Math.max(0, Math.min(viewportWidth, 1120) - gutter * 2);

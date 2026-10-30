@@ -1,9 +1,9 @@
 import { getMemberCardWidth, getMemberColumns } from '../sinceraMemberLayout';
 describe('Sincera Bubble authenticated three-column grid layout', () => {
-  test.each([[390,1],[768,2],[1440,3]])('at %ipx chooses %i columns', (width,expected) => {
+  test.each([[390,1],[700,1],[760,2],[1020,2],[1024,3],[1440,3]])('at %ipx chooses %i columns', (width,expected) => {
     expect(getMemberColumns(width)).toBe(expected);
   });
-  test.each([390,768,1024,1440])('cards fit inside the member page rail at %ipx', width => {
+  test.each([390,700,760,1020,1024,1440])('cards fit inside the member page rail at %ipx', width => {
     const columns=getMemberColumns(width);
     const card=getMemberCardWidth(width,columns);
     const rail=Math.min(width,1120)-44;

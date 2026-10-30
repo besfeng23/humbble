@@ -25,7 +25,7 @@ export default function PeopleScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, width: '100%', maxWidth: 1120, alignSelf: 'center', paddingTop: 28 },
   kicker: { fontSize: 12, letterSpacing: 2, fontWeight: '700', color: '#956B35', paddingHorizontal: 18, marginBottom: 8 },
-  title: { fontFamily: FontFamilies.editorial, fontSize: 36, lineHeight: 43, fontWeight: '600', paddingHorizontal: 18, marginBottom: 8 },
-  titleMobile: { fontSize: 30, lineHeight: 35 },
+  title: { fontFamily: FontFamilies.editorial, fontSize: 50, lineHeight: 54, fontWeight: '600', paddingHorizontal: 18, marginBottom: 8 },
+  titleMobile: { fontSize: 26, lineHeight: 32 },
   subtitle: { fontSize: 16, lineHeight: 24, marginBottom: 16, maxWidth: 760, paddingHorizontal: 18 },
 });

@@ -25,7 +25,7 @@ export function DiscoveryGrid() {
  const router=useRouter();
  const palette=Colors[useColorScheme()??"light"];
  const {width}=useWindowDimensions();
- const columns=width>=1020?3:width>=680?2:1;
+ const columns=width>=1024?3:width>=760?2:1;
  const cardWidth=getBubbleGridCardWidth(width,columns);
  const [items,setItems]=useState<DiscoveryCard[]>([]);
  const [loading,setLoading]=useState(true);
@@ -39,7 +39,8 @@ export function DiscoveryGrid() {
  const [minAge,setMinAge]=useState("");
  const [maxAge,setMaxAge]=useState("");
  const [intent,setIntent]=useState<Intent>("");
- const [filtersOpen,setFiltersOpen]=useState(width>=760);
+ const [filtersOpen,setFiltersOpen]=useState(false);
+ const showFilters=width>=760||filtersOpen;
  const [advancedOpen,setAdvancedOpen]=useState(false);
  const cursor=useRef<string|null>(null);
  const seen=useRef<Set<string>>(new Set());
@@ -82,11 +83,11 @@ export function DiscoveryGrid() {
  <View style={styles.field}><Text style={styles.fieldLabel}>{label}</Text>
  <TextInput accessibilityLabel={label} value={value} onChangeText={onChange} keyboardType={keyboardType} autoCapitalize="none" placeholder={label==="Search profiles"?"Name, interests or region":"Any"} placeholderTextColor="#766E61" style={styles.fieldInput}/></View>;
  return <View testID="sincera-discovery-grid" style={[styles.root,{backgroundColor:palette.background}]}>
-   <View style={styles.filterHeader}>
+   {width<760?<View style={styles.filterHeader}>
      <Pressable accessibilityRole="button" accessibilityState={{expanded:filtersOpen}} onPress={()=>setFiltersOpen(o=>!o)} style={styles.filterToggle}><Text style={styles.filterToggleText}>{filtersOpen?"Hide filters":"Refine my search"}</Text></Pressable>
      <Text style={styles.filterHelp}>Explore people first. Refine the results only when you need to.</Text>
-   </View>
-   {filtersOpen?<View style={styles.filterPanel}>
+   </View>:null}
+   {showFilters?<View style={styles.filterPanel}>
      <View style={styles.filterRow}>
        {input("Search profiles",query,setQuery)}
        {input("Minimum age",minAge,setMinAge,"numeric")}
@@ -100,13 +101,14 @@ export function DiscoveryGrid() {
        <Pressable accessibilityRole="button" onPress={reset} style={styles.textButton}><Text style={styles.toolbarText}>Reset filters</Text></Pressable>
        <Pressable accessibilityRole="button" onPress={()=>router.push("/(tabs)/discover/filters" as any)} style={styles.textButton}><Text style={styles.toolbarText}>Match preferences</Text></Pressable>
      </View>
+     {width<760?<Pressable accessibilityRole="button" onPress={()=>setFiltersOpen(false)} style={styles.filterToggle}><Text style={styles.filterToggleText}>Show matching profiles</Text></Pressable>:null}
      {advancedOpen?<Text style={styles.filterNote}>Country, gender, religion, lifestyle and language filters are not yet connected to server-side discovery. The active controls above filter the profiles already loaded on this page. Set your permanent age range in Match preferences.</Text>:null}
    </View>:null}
    {matched?<View testID="discovery-grid-match" style={styles.matchBox}><Text style={styles.matchText}>The feeling is mutual with {matched.display_name}.</Text><Pressable accessibilityRole="button" onPress={()=>router.push("/(tabs)/matches" as any)}><Text style={styles.matchLink}>Open matches</Text></Pressable><Pressable accessibilityRole="button" onPress={()=>setMatched(null)}><Text style={styles.matchLink}>Keep exploring</Text></Pressable></View>:null}
    {quota?<Text testID="discovery-grid-quota" style={styles.notice}>Your daily like allowance has been reached. You can still view profiles.</Text>:null}
    {error?<View style={styles.error}><Text accessibilityRole="alert" style={styles.errorText}>{error}</Text><Pressable accessibilityRole="button" onPress={()=>void load(false)}><Text style={styles.toolbarText}>Try again</Text></Pressable></View>:null}
    {loading?<View style={styles.loading}><ActivityIndicator color={GREEN}/><Text style={styles.filterHelp}>Finding eligible profiles…</Text></View>:null}
-   {!loading?<FlatList key={columns} testID="discovery-browse-results" data={filtered} numColumns={columns}
+   {!loading&&!(width<760&&showFilters)?<FlatList key={columns} testID="discovery-browse-results" data={filtered} numColumns={columns}
       columnWrapperStyle={columns>1?{gap:14}:undefined} keyExtractor={item=>item.profile_id}
       contentContainerStyle={styles.gridContent} renderItem={({item})=><View style={[styles.card,{width:cardWidth,backgroundColor:palette.surface,borderColor:palette.border}]} testID={`discovery-grid-profile-${item.profile_id}`}>
        {item.imageUrl?<Image source={{uri:item.imageUrl}} accessibilityLabel={`Profile photo of ${item.display_name}`} style={styles.photo}/>:<View style={[styles.photo,styles.privatePhoto]}><View style={styles.initialAvatar}><Text style={styles.initialAvatarText}>{item.display_name.trim().slice(0,1).toUpperCase() || "S"}</Text></View><Text style={styles.privatePhotoLabel}>Photos shared at this member’s pace.</Text></View>}
