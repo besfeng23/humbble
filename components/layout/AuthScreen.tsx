@@ -1,5 +1,6 @@
 import React from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ActivityIndicator, ImageBackground, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
 import { Spacing, TouchTargets } from '@/constants/Spacing';
@@ -15,6 +16,21 @@ export function AuthScreen({ title, subtitle, children, testID }: { title: strin
     <SafeAreaView style={[styles.fill, { backgroundColor: palette.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={[styles.scroll, isWide ? { minHeight: height, justifyContent: 'center' } : styles.scrollCompact]} keyboardShouldPersistTaps="handled">
+          {(testID === 'signup-screen' || testID === 'signin-screen') ? (
+            <ImageBackground
+              source={{ uri: 'https://2e0349a89f9baad1c16427dab8ebef56.cdn.bubble.io/f1793010839656x996345794277444500/sincera-editorial-story-couple.jpg' }}
+              accessibilityLabel="Illustrative editorial photograph, not Sincera members"
+              style={[styles.authMasthead, isWide && styles.authMastheadWide]}
+              imageStyle={styles.authMastheadImage}
+              resizeMode="cover"
+            >
+              <LinearGradient colors={['rgba(14,39,31,.87)', 'rgba(14,39,31,.16)']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.authOverlay}>
+                <Text style={styles.authKicker}>SINCERA / YOUR NEXT CHAPTER</Text>
+                <Text style={styles.authMastheadTitle}>{testID === 'signup-screen' ? 'Start with your story.' : 'Welcome back.'}</Text>
+                <Text style={styles.authMastheadCopy}>{testID === 'signup-screen' ? 'A little about you. A better way to connect.' : 'A thoughtful connection starts with a hello.'}</Text>
+              </LinearGradient>
+            </ImageBackground>
+          ) : null}
           <View style={styles.content} testID={testID}>
             <Text style={styles.wordmark}>sincera·</Text>
             <Text accessibilityRole="header" style={[styles.title, { color: palette.text }]}>{title}</Text>
@@ -39,6 +55,13 @@ export function AuthNotice({ testID, children }: { testID: string; children: Rea
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  authMasthead: { width: '100%', maxWidth: 940, alignSelf: 'center', minHeight: 190, marginBottom: 18, overflow: 'hidden', borderRadius: 18, backgroundColor: '#17362D' },
+  authMastheadWide: { minHeight: 238 },
+  authMastheadImage: { borderRadius: 18 },
+  authOverlay: { flex: 1, paddingHorizontal: 24, paddingVertical: 22, gap: 12, justifyContent: 'center' },
+  authKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.8, color: '#EAD19C' },
+  authMastheadTitle: { fontFamily: 'Georgia', fontSize: 39, lineHeight: 46, fontWeight: '600', color: '#FFFAF0' },
+  authMastheadCopy: { fontSize: 15, color: '#F1EDE0', lineHeight: 23 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: Spacing.xl },
   scrollCompact: { justifyContent: 'flex-start', paddingTop: Spacing['3xl'], paddingBottom: Spacing.xl },
   content: { width: '100%', maxWidth: 440, alignSelf: 'center', gap: Spacing.lg, padding: 24, backgroundColor: '#FFFDFA', borderRadius: 20, borderWidth: 1, borderColor: '#E9E0D3' },
