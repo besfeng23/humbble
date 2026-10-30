@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.18"
-  }
   public: {
     Tables: {
       attribution_networks: {
@@ -748,6 +743,86 @@ export type Database = {
           },
         ]
       }
+      notification_jobs: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          dedupe_key: string
+          id: number
+          last_error_code: string | null
+          locked_at: string | null
+          match_id: string | null
+          message_id: string | null
+          next_attempt_at: string
+          notification_type: string
+          recipient_id: string
+          retry_count: number
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          dedupe_key: string
+          id?: never
+          last_error_code?: string | null
+          locked_at?: string | null
+          match_id?: string | null
+          message_id?: string | null
+          next_attempt_at?: string
+          notification_type: string
+          recipient_id: string
+          retry_count?: number
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          dedupe_key?: string
+          id?: never
+          last_error_code?: string | null
+          locked_at?: string | null
+          match_id?: string | null
+          message_id?: string | null
+          next_attempt_at?: string
+          notification_type?: string
+          recipient_id?: string
+          retry_count?: number
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_jobs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_jobs_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_jobs_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_jobs_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -1371,6 +1446,45 @@ export type Database = {
           },
         ]
       }
+      swipes: {
+        Row: {
+          actor_id: string
+          created_at: string
+          direction: Database["public"]["Enums"]["swipe_direction"]
+          id: string
+          target_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          direction: Database["public"]["Enums"]["swipe_direction"]
+          id?: string
+          target_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          direction?: Database["public"]["Enums"]["swipe_direction"]
+          id?: string
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "swipes_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "swipes_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_consents: {
         Row: {
           created_at: string
@@ -1675,6 +1789,66 @@ export type Database = {
         }
         Returns: undefined
       }
+      moderation_get_case: {
+        Args: { p_report_id: string }
+        Returns: {
+          assigned_moderator_id: string
+          blocks_against_count: number
+          case_id: string
+          case_status: string
+          case_updated_at: string
+          category: string
+          context_summary: string
+          history: Json
+          report_id: string
+          report_status: string
+          reported_at: string
+          reported_display_name: string
+          reported_is_suspended: boolean
+          reported_user_id: string
+          reporter_id: string
+          reports_against_count: number
+          resolution_code: string
+          severity: string
+        }[]
+      }
+      moderation_list_queue: {
+        Args: { p_filter?: string; p_limit?: number; p_offset?: number }
+        Returns: {
+          assigned_to_me: boolean
+          case_id: string
+          case_status: string
+          case_updated_at: string
+          category: string
+          report_id: string
+          report_status: string
+          reported_at: string
+          reported_display_name: string
+          reported_is_suspended: boolean
+          reported_user_id: string
+          reports_against_count: number
+          severity: string
+        }[]
+      }
+      moderation_open_case: {
+        Args: { p_reason: string; p_report_id: string }
+        Returns: string
+      }
+      moderation_take_action: {
+        Args: { p_action: string; p_case_id: string; p_reason: string }
+        Returns: {
+          case_status: string
+          reported_is_suspended: boolean
+        }[]
+      }
+      moderation_transition_case: {
+        Args: {
+          p_case_id: string
+          p_new_status: Database["public"]["Enums"]["moderation_case_status"]
+          p_note: string
+        }
+        Returns: undefined
+      }
       purge_quiz_events: {
         Args: {
           p_batch_size?: number
@@ -1749,14 +1923,6 @@ export type Database = {
           sender_id: string
         }[]
       }
-      sincera_activate_bubble_link: {
-        Args: {
-          p_bubble_user_id: string
-          p_evidence_reference: string
-          p_supabase_user_id: string
-        }
-        Returns: boolean
-      }
       submit_report: {
         Args: {
           p_category: Database["public"]["Enums"]["report_category"]
@@ -1770,6 +1936,7 @@ export type Database = {
         Args: { p_body: string; p_client_request_id: string; p_topic: string }
         Returns: string
       }
+      unblock_user: { Args: { p_target_id: string }; Returns: boolean }
       unblock_user: { Args: { p_target_id: string }; Returns: boolean }
       unmatch: { Args: { p_target_id: string }; Returns: boolean }
       unregister_push_token: { Args: { p_token: string }; Returns: boolean }
@@ -1849,12 +2016,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1878,11 +2045,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1903,11 +2070,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1928,11 +2095,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1945,11 +2112,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2031,3 +2198,4 @@ export const Constants = {
     },
   },
 } as const
+
