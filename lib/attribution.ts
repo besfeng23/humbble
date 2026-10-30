@@ -21,6 +21,8 @@ function nativeStore(): KeyValueStore {
  * sends yet, because each network's postback spec is unconfirmed.
  */
 export const ATTRIBUTION_STORAGE_KEY = 'humbble.attribution.v1';
+export const TRACKING_CONSENT_STORAGE_KEY = 'sincera.optional_tracking_consent.v1';
+export type TrackingConsentChoice = 'allowed' | 'denied' | null;
 export const ATTRIBUTION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 // Generic allowlist covering affiliate networks and self-run trackers (Voluum `cid`,
 // RedTrack `rtkcid`, HasOffers-style `aff_click_id`/`aff_sub*`, `sub1..sub10`, utm_*).
@@ -69,7 +71,31 @@ async function writeRaw(value: string | null): Promise<void> {
   } catch { /* storage unavailable: attribution is best-effort */ }
 }
 
+/** Optional affiliate/analytics storage is denied unless the visitor explicitly opts in.
+ * This device setting does not replace signed-in server consent/erasure workflows.
+ */
+export async function readTrackingConsent(): Promise<TrackingConsentChoice> {
+  try {
+    const raw = typeof window !== 'undefined' && window.localStorage
+      ? window.localStorage.getItem(TRACKING_CONSENT_STORAGE_KEY)
+      : await nativeStore().getItem(TRACKING_CONSENT_STORAGE_KEY);
+    return raw === 'allowed' || raw === 'denied' ? raw : null;
+  } catch { return null; }
+}
+
+export async function setTrackingConsent(choice: Exclude<TrackingConsentChoice, null>): Promise<boolean> {
+  let written = false;
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(TRACKING_CONSENT_STORAGE_KEY, choice);
+    else await nativeStore().setItem(TRACKING_CONSENT_STORAGE_KEY, choice);
+    written = true;
+  } catch { /* fail closed: unpersisted permission never enables attribution */ }
+  if (choice === 'denied') await clearAttribution();
+  return written;
+}
+
 export async function loadAttribution(now = Date.now()): Promise<Attribution | null> {
+  if (await readTrackingConsent() !== 'allowed') return null;
   const raw = await readRaw();
   if (!raw) return null;
   try {
@@ -83,6 +109,7 @@ export async function loadAttribution(now = Date.now()): Promise<Attribution | n
 
 /** Captures attribution from a landing visit. First touch wins within the 30-day window. */
 export async function captureAttribution(search: string | Record<string, unknown>, path: string | null, now = Date.now()): Promise<Attribution | null> {
+  if (await readTrackingConsent() !== 'allowed') return null;
   const params = extractAttributionParams(search);
   const existing = await loadAttribution(now);
   if (existing || !Object.keys(params).length) return existing;
