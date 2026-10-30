@@ -68,6 +68,12 @@ export const PUBLIC_NAV_ITEMS: readonly NavItem[] = [
     accessibilityLabel: "Sincera help and frequently asked questions",
   },
   {
+    id: "public-safety",
+    label: "Safety",
+    href: "/(public)/safety",
+    accessibilityLabel: "Sincera safety guide",
+  },
+  {
     id: "public-pricing",
     label: "Pricing",
     href: "/(public)/pricing",
