@@ -22,7 +22,7 @@ import {
   getMotionConfig,
   useReducedMotion,
 } from "@/constants/Motion";
-import { HitSlop, Spacing } from "@/constants/Spacing";
+import { HitSlop, Spacing, TouchTargets } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
