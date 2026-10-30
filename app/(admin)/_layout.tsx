@@ -12,6 +12,7 @@ export default function AdminModerationStackLayout() {
       testID="admin-stack-guard"
     >
       <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="dashboard" />
         <Stack.Screen name="moderation/index" />
         <Stack.Screen name="moderation/[reportId]" />
       </Stack>
