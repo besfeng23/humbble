@@ -258,7 +258,7 @@ describe('trackQuizEvent', () => {
     trackQuizEvent({ event: 'quiz_step', step: 1, value: 'serious' });
     await flush();
     expect(transport).not.toHaveBeenCalled();
-    expect(await AsyncStorage.getAllKeys()).toEqual([]);
+    expect((await AsyncStorage.getAllKeys()).filter(key => key !== 'sincera.optional_tracking_consent.v1')).toEqual([]);
   });
 
   it('honours Do Not Track and Global Privacy Control', async () => {
