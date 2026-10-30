@@ -1,9 +1,11 @@
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Colors } from "@/constants/Colors";
 import { Spacing, TouchTargets } from "@/constants/Spacing";
+import { FontFamilies } from "@/constants/Typography";
+import { createProfilePhotoSignedUrl } from "@/lib/onboarding/photos";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/lib/AuthProvider";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
@@ -17,6 +19,8 @@ type MyProfile = {
   verification_status: string | null;
   is_discoverable: boolean | null;
   is_paused: boolean | null;
+  birth_date: string | null;
+  prompts: unknown;
 };
 
 const FOREST = "#17362D";
@@ -29,6 +33,8 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [photoCount, setPhotoCount] = useState(0);
+  const [myPhotos, setMyPhotos] = useState<string[]>([]);
 
   const refresh = useCallback(async () => {
     if (!user?.id || !isSupabaseConfigured) {
@@ -38,11 +44,21 @@ export default function ProfileScreen() {
     }
     setLoading(true);
     setError(null);
-    const { data, error: fetchError } = await supabase
-      .from("profiles")
-      .select("display_name,city_region,country_code,relationship_intention,verification_status,is_discoverable,is_paused")
-      .eq("id", user.id)
-      .maybeSingle();
+    const [account, photoRows] = await Promise.all([
+      supabase.from("profiles")
+        .select("display_name,city_region,country_code,relationship_intention,verification_status,is_discoverable,is_paused,birth_date,prompts")
+        .eq("id", user.id).maybeSingle(),
+      supabase.from("profile_photos")
+        .select("storage_path,position").eq("user_id",user.id).order("position").limit(6),
+    ]);
+    const { data, error: fetchError } = account;
+    if (!photoRows.error) {
+      setPhotoCount(photoRows.data?.length??0);
+      const urls=await Promise.all((photoRows.data??[]).map(row=>createProfilePhotoSignedUrl(row.storage_path)));
+      setMyPhotos(urls.filter((url):url is string=>Boolean(url)));
+    } else {
+      setPhotoCount(0);setMyPhotos([]);
+    }
     if (fetchError) {
       setProfile(null);
       setError("Your profile could not be loaded. Please try again.");
@@ -64,6 +80,13 @@ export default function ProfileScreen() {
   const location = [profile?.city_region, profile?.country_code].filter(Boolean).join(", ");
   const verified = profile?.verification_status === "verified";
   const paused = profile?.is_paused === true;
+  const profileReady = Boolean(profile?.display_name?.trim() && profile?.relationship_intention && profile?.city_region && profile?.country_code && profile?.birth_date && photoCount > 0);
+  const checklist = [
+    { label: "Confirm age and accept the terms", complete: Boolean(profile?.birth_date) },
+    { label: "Complete your display name and relationship intent", complete: Boolean(profile?.display_name?.trim() && profile?.relationship_intention) },
+    { label: "Add a recent profile photo", complete: photoCount > 0 },
+    { label: "Add your broad location", complete: Boolean(profile?.city_region && profile?.country_code) },
+  ];
   const statusMessage = paused
     ? "Your profile is paused and hidden from Discover."
     : profile?.is_discoverable
@@ -83,6 +106,13 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
 
+      {!loading && !profileReady && !error ? <View style={styles.progressCard}>
+        <Text style={styles.progressKicker}>FINISH YOUR PROFILE</Text>
+        <Text style={styles.progressTitle}>Finish your profile to appear in Discover</Text>
+        <Text style={styles.progressCopy}>Complete the items below. Finished steps disappear automatically.</Text>
+        {checklist.filter(c=>!c.complete).map(c=><Text key={c.label} style={styles.progressCopy}>• {c.label}</Text>)}
+        <Pressable accessibilityRole="button" style={styles.action} onPress={()=>router.push("/(onboarding)/basics" as any)}><Text style={styles.actionText}>Continue guided setup</Text></Pressable>
+      </View> : null}
       <View style={styles.card}>
         {loading ? <ActivityIndicator color={FOREST} /> : null}
         {error ? (
@@ -107,6 +137,18 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
 
+      <View style={styles.trustCard}>
+        <Text style={styles.trustLabel}>YOUR TRUST CHECKLIST</Text>
+        <Text style={styles.trustHeading}>Build trust at your own pace.</Text>
+        <Text style={styles.trustBody}>Complete your profile, add a recent photo, and decide whether to request optional photo verification. Verification is not proof of identity.</Text>
+        {checklist.slice(0,3).map((c,i)=><Text key={c.label} style={styles.trustBody}>{c.complete?"✓":"○"} {i+1} · {c.label}</Text>)}
+      </View>
+      <View style={styles.photoSection}>
+        <View style={styles.photoHead}><Text accessibilityRole="header" style={[styles.sectionHeading,{color:palette.text}]}>Your photos</Text><Pressable accessibilityRole="button" onPress={()=>router.push("/(onboarding)/photos-prompts" as any)} style={styles.ghostButton}><Text style={styles.ghostButtonText}>Add a photo</Text></Pressable></View>
+        {myPhotos.length ? <View style={styles.photoGrid}>{myPhotos.map((url,i)=><Image key={i} source={{uri:url}} accessibilityLabel={"Your profile photo "+(i+1)} style={styles.photoThumb} />)}</View>
+          : <Text style={[styles.lead,{color:palette.textSecondary}]}>Add your first profile photo. You control who can see it; verification is a separate step.</Text>}
+        <Text style={[styles.profileMeta,{color:palette.textSecondary}]}>Up to 6 photos. Manage order and privacy through your photo settings.</Text>
+      </View>
       <Text accessibilityRole="header" style={[styles.sectionHeading, { color: palette.text }]}>Make Sincera yours</Text>
       <View style={styles.linkGrid}>
         <NavCard testID="profile-link-preferences" title="Match preferences" description="Set the age range and intentions that matter to you." onPress={() => router.push("/(tabs)/discover/filters" as any)} />
@@ -146,7 +188,7 @@ const styles = StyleSheet.create({
   headingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 14 },
   headingBlock: { flex: 1, gap: 7, minWidth: 220 },
   eyebrow: { color: "#966C28", fontSize: 12, letterSpacing: 1.7, fontWeight: "700" },
-  heading: { fontFamily: "Georgia", fontSize: 38, fontWeight: "600", lineHeight: 43 },
+  heading: { fontFamily: FontFamilies.editorial, fontSize: 38, fontWeight: "600", lineHeight: 43 },
   lead: { fontSize: 15, lineHeight: 23 },
   ghostButton: { minHeight: TouchTargets.minimum, paddingHorizontal: 18, borderRadius: 25, borderWidth: 1, borderColor: "#C8BDA9", justifyContent: "center" },
   ghostButtonText: { color: FOREST, fontWeight: "700" },
@@ -163,12 +205,24 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 14, lineHeight: 21, color: "#445649" },
   action: { alignSelf: "flex-start", minHeight: 44, borderRadius: 30, paddingHorizontal: 19, paddingVertical: 11, justifyContent: "center", backgroundColor: GOLD },
   actionText: { fontSize: 14, color: FOREST, fontWeight: "700" },
-  sectionHeading: { fontFamily: "Georgia", fontSize: 29, lineHeight: 35, fontWeight: "600" },
+  sectionHeading: { fontFamily: FontFamilies.editorial, fontSize: 29, lineHeight: 35, fontWeight: "600" },
   linkGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   linkCard: { flexGrow: 1, flexBasis: 260, borderRadius: 16, padding: 20, backgroundColor: "#FFFDFA", borderWidth: 1, borderColor: "#E6DDD0", minHeight: 153, gap: 9 },
   linkTitle: { color: FOREST, fontSize: 18, fontWeight: "700" },
   linkDescription: { color: "#58625A", fontSize: 14, lineHeight: 21, flex: 1 },
   linkArrow: { color: "#8B632B", fontSize: 13, fontWeight: "700" },
+  progressCard: { padding: 22, borderRadius: 17, backgroundColor: "#F0F3ED", borderColor: "#DBE3D6", borderWidth: 1, gap: 11 },
+  progressKicker: { color: "#375845", fontSize: 12, letterSpacing: 1.7, fontWeight: "700" },
+  progressTitle: { color: FOREST, fontFamily: FontFamilies.editorial, fontSize: 28, fontWeight: "600" },
+  progressCopy: { color: "#506153", fontSize: 14, lineHeight: 22 },
+  trustCard: { backgroundColor: "#FFFDFA", borderWidth: 1, borderColor: "#E5DBCD", padding: 22, borderRadius: 16, gap: 10 },
+  trustLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 1.6, color: "#91682E" },
+  trustHeading: { color: FOREST, fontFamily: FontFamilies.editorial, fontSize: 29, fontWeight: "600" },
+  trustBody: { color: "#556157", fontSize: 14, lineHeight: 22 },
+  photoSection: { padding: 22, backgroundColor: "#FFFDFA", borderWidth: 1, borderColor: "#E5DBCD", borderRadius: 16, gap: 13 },
+  photoHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" },
+  photoGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
+  photoThumb: { width: 118, height: 145, borderRadius: 10, backgroundColor: "#EFE5D5" },
   safetyNote: { padding: 22, borderRadius: 16, backgroundColor: FOREST, gap: 9 },
   safetyTitle: { color: "#FFFAF0", fontSize: 19, fontWeight: "700" },
   safetyText: { color: "#E8E4D9", fontSize: 14, lineHeight: 22 },
