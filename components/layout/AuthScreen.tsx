@@ -4,7 +4,7 @@ import { ActivityIndicator, ImageBackground, KeyboardAvoidingView, Platform, Pre
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
 import { Spacing, TouchTargets } from '@/constants/Spacing';
-import { Typography } from '@/constants/Typography';
+import { FontFamilies, Typography } from '@/constants/Typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 export function AuthScreen({ title, subtitle, children, testID }: { title: string; subtitle?: string; children: React.ReactNode; testID?: string }) {
@@ -60,13 +60,13 @@ const styles = StyleSheet.create({
   authMastheadImage: { borderRadius: 18 },
   authOverlay: { flex: 1, paddingHorizontal: 24, paddingVertical: 22, gap: 12, justifyContent: 'center' },
   authKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.8, color: '#EAD19C' },
-  authMastheadTitle: { fontFamily: 'Georgia', fontSize: 39, lineHeight: 46, fontWeight: '600', color: '#FFFAF0' },
+  authMastheadTitle: { fontFamily: FontFamilies.editorial, fontSize: 39, lineHeight: 46, fontWeight: '600', color: '#FFFAF0' },
   authMastheadCopy: { fontSize: 15, color: '#F1EDE0', lineHeight: 23 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: Spacing.xl },
   scrollCompact: { justifyContent: 'flex-start', paddingTop: Spacing['3xl'], paddingBottom: Spacing.xl },
   content: { width: '100%', maxWidth: 440, alignSelf: 'center', gap: Spacing.lg, padding: 24, backgroundColor: '#FFFDFA', borderRadius: 20, borderWidth: 1, borderColor: '#E9E0D3' },
-  wordmark: { fontFamily: 'Georgia', color: '#17362D', fontSize: 30, fontWeight: '700', marginBottom: 10 },
-  title: { ...Typography.h1, fontFamily: 'Georgia', fontSize: 34, lineHeight: 40 },
+  wordmark: { fontFamily: FontFamilies.editorial, color: '#17362D', fontSize: 30, fontWeight: '700', marginBottom: 10 },
+  title: { ...Typography.h1, fontFamily: FontFamilies.editorial, fontSize: 34, lineHeight: 40 },
   subtitle: { ...Typography.body },
   notice: { borderWidth: 1, borderRadius: 10, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, marginVertical: Spacing.xs },
   disabledOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.18)', borderRadius: 12 },
