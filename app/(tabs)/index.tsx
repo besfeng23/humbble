@@ -40,8 +40,8 @@ const LikedYou = () => {
   if (premium.isPremium) {
     return (
       <ScrollView testID="scr-14-liked-you" style={{ paddingHorizontal: 8 }}>
-        <Header headerTitle={"Liked You"} button={button} />
-        <Text testID="likes-premium-badge" style={{ fontWeight: "600", marginBottom: 12 }}>Premium</Text>
+        <Header headerTitle={"A spark starts here."} button={button} />
+        <Text testID="likes-premium-badge" style={{ fontWeight: "600", marginBottom: 12, color: "#17362D" }}>Your incoming likes</Text>
         {likes.people.length === 0 ? (
           <Text style={{ fontWeight: "300" }}>No new likes yet.</Text>
         ) : (
@@ -57,22 +57,22 @@ const LikedYou = () => {
 
   return (
     <ScrollView testID="scr-14-liked-you" style={{ paddingHorizontal: 8 }}>
-      <Header headerTitle={"Liked You"} button={button} />
+      <Header headerTitle={"A spark starts here."} button={button} />
       <View style={{ alignSelf: "center", alignItems: "center", marginTop: 120, gap: 16, paddingHorizontal: 10 }}>
         <Text testID="likes-locked-count" style={{ fontSize: 24, fontWeight: "bold", color: "#1a1a1a", textAlign: "center" }}>
-          {likes.count > 0 ? `${likes.count} ${likes.count === 1 ? "person likes" : "people like"} you` : "See who likes you"}
+          {likes.count > 0 ? `${likes.count} ${likes.count === 1 ? "person likes" : "people like"} you` : "A little space for what’s next"}
         </Text>
         <Text style={{ fontSize: 16, color: "#1a1a1a", textAlign: "center", fontWeight: "300" }}>
-          Premium shows you who they are.
+          Your outgoing likes and mutual connections matter more than a number. Incoming-like details are planned for optional membership; not yet on sale.
         </Text>
         <Pressable
           testID="likes-upgrade-btn"
           accessibilityRole="button"
-          accessibilityLabel="Upgrade to Humbble Premium to see who liked you"
-          onPress={() => router.push("/(paywall)/upgrade" as any)}
-          style={{ width: 220, minHeight: TouchTargets.comfortable, backgroundColor: "#1a1a1a", padding: 12, borderRadius: 30, justifyContent: "center", alignItems: "center" }}
+          accessibilityLabel="Explore profiles"
+          onPress={() => router.push("/(tabs)/people" as any)}
+          style={{ width: 220, minHeight: TouchTargets.comfortable, backgroundColor: "#17362D", padding: 12, borderRadius: 30, justifyContent: "center", alignItems: "center" }}
         >
-          <Text style={{ color: "white", fontSize: 18, fontWeight: "600" }}>Upgrade</Text>
+          <Text style={{ color: "white", fontSize: 18, fontWeight: "600" }}>Discover people</Text>
         </Pressable>
       </View>
     </ScrollView>
