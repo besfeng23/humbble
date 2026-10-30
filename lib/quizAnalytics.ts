@@ -1,4 +1,4 @@
-import { extractAttributionParams, loadAttribution } from '@/lib/attribution';
+import { extractAttributionParams, loadAttribution, readTrackingConsent } from '@/lib/attribution';
 import { normalizeCountryCode } from '@/lib/countries';
 import { QUIZ_CHOICE_STEPS, QUIZ_TOTAL_STEPS } from '@/lib/quiz';
 
@@ -177,7 +177,8 @@ export async function setQuizAnalyticsOptOut(optedOut: boolean): Promise<void> {
 export async function initQuizAnalytics(now = Date.now()): Promise<{ active: boolean }> {
   try {
     const optedOut = await isQuizAnalyticsOptedOut();
-    const active = isQuizAnalyticsEnabled() && !optedOut;
+    const consent = await readTrackingConsent();
+    const active = isQuizAnalyticsEnabled() && !optedOut && consent === 'allowed';
     const raw = await readRaw();
     if (raw !== null) {
       let keep = false;
@@ -257,7 +258,10 @@ export function buildQuizEventArgs(sessionId: string, input: QuizEventInput): Qu
 
 /** Slugs to attach to quiz_started: saved first-touch params overlaid with whatever the page was opened with. */
 export async function collectQuizAttribution(incoming: Record<string, unknown> = {}): Promise<QuizAttribution> {
-  try { return deriveQuizAttribution({ ...((await loadAttribution())?.params ?? {}), ...extractAttributionParams(incoming) }); } catch { return {}; }
+  try {
+    if (await readTrackingConsent() !== 'allowed') return {};
+    return deriveQuizAttribution({ ...((await loadAttribution())?.params ?? {}), ...extractAttributionParams(incoming) });
+  } catch { return {}; }
 }
 
 /**
@@ -278,9 +282,9 @@ async function send(input: QuizEventInput): Promise<void> {
   const key = `${input.event}:${input.step ?? 0}`;
   if (sent.has(key)) return; // the server is idempotent too; this just avoids pointless requests after Back
   // Enablement and opt-out come first: no session id is created or stored for a visitor who is off or opted out.
-  if (!isQuizAnalyticsEnabled() || (await isQuizAnalyticsOptedOut())) return;
+  if (!isQuizAnalyticsEnabled() || (await isQuizAnalyticsOptedOut()) || (await readTrackingConsent()) !== 'allowed') return;
   const sessionId = await getQuizSessionId();
-  if (!isQuizAnalyticsEnabled()) { memorySession = null; await writeRaw(null); return; } // opted out while the id was being resolved
+  if (!isQuizAnalyticsEnabled() || (await readTrackingConsent()) !== 'allowed') { memorySession = null; await writeRaw(null); return; } // revoked while the id was being resolved
   const args = buildQuizEventArgs(sessionId, input);
   if (!args) return;
   sent.add(key);
