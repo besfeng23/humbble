@@ -28,9 +28,10 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   logo: {
-    color: "#11181C",
-    fontSize: 24,
-    fontWeight: "bold",
-    letterSpacing: 1,
+    color: "#193329",
+    fontFamily: "Georgia",
+    fontSize: 28,
+    fontWeight: "600",
+    letterSpacing: -0.4,
   },
 });
