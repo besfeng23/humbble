@@ -10,6 +10,7 @@ export default function PublicStackLayout() {
       <Stack.Screen name="how-it-works" />
       <Stack.Screen name="faq" />
       <Stack.Screen name="safety" />
+      <Stack.Screen name="affiliate-program" />
       <Stack.Screen name="legal/[slug]" />
     </Stack>
   );
