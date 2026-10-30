@@ -743,86 +743,6 @@ export type Database = {
           },
         ]
       }
-      notification_jobs: {
-        Row: {
-          conversation_id: string | null
-          created_at: string
-          dedupe_key: string
-          id: number
-          last_error_code: string | null
-          locked_at: string | null
-          match_id: string | null
-          message_id: string | null
-          next_attempt_at: string
-          notification_type: string
-          recipient_id: string
-          retry_count: number
-          sent_at: string | null
-          status: string
-        }
-        Insert: {
-          conversation_id?: string | null
-          created_at?: string
-          dedupe_key: string
-          id?: never
-          last_error_code?: string | null
-          locked_at?: string | null
-          match_id?: string | null
-          message_id?: string | null
-          next_attempt_at?: string
-          notification_type: string
-          recipient_id: string
-          retry_count?: number
-          sent_at?: string | null
-          status?: string
-        }
-        Update: {
-          conversation_id?: string | null
-          created_at?: string
-          dedupe_key?: string
-          id?: never
-          last_error_code?: string | null
-          locked_at?: string | null
-          match_id?: string | null
-          message_id?: string | null
-          next_attempt_at?: string
-          notification_type?: string
-          recipient_id?: string
-          retry_count?: number
-          sent_at?: string | null
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notification_jobs_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notification_jobs_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "matches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notification_jobs_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notification_jobs_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -1446,45 +1366,6 @@ export type Database = {
           },
         ]
       }
-      swipes: {
-        Row: {
-          actor_id: string
-          created_at: string
-          direction: Database["public"]["Enums"]["swipe_direction"]
-          id: string
-          target_id: string
-        }
-        Insert: {
-          actor_id: string
-          created_at?: string
-          direction: Database["public"]["Enums"]["swipe_direction"]
-          id?: string
-          target_id: string
-        }
-        Update: {
-          actor_id?: string
-          created_at?: string
-          direction?: Database["public"]["Enums"]["swipe_direction"]
-          id?: string
-          target_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "swipes_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "swipes_target_id_fkey"
-            columns: ["target_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_consents: {
         Row: {
           created_at: string
@@ -1781,14 +1662,6 @@ export type Database = {
         Args: { p_notification_id: string }
         Returns: boolean
       }
-      moderation_transition_case: {
-        Args: {
-          p_case_id: string
-          p_new_status: Database["public"]["Enums"]["moderation_case_status"]
-          p_note: string
-        }
-        Returns: undefined
-      }
       moderation_get_case: {
         Args: { p_report_id: string }
         Returns: {
@@ -1936,7 +1809,6 @@ export type Database = {
         Args: { p_body: string; p_client_request_id: string; p_topic: string }
         Returns: string
       }
-      unblock_user: { Args: { p_target_id: string }; Returns: boolean }
       unblock_user: { Args: { p_target_id: string }; Returns: boolean }
       unmatch: { Args: { p_target_id: string }; Returns: boolean }
       unregister_push_token: { Args: { p_token: string }; Returns: boolean }
