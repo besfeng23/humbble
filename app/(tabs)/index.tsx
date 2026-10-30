@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { usePremium } from "@/hooks/usePremium";
 import { useAuth } from "@/lib/AuthProvider";
 import { getLikedYou, type LikedYouEntry } from "@/lib/billing";
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { Colors } from "@/constants/Colors";
 import { FontFamilies } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -26,7 +26,7 @@ export default function SinceraLikes() {
    setLoading(true);setError("");
    const [incoming,outgoing]=await Promise.allSettled([
      getLikedYou(premium.isPremium),
-     supabase.from("swipes").select("target_id,created_at").eq("actor_id",user.id).eq("direction","like").order("created_at",{ascending:false}).limit(20),
+     isSupabaseConfigured ? supabase.from("swipes").select("target_id,created_at").eq("actor_id",user.id).eq("direction","like").order("created_at",{ascending:false}).limit(20) : Promise.resolve({data:[] as SentLike[],error:null}),
    ]);
    if(incoming.status==="fulfilled")setReceived(incoming.value);
    else setError("Some incoming likes could not be loaded.");
