@@ -3,6 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
 import AuthCallbackScreen from '@/app/auth/callback';
 import { textContent } from '../test-utils/textContent';
+import { Colors } from '@/constants/Colors';
 
 var mockConfigured = false;
 var mockParams: Record<string, string> = {};
@@ -32,7 +33,7 @@ describe('auth callback', () => {
     const action = tree.root.findAll((node) => node.props.testID === 'callback-resend' && node.props.style != null)[0];
     const rawStyle = action.props.style;
     const actionStyle = StyleSheet.flatten(typeof rawStyle === 'function' ? rawStyle({ pressed: false }) : rawStyle);
-    expect(actionStyle.backgroundColor).toBe('#FFD600');
+    expect(actionStyle.backgroundColor).toBe(Colors.light.primary);
     expect(tree.root.findAllByType(Text).some((node) => /token_hash|access_token|code=/.test(textContent(node.children)))).toBe(false);
   });
   test('verifies a recovery token hash then routes only to password reset', async () => {
