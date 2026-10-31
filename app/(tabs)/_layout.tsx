@@ -15,7 +15,7 @@ export default function TabLayout() {
  const { width }=useWindowDimensions();
  const params=useLocalSearchParams<{preview?:string}>();
  const previewAllowed=__DEV__&&DISCOVERY_PREVIEWS.includes(String(params.preview??""));
- const wideWeb=Platform.OS==="web"&&width>=768;
+ const wideWeb=Platform.OS==="web"&&width>=760; // Bubble Live breakpoint
  return <DatingLayout testID="tabs-dating-layout" skipAuthGuard={previewAllowed}>
    <Tabs initialRouteName="people" screenOptions={{
      animation:"shift", headerShown:false, tabBarButton:HapticTab,
