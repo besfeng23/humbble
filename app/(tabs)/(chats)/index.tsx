@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { AuthGuard } from '@/components/layout';
 import { FontFamilies } from '@/constants/Typography';
+import { showCompactMemberPageIntro } from '@/lib/sinceraMemberLayout';
 import { useAuth } from '@/lib/AuthProvider';
 import { loadConversationList, type ConversationSummary } from '@/lib/messaging';
 import { isSupabaseConfigured } from '@/lib/supabase';
@@ -11,6 +12,8 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function Chats() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const showIntro = showCompactMemberPageIntro(width);
   const { user } = useAuth();
   const palette = Colors[useColorScheme() ?? 'light'];
   const [items, setItems] = useState<ConversationSummary[]>([]);
@@ -26,9 +29,9 @@ export default function Chats() {
   useEffect(() => { void load(); }, [load]);
   return <AuthGuard mode="protected" redirectTo="/auth/signin" testID="chats-list-guard">
     <View style={[styles.root, { backgroundColor: palette.background }]} testID="scr-15-chats-inbox">
-      <Text style={styles.kicker}>PRIVATE MESSAGES</Text>
-      <Text accessibilityRole="header" style={[styles.title,{color:palette.text}]}>Conversations with intention.</Text>
-      <Text style={[styles.subtitle,{color:palette.textSecondary}]}>Your mutual connections, all in one place.</Text>
+      {showIntro ? <Text style={styles.kicker}>PRIVATE MESSAGES</Text> : null}
+      <Text accessibilityRole="header" style={[styles.title,!showIntro&&styles.titleMobile,{color:palette.text}]}>Conversations with intention.</Text>
+      {showIntro ? <Text style={[styles.subtitle,{color:palette.textSecondary}]}>Your mutual connections, all in one place.</Text> : null}
       {loading ? <View style={styles.center}><ActivityIndicator /><Text style={{ color: palette.textSecondary }}>Loading conversations…</Text></View> :
         error ? <View style={styles.center}><Text style={[styles.message, { color: palette.text }]}>{error}</Text><Pressable onPress={() => void load()}><Text style={styles.link}>Try again</Text></Pressable></View> :
         items.length === 0 ? <View style={styles.empty}><Text style={[styles.heading, { color: palette.text }]}>No conversations yet</Text><Text style={[styles.message, { color: palette.textSecondary }]}>When you and someone like each other, you can message each other for free.</Text><Pressable onPress={() => router.push('/(tabs)/people' as any)}><Text style={styles.link}>Start discovering</Text></Pressable></View> :
@@ -44,6 +47,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 30 },
   kicker: { color: "#956B35", fontSize: 12, letterSpacing: 2, fontWeight: "700", marginBottom: 8 },
   title: { fontFamily: FontFamilies.editorial, fontSize: 36, lineHeight: 43, fontWeight: "600", marginBottom: 8 },
+  titleMobile: { fontSize: 26, lineHeight: 33 },
   subtitle: { fontSize: 16, lineHeight: 24, marginBottom: 20 },
   list: { paddingBottom: 30 },
   row: { minHeight: 84, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, marginBottom: 10, borderRadius: 16, borderWidth: 1, borderColor: '#E9E0D3', backgroundColor: '#FFFDFA' },

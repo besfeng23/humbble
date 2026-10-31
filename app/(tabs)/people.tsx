@@ -6,19 +6,21 @@ import { DiscoveryGrid } from '@/components/discovery/DiscoveryGrid';
 import { Colors } from '@/constants/Colors';
 import { FontFamilies } from '@/constants/Typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { showCompactMemberPageIntro } from '@/lib/sinceraMemberLayout';
 
 /** Bubble Live: bounded editorial header, then progressive member filters and grid. */
 export default function PeopleScreen() {
   const params = useLocalSearchParams<{ preview?: string }>();
   const { width } = useWindowDimensions();
   const palette = Colors[useColorScheme() ?? 'light'];
+  const showIntro = showCompactMemberPageIntro(width);
   const preview = __DEV__ && ['feed', 'empty', 'quota', 'error', 'match', 'ineligible'].includes(String(params.preview ?? ''))
     ? String(params.preview) as 'feed' | 'empty' | 'quota' | 'error' | 'match' | 'ineligible'
     : undefined;
   return <View testID="scr-11-people" style={[styles.container, { backgroundColor: palette.background }]}>
-    <Text style={styles.kicker}>MEET WITH INTENTION</Text>
+    {showIntro ? <Text style={styles.kicker}>MEET WITH INTENTION</Text> : null}
     <Text accessibilityRole="header" style={[styles.title, width < 760 && styles.titleMobile, { color: palette.text }]}>Discover people who feel right.</Text>
-    <Text style={[styles.subtitle, { color: palette.textSecondary }]}>Look beyond the first photo. Discover compatible adults and connect when the feeling is mutual.</Text>
+    {showIntro ? <Text style={[styles.subtitle, { color: palette.textSecondary }]}>Look beyond the first photo. Discover compatible adults and connect when the feeling is mutual.</Text> : null}
     {preview ? <DiscoveryFeed previewState={preview} /> : <DiscoveryGrid />}
   </View>;
 }

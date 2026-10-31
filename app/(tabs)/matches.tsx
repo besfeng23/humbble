@@ -7,7 +7,7 @@ import { FontFamilies } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/lib/AuthProvider";
 import { loadConversationList, type ConversationSummary } from "@/lib/messaging";
-import { getMemberCardWidth, getMemberColumns } from "@/lib/sinceraMemberLayout";
+import { getMemberCardWidth, getMemberColumns, showCompactMemberPageIntro } from "@/lib/sinceraMemberLayout";
 
 const GREEN = "#17362D";
 /** Matches reuses the same securely filtered conversation RPC. Unlike Bubble,
@@ -19,6 +19,7 @@ export default function MatchesScreen() {
   const { user } = useAuth();
   const palette = Colors[useColorScheme() ?? "light"];
   const { width } = useWindowDimensions();
+  const showIntro = showCompactMemberPageIntro(width);
   const columns = getMemberColumns(width);
   const cardWidth = getMemberCardWidth(width, columns);
   const [items, setItems] = useState<ConversationSummary[]>([]);
@@ -33,9 +34,9 @@ export default function MatchesScreen() {
   }, [user?.id]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   return <ScrollView testID="sincera-matches-list" style={[styles.root, { backgroundColor: palette.background }]} contentContainerStyle={styles.content}>
-    <Text style={styles.kicker}>YOUR CONNECTIONS</Text>
+    {showIntro ? <Text style={styles.kicker}>YOUR CONNECTIONS</Text> : null}
     <Text accessibilityRole="header" style={[styles.title, width<760&&styles.titleMobile, { color: palette.text }]}>The feeling is mutual.</Text>
-    <Text style={[styles.description, { color: palette.textSecondary }]}>Mutual likes. Private conversations.</Text>
+    {showIntro ? <Text style={[styles.description, { color: palette.textSecondary }]}>Mutual likes. Private conversations.</Text> : null}
     {loading ? <ActivityIndicator color={GREEN}/> : null}
     {error ? <View style={styles.empty}><Text accessibilityRole="alert" style={{ color: palette.danger }}>{error}</Text><Pressable accessibilityRole="button" style={styles.linkBox} onPress={() => void load()}><Text style={styles.link}>Try again</Text></Pressable></View> : null}
     {!loading && !error && items.length === 0 ? <View style={styles.empty}>

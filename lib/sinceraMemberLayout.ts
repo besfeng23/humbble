@@ -15,3 +15,11 @@ export function getBubbleGridCardWidth(viewportWidth: number, columns: number): 
   const available = Math.max(0, Math.min(viewportWidth - 36, 1120) - 32);
   return Math.max(0, (available - (columns - 1) * 14) / columns);
 }
+
+/** Bubble Live hides redundant section labels and introductory paragraphs on
+ * mobile Discover, Likes, Matches and Messages. Full headers return at 760px.
+ * Profile and other pages retain their own visibility decisions.
+ */
+export function showCompactMemberPageIntro(viewportWidth: number): boolean {
+  return viewportWidth >= 760;
+}
