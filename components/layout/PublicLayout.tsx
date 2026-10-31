@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import {
   ScrollView,
+  Platform,
   StyleSheet,
   Text,
   View,
@@ -21,6 +22,7 @@ import { useAuth } from "@/lib/AuthProvider";
 
 import { ResponsiveNavHeader } from "./ResponsiveNavHeader";
 import { PUBLIC_NAV_ITEMS } from "./navigation";
+import { BubblePublicNav } from "./BubblePublicNav";
 
 export interface PublicLayoutProps {
   /** Page heading in the public header */
@@ -42,8 +44,8 @@ export interface PublicLayoutProps {
 }
 
 export function PublicLayout({
-  title = "Humbble",
-  subtitle = "Intentional connections • Philippines launch preview",
+  title = "Sincera",
+  subtitle = "Intentional dating · 18+ preview",
   showBack = false,
   fallbackHref = "/(public)",
   activeNavId,
@@ -86,17 +88,21 @@ export function PublicLayout({
       accessibilityValue={{ text: `breakpoint-${breakpoint}` }}
       style={[styles.root, { backgroundColor: palette.background }]}
     >
-      <ResponsiveNavHeader
-        testID={`${testID}-header`}
-        title={title}
-        subtitle={subtitle}
-        showBack={showBack}
-        fallbackHref={fallbackHref}
-        navItems={PUBLIC_NAV_ITEMS}
-        activeNavId={activeNavId}
-        rightSlot={ctaButton}
-        reduceMotion={reduceMotion}
-      />
+      {Platform.OS === "web" ? (
+        <BubblePublicNav testID={`${testID}-header`} activeNavId={activeNavId} />
+      ) : (
+        <ResponsiveNavHeader
+          testID={`${testID}-header`}
+          title={title}
+          subtitle={subtitle}
+          showBack={showBack}
+          fallbackHref={fallbackHref}
+          navItems={PUBLIC_NAV_ITEMS}
+          activeNavId={activeNavId}
+          rightSlot={ctaButton}
+          reduceMotion={reduceMotion}
+        />
+      )}
 
       <ScrollView
         testID={`${testID}-scroll`}
@@ -115,9 +121,14 @@ export function PublicLayout({
           ]}
         >
           <Text style={[styles.footerText, { color: palette.textSecondary }]}>
-            Humbble • 18+ Intentional Dating
+            Sincera · 18+ intentional dating
           </Text>
           <View style={styles.footerLinks}>
+            <Button label="How it works" variant="ghost" size="sm" onPress={() => router.push("/(public)/how-it-works" as any)} />
+            <Button label="Help & FAQ" variant="ghost" size="sm" onPress={() => router.push("/(public)/faq" as any)} />
+            <Button label="Contact support" variant="ghost" size="sm" onPress={() => router.push("/(public)/contact-support" as any)} />
+            <Button label="Safety Guide" variant="ghost" size="sm" onPress={() => router.push("/(public)/safety" as any)} />
+            <Button label="Partners" variant="ghost" size="sm" onPress={() => router.push("/(public)/affiliate-program" as any)} />
             <Button
               testID={`${testID}-footer-terms`}
               label="Terms of Service"
@@ -165,7 +176,7 @@ const styles = StyleSheet.create({
   },
   contentColumn: {
     width: "100%",
-    maxWidth: MaxContentWidth.page,
+    maxWidth: 1160,
     alignSelf: "center",
     padding: Spacing.xl,
     gap: Spacing.xl,

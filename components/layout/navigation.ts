@@ -53,7 +53,31 @@ export const PUBLIC_NAV_ITEMS: readonly NavItem[] = [
     id: "public-home",
     label: "Overview",
     href: "/(public)",
-    accessibilityLabel: "Humbble overview landing page",
+    accessibilityLabel: "Sincera overview landing page",
+  },
+  {
+    id: "public-how",
+    label: "How it works",
+    href: "/(public)/how-it-works",
+    accessibilityLabel: "How Sincera works",
+  },
+  {
+    id: "public-contact",
+    label: "Contact",
+    href: "/(public)/contact-support",
+    accessibilityLabel: "Sincera contact and support",
+  },
+  {
+    id: "public-faq",
+    label: "Help & FAQ",
+    href: "/(public)/faq",
+    accessibilityLabel: "Sincera help and frequently asked questions",
+  },
+  {
+    id: "public-safety",
+    label: "Safety",
+    href: "/(public)/safety",
+    accessibilityLabel: "Sincera safety guide",
   },
   {
     id: "public-pricing",
@@ -75,37 +99,13 @@ export const PUBLIC_NAV_ITEMS: readonly NavItem[] = [
   },
 ] as const;
 
+/** Bubble Live Sincera header ordering, October 30, 2026. Do not substitute Explore for Matches. */
 export const DATING_NAV_ITEMS: readonly NavItem[] = [
-  {
-    id: "dating-people",
-    label: "People",
-    href: "/(tabs)/people",
-    accessibilityLabel: "People swipe deck",
-  },
-  {
-    id: "dating-discover",
-    label: "Discover",
-    href: "/(tabs)/discover",
-    accessibilityLabel: "Discover recommendations",
-  },
-  {
-    id: "dating-likes",
-    label: "Liked You",
-    href: "/(tabs)",
-    accessibilityLabel: "Liked You incoming likes",
-  },
-  {
-    id: "dating-chats",
-    label: "Chats",
-    href: "/(tabs)/(chats)",
-    accessibilityLabel: "Chats and active matches",
-  },
-  {
-    id: "dating-profile",
-    label: "Profile",
-    href: "/(tabs)/profile",
-    accessibilityLabel: "Your profile and settings",
-  },
+  { id: "dating-people", label: "Discover", href: "/(tabs)/people", accessibilityLabel: "Discover people" },
+  { id: "dating-likes", label: "Likes", href: "/(tabs)", accessibilityLabel: "Likes" },
+  { id: "dating-matches", label: "Matches", href: "/(tabs)/matches", accessibilityLabel: "Your mutual matches" },
+  { id: "dating-chats", label: "Messages", href: "/(tabs)/(chats)", accessibilityLabel: "Messages" },
+  { id: "dating-profile", label: "Profile", href: "/(tabs)/profile", accessibilityLabel: "Your profile" },
 ] as const;
 
 export const ONBOARDING_STEP_ITEMS: readonly (NavItem & { step: number })[] = [
@@ -162,7 +162,7 @@ export const SETTINGS_NAV_ITEMS: readonly NavItem[] = [
     id: "settings-upgrade",
     label: "Premium",
     href: "/(paywall)/upgrade",
-    accessibilityLabel: "Upgrade to Humbble Premium",
+    accessibilityLabel: "Sincera membership and proposed plans",
   },
   {
     id: "settings-billing",
@@ -179,6 +179,12 @@ export const SETTINGS_NAV_ITEMS: readonly NavItem[] = [
 ] as const;
 
 export const MODERATION_NAV_ITEMS: readonly NavItem[] = [
+  {
+    id: "moderation-dashboard",
+    label: "Overview",
+    href: "/(admin)/dashboard",
+    accessibilityLabel: "Trust and safety operations overview",
+  },
   {
     id: "moderation-queue",
     label: "Moderation queue",

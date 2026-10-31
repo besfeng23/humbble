@@ -1,4 +1,5 @@
 import React from "react";
+import { FontFamilies } from "@/constants/Typography";
 import { StyleSheet, Text, View } from "react-native";
 
 interface HeaderProp {
@@ -28,9 +29,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   logo: {
-    color: "#11181C",
-    fontSize: 24,
-    fontWeight: "bold",
-    letterSpacing: 1,
+    color: "#193329",
+    fontFamily: FontFamilies.editorial,
+    fontSize: 40,
+    lineHeight: 46,
+    fontWeight: "600",
+    letterSpacing: -0.4,
   },
 });

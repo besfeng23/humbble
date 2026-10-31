@@ -1,7 +1,7 @@
 import { Platform, type TextStyle } from "react-native";
 
 /**
- * Editorial typography scale preserving Humbble's existing visual hierarchy:
+ * Sincera editorials use Cormorant Garamond on web, with native serif fallbacks.
  * - Display / hero titles: 32px bold (ThemedText.title, auth welcome headers)
  * - Section / card titles: 24px bold (PeopleCard name/age, form titles, Header logo)
  * - Subtitles / subheadings: 20px–22px semi-bold/bold (Profile name, Discover sections)
@@ -11,6 +11,12 @@ import { Platform, type TextStyle } from "react-native";
  */
 
 export const FontFamilies = {
+  editorial: Platform.select({
+    web: '"Cormorant Garamond", Georgia, serif',
+    ios: "Georgia",
+    android: "serif",
+    default: "serif",
+  }),
   sans: Platform.select({
     ios: "System",
     android: "sans-serif",
@@ -75,30 +81,35 @@ export const Typography: Record<
   TextStyle
 > = {
   display: {
+    fontFamily: FontFamilies.editorial,
     fontSize: FontSizes["4xl"],
     lineHeight: LineHeights["4xl"],
     fontWeight: FontWeights.bold,
     letterSpacing: LetterSpacings.tight,
   },
   h1: {
+    fontFamily: FontFamilies.editorial,
     fontSize: FontSizes["3xl"],
     lineHeight: LineHeights["3xl"],
     fontWeight: FontWeights.bold,
     letterSpacing: LetterSpacings.wider,
   },
   h2: {
+    fontFamily: FontFamilies.editorial,
     fontSize: FontSizes["2xl"],
     lineHeight: LineHeights["2xl"],
     fontWeight: FontWeights.semibold,
     letterSpacing: LetterSpacings.normal,
   },
   h3: {
+    fontFamily: FontFamilies.editorial,
     fontSize: FontSizes.xl,
     lineHeight: LineHeights.xl,
     fontWeight: FontWeights.bold,
     letterSpacing: LetterSpacings.normal,
   },
   subtitle: {
+    fontFamily: FontFamilies.editorial,
     fontSize: FontSizes.lg,
     lineHeight: LineHeights.lg,
     fontWeight: FontWeights.extrabold,

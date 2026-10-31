@@ -26,7 +26,9 @@ export default function SignupScreen() {
   const router = useRouter();
   const palette = Colors[useColorScheme() ?? 'light'];
   const { session } = useAuth();
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +45,11 @@ export default function SignupScreen() {
   const submit = async () => {
     if (busy || unavailable) return;
     setError(null);
+    const cleanName = displayName.trim().replace(/\s+/g, ' ');
+    if (cleanName.length < 2 || cleanName.length > 40 || !/^[A-Za-z][A-Za-z0-9 .'_-]{1,39}$/.test(cleanName)) { setError('Enter a display name between 2 and 40 characters.'); return; }
     if (!email.trim() || !password) { setError('Enter your email and password.'); return; }
-    if (password.length < MIN_PASSWORD_LENGTH) { setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`); return; }
+    if (password.length < Math.max(12, MIN_PASSWORD_LENGTH)) { setError('Use at least 12 characters for your password.'); return; }
+    if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
     if (!acceptTerms) { setError('Please agree to the Terms and Privacy Policy to continue.'); return; }
     setBusy(true);
     try {
@@ -52,7 +57,7 @@ export default function SignupScreen() {
       const attribution = await loadAttribution();
       // Consent + attribution ride in signUp metadata; a server trigger stores them with
       // server timestamps and binds attribution to the account exactly once.
-      const data: Record<string, unknown> = { consent: { terms_privacy: true, terms_version: TERMS_VERSION, marketing: marketingOptIn } };
+      const data: Record<string, unknown> = { name: cleanName, consent: { terms_privacy: true, terms_version: TERMS_VERSION, marketing: marketingOptIn } };
       if (attribution) data.attribution = attribution;
       // Prelander quiz answers (fixed option values only) ride along in metadata; no extra table.
       const quiz = buildQuizMetadata(params as Record<string, unknown>, await loadQuiz());
@@ -68,10 +73,14 @@ export default function SignupScreen() {
       setError('Sign-up is temporarily unavailable. Try again.');
     } finally { setBusy(false); }
   };
-  return <AuthScreen testID="signup-screen" title="Create account" subtitle="Use your email to get started.">
+  return <AuthScreen testID="signup-screen" title="Create your free profile" subtitle="Join Sincera free. Adults 18+ only; your privacy matters.">
     {unavailable ? <AuthNotice testID="auth-unavailable">Sign-in is unavailable in this build</AuthNotice> : null}
+    <Text style={styles.kicker}>STEP 1 OF 2 · ACCOUNT ACCESS</Text>
+    <TextField testID="signup-display-name" label="Display name (first name is fine)" value={displayName} onChangeText={setDisplayName} autoCapitalize="words" autoComplete="name" required />
     <TextField testID="signup-email" label="Email address" value={email} onChangeText={setEmail} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" required />
-    <TextField testID="signup-password" label="Password" value={password} onChangeText={setPassword} secureTextEntry textContentType="newPassword" returnKeyType="go" onSubmitEditing={submit} required />
+    <TextField testID="signup-password" label="Create password (12+ characters)" value={password} onChangeText={setPassword} secureTextEntry textContentType="newPassword" returnKeyType="go" onSubmitEditing={submit} required />
+    <TextField testID="signup-password-confirm" label="Confirm password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry textContentType="newPassword" required />
+    <Text style={styles.hint}>After confirming your email, enter your birth date before accessing member profiles.</Text>
     <ConsentCheckbox testID="signup-consent-terms" checked={acceptTerms} onToggle={() => setAcceptTerms((v) => !v)}>
       I am 18 or older and agree to the <Text accessibilityRole="link" style={{ color: palette.link, textDecorationLine: 'underline' }} onPress={() => router.push('/(public)/legal/terms-of-service' as any)}>Terms</Text> and <Text accessibilityRole="link" style={{ color: palette.link, textDecorationLine: 'underline' }} onPress={() => router.push('/(public)/legal/privacy-notice' as any)}>Privacy Policy</Text> (required)
     </ConsentCheckbox>
@@ -84,4 +93,4 @@ export default function SignupScreen() {
     {/* Google and Facebook are intentionally omitted until provider configuration exists. */}
   </AuthScreen>;
 }
-const styles = StyleSheet.create({ checkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, minHeight: 44, paddingVertical: 4 }, box: { width: 24, height: 24, borderWidth: 2, borderRadius: 6, alignItems: 'center', justifyContent: 'center', marginTop: 1 }, checkLabel: { flex: 1, fontSize: 15, lineHeight: 22 }, link: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center' } });
+const styles = StyleSheet.create({ kicker: { fontSize: 12, fontWeight: "700", letterSpacing: 1.7, color: "#966B2F" }, hint: { fontSize: 13, lineHeight: 20, color: "#586257" }, checkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, minHeight: 44, paddingVertical: 4 }, box: { width: 24, height: 24, borderWidth: 2, borderRadius: 6, alignItems: 'center', justifyContent: 'center', marginTop: 1 }, checkLabel: { flex: 1, fontSize: 15, lineHeight: 22 }, link: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center' } });

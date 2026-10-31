@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "humbble",
+    "name": "Sincera Preview",
     "slug": "humbble",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "humbble",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -20,7 +20,7 @@
     "plugins": [
       "expo-router",
       ["expo-splash-screen", { "image": "./assets/images/splash-icon.png", "imageWidth": 300, "resizeMode": "contain", "backgroundColor": "#ffca55" }],
-      ["expo-image-picker", { "photosPermission": "Humbble accesses selected photos so you can add them to your profile.", "cameraPermission": false, "microphonePermission": false }],
+      ["expo-image-picker", { "photosPermission": "Sincera accesses selected photos so you can add them to your profile.", "cameraPermission": false, "microphonePermission": false }],
       "expo-notifications"
     ],
     "experiments": { "typedRoutes": true }

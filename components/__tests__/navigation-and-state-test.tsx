@@ -134,6 +134,7 @@ jest.mock("expo-router", () => {
     useFocusEffect: (cb: () => void | (() => void)) => {
       ReactActual.useEffect(cb, [cb]);
     },
+    usePathname: () => '/people',
     useLocalSearchParams: () => mockLocalSearchParams,
     useGlobalSearchParams: () => mockLocalSearchParams,
   };

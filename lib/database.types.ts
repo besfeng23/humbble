@@ -618,6 +618,51 @@ export type Database = {
           },
         ]
       }
+      notification_events: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          read_at: string | null
+          recipient_id: string
+          source_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          read_at?: string | null
+          recipient_id: string
+          source_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          recipient_id?: string
+          source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_jobs: {
         Row: {
           conversation_id: string | null
@@ -1249,6 +1294,39 @@ export type Database = {
           },
         ]
       }
+      support_requests: {
+        Row: {
+          body: string
+          client_request_id: string
+          created_at: string
+          id: string
+          status: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          client_request_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          client_request_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       swipes: {
         Row: {
           actor_id: string
@@ -1580,6 +1658,10 @@ export type Database = {
           display_name: string
         }[]
       }
+      mark_my_notification_read: {
+        Args: { p_notification_id: string }
+        Returns: boolean
+      }
       moderation_get_case: {
         Args: { p_report_id: string }
         Returns: {
@@ -1721,6 +1803,10 @@ export type Database = {
           p_context_summary: string
           p_reported_user_id: string
         }
+        Returns: string
+      }
+      submit_support_request: {
+        Args: { p_body: string; p_client_request_id: string; p_topic: string }
         Returns: string
       }
       unblock_user: { Args: { p_target_id: string }; Returns: boolean }

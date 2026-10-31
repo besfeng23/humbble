@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { captureAttribution } from '@/lib/attribution';
+import { captureAttribution, setTrackingConsent } from '@/lib/attribution';
 import {
   INITIAL_QUIZ_STATE,
   QUIZ_STORAGE_KEY,
@@ -91,6 +91,7 @@ describe('quiz persistence and attribution coexistence', () => {
   });
   it('does not touch the attribution record', async () => {
     const t0 = Date.parse('2026-10-23T00:00:00Z');
+    await setTrackingConsent('allowed');
     await captureAttribution({ click_id: 'first', utm_source: 'fb' }, '/quiz', t0);
     await saveQuiz(FULL, t0 + 10);
     const attr = JSON.parse((await AsyncStorage.getItem('humbble.attribution.v1')) as string);

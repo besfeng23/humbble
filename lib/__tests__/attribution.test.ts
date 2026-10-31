@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ATTRIBUTION_TTL_MS, captureAttribution, extractAttributionParams, loadAttribution, sanitizeLandingPath } from '@/lib/attribution';
+import { ATTRIBUTION_TTL_MS, captureAttribution, extractAttributionParams, loadAttribution, sanitizeLandingPath, setTrackingConsent, readTrackingConsent } from '@/lib/attribution';
 import { mailAppUrl, secondsUntilResend } from '@/lib/auth/resend';
 
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
@@ -16,10 +16,24 @@ describe('affiliate attribution capture', () => {
   });
   it('first touch wins and expires after 30 days', async () => {
     const t0 = Date.parse('2026-10-01T00:00:00Z');
+    await setTrackingConsent('allowed');
     await captureAttribution({ click_id: 'first' }, '/', t0);
     await captureAttribution({ click_id: 'second' }, '/', t0 + 1000);
     expect((await loadAttribution(t0 + 2000))?.params.click_id).toBe('first');
     expect(await loadAttribution(t0 + ATTRIBUTION_TTL_MS + 1)).toBeNull();
+  });
+  it('defaults to denied, allows only explicit consent, and clears attribution on withdrawal', async () => {
+    expect(await readTrackingConsent()).toBeNull();
+    expect(await captureAttribution({click_id:'silent'},'/')).toBeNull();
+    expect(await loadAttribution()).toBeNull();
+    await setTrackingConsent('allowed');
+    expect(await readTrackingConsent()).toBe('allowed');
+    await captureAttribution({click_id:'approved'},'/');
+    expect((await loadAttribution())?.params.click_id).toBe('approved');
+    await setTrackingConsent('denied');
+    expect(await readTrackingConsent()).toBe('denied');
+    expect(await loadAttribution()).toBeNull();
+    expect(await captureAttribution({click_id:'blocked'},'/')).toBeNull();
   });
   it('ignores visits with no attribution params', async () => {
     expect(await captureAttribution({ foo: 'bar' }, '/')).toBeNull();

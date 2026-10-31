@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text } from 'react-native';
+import { setTrackingConsent } from '@/lib/attribution';
 import renderer, { act } from 'react-test-renderer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import QuizScreen from '@/app/(public)/quiz';
@@ -29,7 +30,7 @@ async function mount() {
   return tree;
 }
 
-beforeEach(async () => { mockPush.mockClear(); mockReplace.mockClear(); mockParams = {}; __resetQuizAnalytics(); await AsyncStorage.clear(); });
+beforeEach(async () => { mockPush.mockClear(); mockReplace.mockClear(); mockParams = {}; __resetQuizAnalytics(); await AsyncStorage.clear(); await setTrackingConsent('allowed'); });
 afterEach(async () => { await act(async () => { mounted.splice(0).forEach((t) => t.unmount()); await Promise.resolve(); }); });
 
 describe('quiz prelander screen', () => {
@@ -60,6 +61,19 @@ describe('quiz prelander screen', () => {
     });
     expect(JSON.parse((await AsyncStorage.getItem('humbble.quiz.v1')) as string).answers).toEqual({ intent: 'marriage', age: '40_49', timing: 'now', country: 'SE' });
     expect(JSON.parse((await AsyncStorage.getItem('humbble.attribution.v1')) as string).params).toEqual({ click_id: 'abc123', utm_source: 'fb' });
+  });
+
+  it('never forwards visitor click IDs without explicit tracking consent', async () => {
+    await setTrackingConsent('denied');
+    mockParams = { click_id:'secret123', utm_source:'fb' };
+    const tree = await mount();
+    for (const id of ['quiz-option-intent-marriage','quiz-option-age-40_49','quiz-option-timing-now','quiz-option-country-SE']) await tap(tree,id);
+    await tap(tree,'quiz-signup-cta');
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname:'/auth/signup',
+      params:{q_intent:'marriage',q_age:'40_49',q_timing:'now',q_country:'SE'},
+    });
+    expect(await AsyncStorage.getItem('humbble.attribution.v1')).toBeNull();
   });
 
   it('goes back one step and keeps earlier answers', async () => {

@@ -9,7 +9,7 @@ import { Spacing, TouchTargets } from "@/constants/Spacing";
 import { Typography } from "@/constants/Typography";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/lib/AuthProvider";
-import { captureAttribution } from "@/lib/attribution";
+import { captureAttribution, readTrackingConsent } from "@/lib/attribution";
 import { countryName, defaultCountryFromLocale } from "@/lib/countries";
 import {
   INITIAL_QUIZ_STATE,
@@ -85,8 +85,9 @@ export default function QuizScreen() {
 
   const goSignup = async () => {
     trackQuizEvent({ event: "quiz_cta_clicked" });
-    const stored = await loadStoredAttributionParams();
-    router.push({ pathname: "/auth/signup", params: buildSignupParams(state.answers, params as Record<string, unknown>, stored) } as any);
+    const allowed = (await readTrackingConsent()) === "allowed";
+    const stored = allowed ? await loadStoredAttributionParams() : {};
+    router.push({ pathname: "/auth/signup", params: buildSignupParams(state.answers, allowed ? params as Record<string, unknown> : {}, stored) } as any);
   };
 
   const summary = [optionLabel("intent", state.answers.intent), optionLabel("age", state.answers.age), state.answers.country ? countryName(state.answers.country, "en") : null]
@@ -99,7 +100,7 @@ export default function QuizScreen() {
         <View testID={done ? "quiz-result" : `quiz-step-${state.step + 1}`} style={styles.content}>
           <View style={styles.topBar}>
             {state.step === 0 && !done ? (
-              <Text accessibilityRole="header" style={[Typography.h3, { color: palette.text }]}>Humbble</Text>
+              <Text accessibilityRole="header" style={[Typography.h3, { color: palette.text }]}>sincera·</Text>
             ) : (
               <Pressable testID="quiz-back" accessibilityRole="button" accessibilityLabel="Back" onPress={goBack} hitSlop={8} style={styles.back}>
                 <Text style={[Typography.link, { color: palette.text }]}>{"\u2039  Back"}</Text>

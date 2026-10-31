@@ -1,0 +1,128 @@
+{
+  "rewrites": [
+    {
+      "source": "/pricing",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/faq",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/how-it-works",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/safety",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/affiliate-program",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/quiz",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/legal/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/people",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/discover/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/profile/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/chats/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/match",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/billing",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/upgrade",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/moderation/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/settings/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/basics",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/intentions",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/photos-prompts",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/verify",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/notifications",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/liked-you",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/reset-password",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/charscreenf",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/404",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/contact-support",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/matches",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/account-settings",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/account_settings",
+      "destination": "/index.html"
+    }
+  ]
+}

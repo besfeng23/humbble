@@ -8,6 +8,7 @@ import CheckEmailScreen from '@/app/auth/check-email';
 import OnboardingVerifyScreen from '@/app/(onboarding)/verify';
 import { useAuth } from '@/lib/AuthProvider';
 import { textContent } from '../test-utils/textContent';
+import { Colors } from '@/constants/Colors';
 
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), replace: mockReplace }), useLocalSearchParams: () => ({}) }));
@@ -45,12 +46,12 @@ describe('enumeration-safe, unconfigured auth UI', () => {
     const submitButton = tree.root.findAll((node) => node.props.testID === 'signin-submit' && node.props.style != null)[0];
     const rawStyle = submitButton.props.style;
     const disabledStyle = StyleSheet.flatten(typeof rawStyle === 'function' ? rawStyle({ pressed: false }) : rawStyle);
-    expect(disabledStyle.backgroundColor).toBe('#FFD600');
+    expect(disabledStyle.backgroundColor).toBe(Colors.light.primary);
     // Keep the label at full contrast; the overlay dims only the primary fill.
     expect(disabledStyle.opacity).toBe(1);
     expect(tree.root.findByProps({ testID: 'signin-submit-disabled-overlay' })).toBeTruthy();
     const signInLabel = submitButton.findAllByType(Text).find((node) => textContent(node.children) === 'Sign in');
-    expect(StyleSheet.flatten(signInLabel?.props.style)?.color).toBe('#1A1A1A');
+    expect(StyleSheet.flatten(signInLabel?.props.style)?.color).toBe(Colors.light.onPrimary);
     expect(tree.root.findAllByType(Text).some((node) => /Google|Facebook/.test(textContent(node.children)))).toBe(false);
     expect(tree.root.findAll((node) => /signin-(google|facebook)/.test(String(node.props.testID ?? '')))).toHaveLength(0);
   });
@@ -72,7 +73,7 @@ describe('enumeration-safe, unconfigured auth UI', () => {
     const action = tree.root.findAll((node) => node.props.testID === 'check-email-open-mail' && node.props.style != null)[0];
     const rawStyle = action.props.style;
     const buttonStyle = StyleSheet.flatten(typeof rawStyle === 'function' ? rawStyle({ pressed: false }) : rawStyle);
-    expect(buttonStyle.backgroundColor).toBe('#FFD600');
+    expect(buttonStyle.backgroundColor).toBe(Colors.light.primary);
   });
   test('verification screen states provider unavailability without a success outcome', () => {
     const tree = mount(<OnboardingVerifyScreen />);
